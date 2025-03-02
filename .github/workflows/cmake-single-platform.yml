@@ -21,6 +21,10 @@ jobs:
 
       - name: Initialize Submodules
         run: git submodule init && git submodule update
+            
+      - name: Bootstrap vcpkg
+        working-directory: ${{github.workspace}}/external/vcpkg
+        run: ./bootstrap-vcpkg.sh
 
       - name: Configure CMake
         run: >
