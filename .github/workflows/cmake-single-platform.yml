@@ -29,8 +29,6 @@ jobs:
       - name: Installing packages
         run: ${{github.workspace}}/external/vcpkg install
 
-      - name: Running cpkg install
-
       - name: Configure CMake
         run: >
           cmake -B ${{github.workspace}}/build
