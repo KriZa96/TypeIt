@@ -24,9 +24,10 @@ jobs:
             
       - name: Bootstrap vcpkg
         working-directory: ${{github.workspace}}/external/vcpkg
-        run: |
-          ./bootstrap-vcpkg.sh
-          ./vcpkg install
+        run: ./bootstrap-vcpkg.sh
+
+      - name: Installing packages
+        run: ${{github.workspace}}/external/vcpkg install
 
       - name: Running cpkg install
 
