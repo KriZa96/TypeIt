@@ -24,7 +24,11 @@ jobs:
             
       - name: Bootstrap vcpkg
         working-directory: ${{github.workspace}}/external/vcpkg
-        run: ./bootstrap-vcpkg.sh
+        run: |
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install
+
+      - name: Running cpkg install
 
       - name: Configure CMake
         run: >
