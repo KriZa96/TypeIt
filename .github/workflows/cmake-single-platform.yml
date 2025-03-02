@@ -19,11 +19,6 @@ jobs:
       - name: Install Ninja
         run: sudo apt-get install ninja-build -y
 
-      - name: Bootstrap vcpkg
-        run: |
-          cd ${{github.workspace}}/external/vcpkg
-          ./bootstrap-vcpkg.sh
-
       - name: Configure CMake
         run: |
           cmake -B ${{github.workspace}}/build -G Ninja \
