@@ -1,7 +1,7 @@
 //
 // Created by kil3 on 3/1/25.
 //
-
+#include <format>
 #include "Timer.h"
 
 Timer::Timer(const int total_time):
