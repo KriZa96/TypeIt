@@ -8,8 +8,8 @@ on:
 
 env:
   BUILD_TYPE: Debug
-  CC:   gcc-10
-  CXX:  g++-10
+  CC:   gcc-14
+  CXX:  g++-14
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install GCC 10 & G++ 10
-        run: sudo apt update && sudo apt install gcc-10 g++-10
+        run: sudo apt update && sudo apt install gcc-14 g++-14
 
       - name: Initialize Submodules
         run: git submodule init && git submodule update --init --recursive
