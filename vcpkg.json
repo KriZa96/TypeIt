@@ -1,12 +1,12 @@
-{
-  "name" : "typeit",
-  "version-string" : "1.0.0",
-  "builtin-baseline" : "d5ec528843d29e3a52d745a64b469f810b2cedbf",
-  "dependencies" : [ {
-    "name" : "ftxui",
-    "version>=" : "5.0.0"
-  }, {
-    "name" : "gtest",
-    "version>=" : "1.16.0"
-  } ]
-}
+  {
+    "name" : "typeit",
+    "version-string" : "1.0.0",
+    "builtin-baseline" : "d5ec528843d29e3a52d745a64b469f810b2cedbf",
+    "dependencies" : [ {
+      "name" : "ftxui",
+      "version>=" : "5.0.0"
+    }, {
+      "name" : "gtest",
+      "version>=" : "1.16.0"
+    } ]
+  }

@@ -6,6 +6,8 @@ add_executable(
         main.cpp
         components/Timer.h
         components/Timer.cpp
+        components/Screen.h
+        components/Screen.cpp
 )
 
 target_link_libraries(

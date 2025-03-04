@@ -1,7 +1,7 @@
 //
 // Created by kil3 on 3/1/25.
 //
-
+#include <format>
 #include "Timer.h"
 
 Timer::Timer(const int total_time):
@@ -10,6 +10,9 @@ Timer::Timer(const int total_time):
             elapsed_time_(0) {}
 
 int Timer::get_elapsed_time() {
+    if (elapsed_time_ >= total_time_) {
+        return total_time_;
+    }
     elapsed_time_ = std::chrono::duration_cast<std::chrono::seconds>(
        std::chrono::steady_clock::now() - start_time_
     ).count();
