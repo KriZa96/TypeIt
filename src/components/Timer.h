@@ -8,6 +8,7 @@
 #include <mutex>
 #include "ftxui/component/component.hpp"
 
+
 class Timer {
     public:
         explicit Timer(int total_time);
@@ -21,10 +22,8 @@ class Timer {
     private:
         std::chrono::steady_clock::time_point start_time_;
         int total_time_;
-        // If elapsed == total time then we can finish the typing
         int elapsed_time_;
 };
-
 
 
 #endif //TIMER_H

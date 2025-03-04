@@ -7,8 +7,12 @@ add_executable(
         tests
         test_setup.cpp
         test_timer.cpp
+        test_file_text_source.cpp
         ../src/components/Timer.h
         ../src/components/Timer.cpp
+        ../src/text_sources/ITextSource.h
+        ../src/text_sources/FileTextSource.h
+        ../src/text_sources/FileTextSource.cpp
 )
 
 target_link_libraries(

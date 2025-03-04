@@ -21,9 +21,9 @@ TEST(TimerTest, ElapsedTimeAfterDelay) {
 }
 
 TEST(TimerTest, ElapsedTimeAfterMaxTime) {
-    Timer timer(3);
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    EXPECT_GE(timer.get_elapsed_time(), 3);
+    Timer timer(1);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    EXPECT_GE(timer.get_elapsed_time(), 1);
 }
 
 TEST(TimerTest, RemainingTimeString) {
