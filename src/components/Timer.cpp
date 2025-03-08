@@ -23,7 +23,7 @@ int Timer::get_elapsed_time() {
 
 
 std::string Timer::get_time_left_str() {
-    return std::format("{}s", total_time_ - get_elapsed_time());
+    return std::format("{}s", std::max(0, total_time_ - get_elapsed_time()));
 }
 
 
