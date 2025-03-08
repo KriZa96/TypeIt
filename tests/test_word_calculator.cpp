@@ -8,7 +8,7 @@
 #undef private
 
 
-TEST(WordCalculator, TestMemberVariables) {
+TEST(WordCalculatorTest, TestMemberVariables) {
     int elapsed_time = 60;
     int word_count = 60;
 
@@ -19,7 +19,7 @@ TEST(WordCalculator, TestMemberVariables) {
 }
 
 
-TEST(WordCalculator, TestWordsPerMinute60Words) {
+TEST(WordCalculatorTest, TestWordsPerMinute60Words) {
     int elapsed_time = 60;
     int word_count = 60;
 
@@ -29,7 +29,7 @@ TEST(WordCalculator, TestWordsPerMinute60Words) {
 }
 
 
-TEST(WordCalculator, TestWordsPerMinuteAbove60Words) {
+TEST(WordCalculatorTest, TestWordsPerMinuteAbove60Words) {
     int elapsed_time = 60;
     int word_count = 120;
 
@@ -39,7 +39,7 @@ TEST(WordCalculator, TestWordsPerMinuteAbove60Words) {
 }
 
 
-TEST(WordCalculator, TestWordsPerMinuteBelow60Words) {
+TEST(WordCalculatorTest, TestWordsPerMinuteBelow60Words) {
     int elapsed_time = 60;
     int word_count = 30;
 
@@ -49,7 +49,7 @@ TEST(WordCalculator, TestWordsPerMinuteBelow60Words) {
 }
 
 
-TEST(WordCalculator, TestWordsPerMinuteElapsedTime0) {
+TEST(WordCalculatorTest, TestWordsPerMinuteElapsedTime0) {
     int elapsed_time = 0;
     int word_count = 0;
 
@@ -59,7 +59,7 @@ TEST(WordCalculator, TestWordsPerMinuteElapsedTime0) {
 }
 
 
-TEST(WordCalculator, TestGetWordsPerMinuteString) {
+TEST(WordCalculatorTest, TestGetWordsPerMinuteString) {
     int elapsed_time = 60;
     int word_count = 60;
 
@@ -69,7 +69,7 @@ TEST(WordCalculator, TestGetWordsPerMinuteString) {
 }
 
 
-TEST(WordCalculator, TestWordsPerMinuteStringElapsedTime0) {
+TEST(WordCalculatorTest, TestWordsPerMinuteStringElapsedTime0) {
     int elapsed_time = 0;
     int word_count = 0;
 

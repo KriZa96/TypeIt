@@ -19,7 +19,7 @@ file(
 file(
         GLOB
         TEST_FILES
-        ./*.cpp
+        ./test_*.cpp
 )
 
 add_executable(
