@@ -4,9 +4,8 @@
 
 #ifndef FILETEXTSOURCE_H
 #define FILETEXTSOURCE_H
+
 #include <string>
-#include <fstream>
-#include <utility>
 #include "ITextSource.h"
 
 class FileTextSource final : public ITextSource {

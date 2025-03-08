@@ -4,7 +4,7 @@
 
 #ifndef ITEXTSOURCE_H
 #define ITEXTSOURCE_H
-#include <iostream>
+
 #include <string>
 
 

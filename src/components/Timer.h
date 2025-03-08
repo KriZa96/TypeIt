@@ -5,7 +5,6 @@
 #ifndef TIMER_H
 #define TIMER_H
 #include <chrono>
-#include <mutex>
 #include "ftxui/component/component.hpp"
 
 
