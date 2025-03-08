@@ -1,9 +1,10 @@
 //
 // Created by kil3 on 3/4/25.
 //
-#include <gtest/gtest.h>
-#include "../src/text_sources/FileTextSource.h"
 #include <fstream>
+#include <gtest/gtest.h>
+
+#include "../include/FileTextSource.h"
 
 void create_temp_file(const std::string& filename, const std::string& content) {
     std::ofstream file(filename);

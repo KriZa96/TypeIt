@@ -6,6 +6,7 @@
 #define FILETEXTSOURCE_H
 
 #include <string>
+
 #include "ITextSource.h"
 
 class FileTextSource final : public ITextSource {

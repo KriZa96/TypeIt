@@ -1,8 +1,8 @@
 //
 // Created by kil3 on 2/15/25.
 //
-#include "components/Timer.h"
-#include "components/Screen.h"
+#include "../include/Timer.h"
+#include "../include/Screen.h"
 
 int main() {
     Screen screen{};

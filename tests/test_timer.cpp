@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "../src/components/Timer.h"
+#include "../include/Timer.h"
 #undef private
 
 TEST(TimerTest, ElapsedTimeStartsAtZero) {

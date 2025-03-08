@@ -4,6 +4,7 @@
 
 #ifndef WORDCALCULATOR_H
 #define WORDCALCULATOR_H
+
 #include "ftxui/component/component.hpp"
 
 

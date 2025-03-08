@@ -4,8 +4,9 @@
 
 #ifndef SCREEN_H
 #define SCREEN_H
-#include <chrono>
+
 #include <thread>
+
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
 

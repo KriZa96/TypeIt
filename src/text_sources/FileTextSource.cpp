@@ -2,9 +2,10 @@
 // Created by kil3 on 3/4/25.
 //
 
+#include "../../include/FileTextSource.h"
+
 #include <fstream>
 #include <utility>
-#include "FileTextSource.h"
 
 
 FileTextSource::FileTextSource(std::string  file_path) : file_path_(std::move(file_path)) {}

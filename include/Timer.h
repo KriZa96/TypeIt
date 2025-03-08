@@ -4,8 +4,10 @@
 
 #ifndef TIMER_H
 #define TIMER_H
+
 #include <chrono>
-#include "ftxui/component/component.hpp"
+
+#include "../cmake-build-debug/vcpkg_installed/x64-linux/include/ftxui/component/component.hpp"
 
 
 class Timer {

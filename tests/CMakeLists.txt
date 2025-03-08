@@ -3,18 +3,30 @@ find_package(ftxui CONFIG REQUIRED)
 
 enable_testing()
 
+file(
+        GLOB
+        SRC_FILES
+        ../src/components/*.cpp
+        ../src/text_sources/*.cpp
+)
+
+file(
+        GLOB
+        HEADER_FILES
+        ../include/*.h
+)
+
+file(
+        GLOB
+        TEST_FILES
+        *.cpp
+)
+
 add_executable(
         tests
-        test_setup.cpp
-        test_timer.cpp
-        test_file_text_source.cpp
-        ../src/components/Timer.h
-        ../src/components/Timer.cpp
-        ../src/text_sources/ITextSource.h
-        ../src/text_sources/FileTextSource.h
-        ../src/text_sources/FileTextSource.cpp
-        ../src/components/WordCalculator.h
-        ../src/components/WordCalculator.cpp
+        ${HEADER_FILES}
+        ${SRC_FILES}
+        ${TEST_FILES}
 )
 
 target_link_libraries(

@@ -2,7 +2,7 @@
 // Created by kil3 on 3/8/25.
 //
 
-#include "WordCalculator.h"
+#include "../../include/WordCalculator.h"
 
 
 WordCalculator::WordCalculator(std::shared_ptr<int> elapsed_time, std::shared_ptr<int> word_count):

@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "../src/components/Screen.h"
+#include "../include/Screen.h"
 #undef private
 
 
