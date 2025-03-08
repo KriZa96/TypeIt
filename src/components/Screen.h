@@ -19,6 +19,9 @@ class Screen {
         ftxui::ScreenInteractive screen_;
         std::atomic<bool> running_;
         std::thread screen_thread_;
+
+        void start_refresh();
+        void stop_refresh();
 };
 
 

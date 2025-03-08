@@ -13,6 +13,8 @@ add_executable(
         ../src/text_sources/ITextSource.h
         ../src/text_sources/FileTextSource.h
         ../src/text_sources/FileTextSource.cpp
+        ../src/components/WordCalculator.h
+        ../src/components/WordCalculator.cpp
 )
 
 target_link_libraries(

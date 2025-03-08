@@ -6,9 +6,9 @@
 
 
 Screen::Screen():
-            screen_(ftxui::ScreenInteractive::Fullscreen()),
-            running_(true)
+            screen_(ftxui::ScreenInteractive::Fullscreen())
 {
+    start_refresh();
     screen_thread_ = std::thread(
         [this] {
             while (running_) {
@@ -21,7 +21,7 @@ Screen::Screen():
 
 
 Screen::~Screen() {
-    running_ = false;
+    stop_refresh();
     if (screen_thread_.joinable()) {
         screen_thread_.join();
     }
@@ -30,5 +30,15 @@ Screen::~Screen() {
 
 void Screen::loop(const ftxui::Component& component) {
     screen_.Loop(component);
+}
+
+
+void Screen::start_refresh() {
+    running_ = true;
+}
+
+
+void Screen::stop_refresh() {
+    running_ = false;
 }
 

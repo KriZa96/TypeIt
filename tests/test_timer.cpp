@@ -4,9 +4,7 @@
 #include <chrono>
 #include <thread>
 #include <gtest/gtest.h>
-#include <ftxui/dom/elements.hpp>
 
-// Changing private methods to public for testing purposes
 #define private public
 #include "../src/components/Timer.h"
 #undef private
