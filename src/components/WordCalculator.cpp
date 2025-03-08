@@ -5,12 +5,15 @@
 #include "../../include/WordCalculator.h"
 
 
-WordCalculator::WordCalculator(std::shared_ptr<int> elapsed_time, std::shared_ptr<int> word_count):
+WordCalculator::WordCalculator(std::shared_ptr<float> elapsed_time, std::shared_ptr<float> word_count):
     elapsed_time_(elapsed_time),
     word_count_(word_count) {}
 
 
 int WordCalculator::calculate_words_per_minute() {
+    if (*elapsed_time_ <= 0) {
+        return 0;
+    }
     return *word_count_ / *elapsed_time_ * 60;
 }
 

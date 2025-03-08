@@ -7,7 +7,7 @@
 
 #include <chrono>
 
-#include "../cmake-build-debug/vcpkg_installed/x64-linux/include/ftxui/component/component.hpp"
+#include "ftxui/component/component.hpp"
 
 
 class Timer {
