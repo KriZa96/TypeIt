@@ -4,6 +4,7 @@
 
 #include "Screen.h"
 
+
 Screen::Screen():
             screen_(ftxui::ScreenInteractive::Fullscreen()),
             running_(true)
@@ -18,12 +19,14 @@ Screen::Screen():
     );
 }
 
+
 Screen::~Screen() {
     running_ = false;
     if (screen_thread_.joinable()) {
         screen_thread_.join();
     }
 }
+
 
 void Screen::loop(const ftxui::Component& component) {
     screen_.Loop(component);

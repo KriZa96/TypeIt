@@ -12,17 +12,14 @@
 class Timer {
     public:
         explicit Timer(int total_time);
-
         int get_elapsed_time();
-
-        std::string get_time_left_str();
-
         ftxui::Element get_time_element();
-
     private:
         std::chrono::steady_clock::time_point start_time_;
         int total_time_;
         int elapsed_time_;
+
+        std::string get_time_left_str();
 };
 
 

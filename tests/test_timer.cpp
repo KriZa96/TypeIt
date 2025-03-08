@@ -25,8 +25,3 @@ TEST(TimerTest, ElapsedTimeAfterMaxTime) {
     std::this_thread::sleep_for(std::chrono::seconds(2));
     EXPECT_GE(timer.get_elapsed_time(), 1);
 }
-
-TEST(TimerTest, RemainingTimeString) {
-    Timer timer(10);
-    EXPECT_EQ(timer.get_time_left_str(), "10s");
-}
