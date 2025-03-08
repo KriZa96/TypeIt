@@ -26,5 +26,4 @@ class Text {
 };
 
 
-
 #endif //TEXT_H

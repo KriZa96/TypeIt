@@ -9,6 +9,7 @@
 
 #include "ITextSource.h"
 
+
 class FileTextSource final : public ITextSource {
     public:
         explicit FileTextSource(std::string  file_path);
@@ -16,7 +17,6 @@ class FileTextSource final : public ITextSource {
     private:
         std::string file_path_;
 };
-
 
 
 #endif //FILETEXTSOURCE_H

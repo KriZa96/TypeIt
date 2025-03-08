@@ -27,6 +27,7 @@ TEST(TextTest, TestTextNotEmpty) {
     EXPECT_FALSE(text.text_lines_.empty());
 }
 
+
 TEST(TextTest, TestWithnewlineChar) {
     int position_x = 0;
     int position_y = 0;
@@ -35,6 +36,7 @@ TEST(TextTest, TestWithnewlineChar) {
 
     ASSERT_EQ(text.text_lines_.size(), 3);
 }
+
 
 TEST(TextTest, TestWithOnlyNewlineChar) {
     int position_x = 0;
@@ -45,6 +47,7 @@ TEST(TextTest, TestWithOnlyNewlineChar) {
     ASSERT_EQ(text.text_lines_.size(), 2);
 }
 
+
 TEST(TextTest, TestWithNewlineCharAndOneChar) {
     int position_x = 0;
     int position_y = 0;
@@ -53,6 +56,7 @@ TEST(TextTest, TestWithNewlineCharAndOneChar) {
 
     ASSERT_EQ(text.text_lines_.size(), 3);
 }
+
 
 TEST(TextTest, TestWithSpacesOneLine) {
     int position_x = 0;
@@ -64,6 +68,7 @@ TEST(TextTest, TestWithSpacesOneLine) {
     ASSERT_EQ(text.text_lines_.size(), 1);
 }
 
+
 TEST(TextTest, TestWithSpacesTwoLine) {
     int position_x = 0;
     int position_y = 0;
@@ -73,6 +78,7 @@ TEST(TextTest, TestWithSpacesTwoLine) {
 
     ASSERT_EQ(text.text_lines_.size(), 2);
 }
+
 
 TEST(TextTest, TestWithSpacesThreeLines) {
     int position_x = 0;
@@ -84,6 +90,7 @@ TEST(TextTest, TestWithSpacesThreeLines) {
     ASSERT_EQ(text.text_lines_.size(), 3);
 }
 
+
 TEST(TextTest, TestWithSpacesAndNewLineThreeLines) {
     int position_x = 0;
     int position_y = 0;
@@ -93,4 +100,3 @@ TEST(TextTest, TestWithSpacesAndNewLineThreeLines) {
 
     ASSERT_EQ(text.text_lines_.size(), 3);
 }
-

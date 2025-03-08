@@ -1,16 +1,19 @@
 //
 // Created by kil3 on 3/4/25.
 //
+
 #include <fstream>
 #include <gtest/gtest.h>
 
 #include "../include/FileTextSource.h"
+
 
 void create_temp_file(const std::string& filename, const std::string& content) {
     std::ofstream file(filename);
     file << content;
     file.close();
 }
+
 
 TEST(FileTextSourceTest, ReadsFileCorrectlyWithoutNewLine) {
     std::string temp_filename = "temp_test.txt";
@@ -23,6 +26,7 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithoutNewLine) {
     EXPECT_EQ(result, expected_content);
 }
 
+
 TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
     std::string temp_filename = "temp_test.txt";
     std::string expected_content = "Hello world.\nThis is a test file.";
@@ -33,6 +37,7 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
 
     EXPECT_EQ(result, "Hello world. This is a test file.");
 }
+
 
 TEST(FileTextSourceTest, HandlesMissingFile) {
     FileTextSource fileSource("non_existent_file.txt");

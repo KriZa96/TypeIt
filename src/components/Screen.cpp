@@ -41,4 +41,3 @@ void Screen::start_refresh() {
 void Screen::stop_refresh() {
     refresh_ = false;
 }
-
