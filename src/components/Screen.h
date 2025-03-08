@@ -17,7 +17,7 @@ class Screen {
         void loop(const ftxui::Component& component);
     private:
         ftxui::ScreenInteractive screen_;
-        std::atomic<bool> running_;
+        std::atomic<bool> refresh_;
         std::thread screen_thread_;
 
         void start_refresh();

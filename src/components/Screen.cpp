@@ -11,7 +11,7 @@ Screen::Screen():
     start_refresh();
     screen_thread_ = std::thread(
         [this] {
-            while (running_) {
+            while (refresh_) {
                 screen_.PostEvent(ftxui::Event::Custom);
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
@@ -34,11 +34,11 @@ void Screen::loop(const ftxui::Component& component) {
 
 
 void Screen::start_refresh() {
-    running_ = true;
+    refresh_ = true;
 }
 
 
 void Screen::stop_refresh() {
-    running_ = false;
+    refresh_ = false;
 }
 
