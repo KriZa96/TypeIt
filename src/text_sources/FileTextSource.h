@@ -6,27 +6,14 @@
 #define FILETEXTSOURCE_H
 #include <string>
 #include <fstream>
+#include <utility>
 #include "ITextSource.h"
 
-class FileTextSource: public ITextSource {
+class FileTextSource final : public ITextSource {
     public:
-        explicit FileTextSource(const std::string& file_path) : file_path_(file_path) {}
+        explicit FileTextSource(std::string  file_path);
 
-        std::string get_text() const override {
-            std::ifstream fileStream(file_path_);
-            if (!fileStream) {
-                return "";
-            }
-
-            std::string content, line;
-            while (std::getline(fileStream, line)) {
-                content += line + " ";
-            }
-
-            content.pop_back();
-
-            return content;
-        }
+        [[nodiscard]] std::string get_text() const override;
     private:
         std::string file_path_;
 };

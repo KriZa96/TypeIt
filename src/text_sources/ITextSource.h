@@ -11,7 +11,7 @@
 class ITextSource {
     public:
         virtual ~ITextSource() = default;
-        virtual std::string get_text() const = 0;
+        [[nodiscard]] virtual std::string get_text() const = 0;
 };
 
 
