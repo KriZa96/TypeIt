@@ -6,8 +6,7 @@ enable_testing()
 file(
         GLOB
         SRC_FILES
-        ../src/components/*.cpp
-        ../src/text_sources/*.cpp
+        ../src/*/*.cpp
 )
 
 file(

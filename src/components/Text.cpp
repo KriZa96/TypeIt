@@ -3,18 +3,20 @@
 //
 
 #include "../../include/Text.h"
+#include "../../include/FocusPosition.h"
+
+#include <numeric>
 
 
-Text::Text(std::string text, std::shared_ptr<int> position_x, std::shared_ptr<int> position_y):
-    text_(text),
-    position_x_(position_x),
-    position_y_(position_y)    {
+Text::Text(std::string text):
+    text_(text) {
     populate_text_lines();
 }
 
 
 void Text::push_line(ftxui::Elements& line, int& num_of_characters){
-    text_lines_.push_back(ftxui::hbox(line) | ftxui::color(ftxui::Color::Grey62));
+    text_lines_.push_back(ftxui::hbox(line) | ftxui::color(ftxui::Color::Grey62));  // TODO mozda ce trebat color stavit na svaki leement
+    text_lines_size_.push_back(num_of_characters);
     num_of_characters = 0;
     line.clear();
 }
@@ -42,7 +44,44 @@ void Text::populate_text_lines() {
 
 ftxui::Element Text::get_text_element() {
     return ftxui::vbox(text_lines_) |
-                ftxui::focusPosition(*position_x_, *position_y_) |
+                ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
                 ftxui::frame |
                 ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+}
+
+
+int Text::get_text_size() const {
+    return text_.size();
+}
+
+
+int Text::get_text_lines_size() const {
+    return text_lines_.size();
+}
+
+
+std::string Text::get_text() const {
+    return text_;
+}
+
+
+ftxui::Elements Text::get_text_lines() const {
+    return text_lines_;
+}
+
+
+int Text::get_text_line_size(const int index) const {
+    return text_lines_size_[index];
+}
+
+int Text::get_text_lines_size_up_to_index(const int index) const {
+    if (index == 0) {
+        return 0;
+    }
+    // TODO ovo moye moyda i bey gornjeg uvjeta
+    return std::accumulate(
+        text_lines_size_.begin(),
+        text_lines_size_.begin() + index,
+        0
+    );
 }
