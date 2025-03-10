@@ -12,13 +12,11 @@
 
 class Input {
     public:
-        Input(const int text_lines_size,
-            std::shared_ptr<std::string> text,
-            std::shared_ptr<std::vector<std::string>> text_lines,
-            std::shared_ptr<Text> text_instance
-        );
+        Input(std::shared_ptr<Text> text_instance);
         ftxui::Component get_input_component();
+        std::shared_ptr<int> get_word_count_shared_pointer();
     private:
+        int word_count_;
         int current_line_index_;
         std::string input_text_;
         ftxui::Component input_component_;
@@ -32,6 +30,7 @@ class Input {
         void remove_element();
         void go_to_new_line();
         void go_to_previous_line();
+        int get_previous_size();
         ftxui::Element get_next_character(const int character_index) const;
 };
 

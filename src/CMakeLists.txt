@@ -4,7 +4,7 @@ find_package(ftxui CONFIG REQUIRED)
 file(
         GLOB
         SRC_FILES
-        */*.cpp
+        ./*/*.cpp
 )
 
 file(

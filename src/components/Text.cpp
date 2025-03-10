@@ -71,6 +71,9 @@ ftxui::Elements Text::get_text_lines() const {
 
 
 int Text::get_text_line_size(const int index) const {
+    if (index < 0 || index >= text_lines_size_.size()) {
+        return 0;
+    }
     return text_lines_size_[index];
 }
 

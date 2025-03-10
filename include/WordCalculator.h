@@ -10,12 +10,12 @@
 
 class WordCalculator {
     public:
-        WordCalculator(std::shared_ptr<float> elapsed_time, std::shared_ptr<float> word_count);
+        WordCalculator(std::shared_ptr<int> elapsed_time, std::shared_ptr<int> word_count);
         int calculate_words_per_minute();
         ftxui::Element get_word_per_minute_element();
     private:
-        std::shared_ptr<float> elapsed_time_;
-        std::shared_ptr<float> word_count_;
+        std::shared_ptr<int> elapsed_time_;
+        std::shared_ptr<int> word_count_;
 
         std::string get_words_per_minute_string();
 };

@@ -15,6 +15,7 @@ class Timer {
         explicit Timer(int total_time);
         int get_elapsed_time();
         ftxui::Element get_time_element();
+        std::shared_ptr<int> get_elapsed_time_shared_pointer();
     private:
         std::chrono::steady_clock::time_point start_time_;
         int total_time_;

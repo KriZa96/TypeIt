@@ -32,3 +32,8 @@ std::string Timer::get_time_left_str() {
 ftxui::Element Timer::get_time_element() {
     return ftxui::text(get_time_left_str());
 }
+
+
+std::shared_ptr<int> Timer::get_elapsed_time_shared_pointer() {
+    return std::make_shared<int>(elapsed_time_);
+}
