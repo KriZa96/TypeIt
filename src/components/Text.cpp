@@ -6,10 +6,11 @@
 #include "../../include/FocusPosition.h"
 
 #include <numeric>
+#include <utility>
 
 
 Text::Text(std::string text):
-    text_(text) {
+    text_(std::move(text)) {
     populate_text_lines();
 }
 
@@ -50,7 +51,7 @@ ftxui::Element Text::get_text_element() const {
 }
 
 
-ftxui::Component Text::get_text_component() {
+ftxui::Component Text::get_text_component() const {
     return ftxui::Renderer(
         [&] {
             return get_text_element();
@@ -60,22 +61,12 @@ ftxui::Component Text::get_text_component() {
 
 
 int Text::get_text_size() const {
-    return text_.size();
+    return static_cast<int>(text_.size());
 }
 
 
 int Text::get_text_lines_size() const {
-    return text_lines_.size();
-}
-
-
-std::string Text::get_text() const {
-    return text_;
-}
-
-
-ftxui::Elements Text::get_text_lines() const {
-    return text_lines_;
+    return static_cast<int>(text_lines_.size());
 }
 
 
@@ -86,14 +77,19 @@ int Text::get_text_line_size(const int index) const {
     return text_lines_size_[index];
 }
 
-int Text::get_text_lines_size_up_to_index(const int index) const {
-    if (index == 0) {
-        return 0;
+
+std::string Text::get_text() const {
+    return text_;
+}
+
+char Text::get_char_at_line_and_position(const int line_index, const int char_index) const {
+    if (line_index < 0 || line_index >= text_lines_.size() || char_index < 0 || char_index >= text_lines_size_[line_index]) {
+        return '\0';
     }
-    // TODO ovo moye moyda i bey gornjeg uvjeta
-    return std::accumulate(
+    const int previous_lines_size = std::accumulate(
         text_lines_size_.begin(),
-        text_lines_size_.begin() + index,
+        text_lines_size_.begin() + line_index,
         0
     );
+    return text_[previous_lines_size + char_index];
 }

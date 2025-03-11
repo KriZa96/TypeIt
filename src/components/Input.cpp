@@ -41,9 +41,11 @@ ftxui::Component Input::get_input_component() {
 }
 
 
-ftxui::Element Input::get_next_character(const int character_index) const {
+ftxui::Element Input::get_next_character() const {
     ftxui::Element new_character = ftxui::text(std::string(1, input_text_.back()));
-    if (text_instance_->get_text_size() >= character_index && text_instance_->get_text()[character_index - 1] == input_text_.back()) {
+    if (input_text_.back() == text_instance_->get_char_at_line_and_position(
+        current_line_index_, std::max(static_cast<int>(current_input_line_.size())-1, 0)
+    )) {
         return new_character | ftxui::color(ftxui::Color::Grey82);
     }
     if (input_text_.back() == ' ') {
@@ -61,6 +63,20 @@ void Input::go_to_new_line() {
 }
 
 
+bool Input::should_go_to_next_line() const {
+    return input_text_.back() == ' ' && current_input_line_.size() + 1 >=
+        text_instance_->get_text_line_size(current_line_index_);
+}
+
+
+void Input::add_element() {
+    current_input_line_.push_back(get_next_character());
+    if (should_go_to_next_line()) {
+        go_to_new_line();
+    }
+}
+
+
 void Input::go_to_previous_line() {
     total_input_lines_[current_line_index_] = ftxui::hbox();
     current_line_index_ ? current_line_index_-- : 0;
@@ -70,19 +86,13 @@ void Input::go_to_previous_line() {
 }
 
 
-void Input::add_element() {
-    current_input_line_.push_back(get_next_character(static_cast<int>(input_text_.size())));
-    if (
-        input_text_.back() == ' ' && current_input_line_.size() + 1 >=
-        text_instance_->get_text_line_size(current_line_index_)
-    ) {
-        go_to_new_line();
-    }
+bool Input::should_go_to_previous_line() const {
+    return !input_text_.empty() && input_text_.size() <= get_previous_lines_size();
 }
 
 
 void Input::remove_element() {
-    if (!input_text_.empty() && input_text_.size() <= get_previous_lines_size()) {
+    if (should_go_to_previous_line()) {
         go_to_previous_line();
         return;
     }

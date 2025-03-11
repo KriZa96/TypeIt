@@ -31,8 +31,10 @@ class Input {
         void render_input_text();
         void go_to_previous_line();
         void set_amount_of_words();
+        [[nodiscard]] bool should_go_to_previous_line() const;
+        [[nodiscard]] bool Input::should_go_to_next_line() const;
         [[nodiscard]] int get_previous_lines_size() const;
-        [[nodiscard]] ftxui::Element get_next_character(int character_index) const;
+        [[nodiscard]] ftxui::Element get_next_character() const;
 };
 
 

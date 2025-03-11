@@ -13,21 +13,20 @@
 
 class Text {
     public:
-        Text(std::string text);
-        ftxui::Element get_text_element() const;
-        ftxui::Component get_text_component();
-        int get_text_size() const;
-        int get_text_lines_size() const;
-        int get_text_line_size(int index) const;
-        int get_text_lines_size_up_to_index(int index) const;
-        std::string get_text() const;
-        ftxui::Elements get_text_lines() const;
+        explicit Text(std::string text);
+        [[nodiscard]] ftxui::Component get_text_component() const;
+        [[nodiscard]] int get_text_size() const;
+        [[nodiscard]] int get_text_lines_size() const;
+        [[nodiscard]] int get_text_line_size(int index) const;
+        [[nodiscard]] std::string get_text() const;
+        [[nodiscard]] char get_char_at_line_and_position(int line_index, int char_index) const;
     private:
         std::string text_;
         ftxui::Elements text_lines_;
         std::vector<int> text_lines_size_;
 
         void populate_text_lines();
+        [[nodiscard]] ftxui::Element get_text_element() const;
         void push_line(ftxui::Elements& line, int& num_of_characters);
 };
 
