@@ -17,9 +17,9 @@ int Timer::get_elapsed_time() {
     if (elapsed_time_ >= total_time_) {
         return total_time_;
     }
-    elapsed_time_ = std::chrono::duration_cast<std::chrono::seconds>(
+    elapsed_time_ = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(
        std::chrono::steady_clock::now() - start_time_
-    ).count();
+    ).count());
     return elapsed_time_;
 }
 
@@ -34,6 +34,15 @@ ftxui::Element Timer::get_time_element() {
 }
 
 
-std::shared_ptr<int> Timer::get_elapsed_time_shared_pointer() {
-    return std::make_shared<int>(elapsed_time_);
+ftxui::Component Timer::get_time_component() {
+    return ftxui::Renderer(
+        [&] {
+            return get_time_element();
+        }
+    );
+}
+
+
+int& Timer::get_elapsed_time_reference() {
+    return elapsed_time_;
 }

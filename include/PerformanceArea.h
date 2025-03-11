@@ -13,11 +13,11 @@
 
 class PerformanceArea {
     public:
-        PerformanceArea(int total_time, std::shared_ptr<int> word_count);
-        ftxui::Component get_performance_component();
+        PerformanceArea(ftxui::Component timer_component, ftxui::Component word_calculator_component);
+        ftxui::Component get_performance_component() const;
     private:
-        Timer timer_;
-        WordCalculator word_calculator_;
+        ftxui::Component timer_component_;
+        ftxui::Component word_calculator_component_;
         ftxui::FlexboxConfig config_;
 };
 

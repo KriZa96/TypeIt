@@ -14,7 +14,8 @@
 class Text {
     public:
         Text(std::string text);
-        ftxui::Element get_text_element();
+        ftxui::Element get_text_element() const;
+        ftxui::Component get_text_component();
         int get_text_size() const;
         int get_text_lines_size() const;
         int get_text_line_size(int index) const;

@@ -7,20 +7,28 @@
 
 #include "ftxui/component/component.hpp"
 
+#include "Text.h"
+#include "Input.h"
 #include "PerformanceArea.h"
 #include "TextInputArea.h"
 
 
 class SpeedTypingSession {
     public:
-        SpeedTypingSession(int total_time, std::string text);
-        ftxui::Component get_speed_typing_session_component();
-        void restart();
+        SpeedTypingSession(int total_time, const std::string& text);
+        [[nodiscard]] ftxui::Component get_speed_typing_session_component() const;
     private:
+        std::shared_ptr<Text> text_ptr_;
+        std::shared_ptr<Input> input_ptr_;
+        std::shared_ptr<Timer> timer_ptr_;
+        std::shared_ptr<WordCalculator> word_calculator_ptr_;
+
         TextInputArea text_input_area_;
         PerformanceArea performance_area_;
+
         ftxui::Component text_input_area_component_;
         ftxui::Component performance_area_component_;
+
         ftxui::FlexboxConfig config_;
 };
 

@@ -42,11 +42,20 @@ void Text::populate_text_lines() {
 }
 
 
-ftxui::Element Text::get_text_element() {
+ftxui::Element Text::get_text_element() const {
     return ftxui::vbox(text_lines_) |
                 ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
                 ftxui::frame |
                 ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+}
+
+
+ftxui::Component Text::get_text_component() {
+    return ftxui::Renderer(
+        [&] {
+            return get_text_element();
+        }
+    );
 }
 
 

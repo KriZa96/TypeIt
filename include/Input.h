@@ -12,9 +12,9 @@
 
 class Input {
     public:
-        Input(std::shared_ptr<Text> text_instance);
+        explicit Input(std::shared_ptr<Text> text_instance);
         ftxui::Component get_input_component();
-        std::shared_ptr<int> get_word_count_shared_pointer();
+        [[nodiscard]] const int& get_word_count_reference() const;
     private:
         int word_count_;
         int current_line_index_;
@@ -25,13 +25,14 @@ class Input {
         std::vector<ftxui::Elements> previous_input_lines_;
         ftxui::Elements total_input_lines_;
 
-        void render_input_text();
         void add_element();
         void remove_element();
         void go_to_new_line();
+        void render_input_text();
         void go_to_previous_line();
-        int get_previous_size();
-        ftxui::Element get_next_character(const int character_index) const;
+        void set_amount_of_words();
+        [[nodiscard]] int get_previous_lines_size() const;
+        [[nodiscard]] ftxui::Element get_next_character(int character_index) const;
 };
 
 
