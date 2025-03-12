@@ -18,7 +18,8 @@ class PerformanceArea {
     private:
         ftxui::Component timer_component_;
         ftxui::Component word_calculator_component_;
-        ftxui::FlexboxConfig config_;
+        ftxui::FlexboxConfig main_config_;
+        ftxui::FlexboxConfig secondary_config_;
 };
 
 

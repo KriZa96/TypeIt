@@ -11,7 +11,7 @@
 class WordCalculator {
     public:
         WordCalculator(const int& elapsed_time, const int& word_count);
-        ftxui::Component get_word_calculator_component() const;
+        [[nodiscard]] ftxui::Component get_word_calculator_component() const;
     private:
         const int& elapsed_time_;
         const int& word_count_;

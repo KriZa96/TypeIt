@@ -11,21 +11,27 @@ PerformanceArea::PerformanceArea(ftxui::Component timer_component, ftxui::Compon
     timer_component_(std::move(timer_component)),
     word_calculator_component_(std::move(word_calculator_component))
 {
-    config_.align_content = ftxui::FlexboxConfig::AlignContent::Center;
-    config_.align_items = ftxui::FlexboxConfig::AlignItems::Center;
-    config_.justify_content = ftxui::FlexboxConfig::JustifyContent::SpaceBetween;
+    main_config_.align_content = ftxui::FlexboxConfig::AlignContent::Center;
+    main_config_.align_items = ftxui::FlexboxConfig::AlignItems::Center;
+    main_config_.justify_content = ftxui::FlexboxConfig::JustifyContent::SpaceBetween;
+
+    secondary_config_.align_content = ftxui::FlexboxConfig::AlignContent::Center;
+    secondary_config_.align_items = ftxui::FlexboxConfig::AlignItems::Center;
+    secondary_config_.justify_content = ftxui::FlexboxConfig::JustifyContent::SpaceAround;
 }
 
 
 ftxui::Component PerformanceArea::get_performance_component() const {
     return ftxui::Renderer(
         [&] {
-            return ftxui::dbox(ftxui::flexbox({
+            return ftxui::dbox(ftxui::flexbox({ftxui::dbox(ftxui::flexbox({
                 timer_component_->Render(),
-                word_calculator_component_->Render()}, config_)) |
-                    ftxui::border |
-                    size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
-                    size(ftxui::WIDTH, ftxui::EQUAL, 75);
+                word_calculator_component_->Render()}, main_config_)) |
+                size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
+                size(ftxui::WIDTH, ftxui::EQUAL, 65)}, secondary_config_)) |
+                ftxui::border |
+                size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
+                size(ftxui::WIDTH, ftxui::EQUAL, 75);
         }
     );
 }

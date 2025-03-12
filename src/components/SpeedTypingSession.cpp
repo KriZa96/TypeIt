@@ -9,7 +9,11 @@ SpeedTypingSession::SpeedTypingSession(int total_time, const std::string& text):
     text_ptr_(std::make_shared<Text>(text)),
     input_ptr_(std::make_shared<Input>(text_ptr_)),
     timer_ptr_(std::make_shared<Timer>(total_time)),
-    word_calculator_ptr_(std::make_shared<WordCalculator>(timer_ptr_->get_elapsed_time_reference(), input_ptr_->get_word_count_reference())),
+    word_calculator_ptr_(
+        std::make_shared<WordCalculator>(
+            timer_ptr_->get_elapsed_time_reference(),
+            input_ptr_->get_word_count_reference())
+    ),
 
     text_input_area_(input_ptr_->get_input_component(), text_ptr_->get_text_component()),
     performance_area_(timer_ptr_->get_time_component(), word_calculator_ptr_->get_word_calculator_component()),
@@ -27,7 +31,7 @@ ftxui::Component SpeedTypingSession::get_speed_typing_session_component() const 
     return ftxui::Renderer(
         text_input_area_component_,
         [&] {
-            return ftxui::flexbox({performance_area_component_->Render(), text_input_area_component_->Render()}, config_) | ftxui::border;
+            return ftxui::flexbox({ftxui::vbox(performance_area_component_->Render(), text_input_area_component_->Render())}, config_) | ftxui::border;
         }
     );
 }

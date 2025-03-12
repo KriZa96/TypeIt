@@ -44,7 +44,7 @@ ftxui::Component Input::get_input_component() {
 ftxui::Element Input::get_next_character() const {
     ftxui::Element new_character = ftxui::text(std::string(1, input_text_.back()));
     if (input_text_.back() == text_instance_->get_char_at_line_and_position(
-        current_line_index_, std::max(static_cast<int>(current_input_line_.size())-1, 0)
+        current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
     )) {
         return new_character | ftxui::color(ftxui::Color::Grey82);
     }
@@ -64,8 +64,8 @@ void Input::go_to_new_line() {
 
 
 bool Input::should_go_to_next_line() const {
-    return input_text_.back() == ' ' && current_input_line_.size() + 1 >=
-        text_instance_->get_text_line_size(current_line_index_);
+    return input_text_.back() == ' ' && current_line_index_ < text_instance_->get_text_lines_size() &&
+        current_input_line_.size() + 1 >= text_instance_->get_text_line_size(current_line_index_);
 }
 
 
