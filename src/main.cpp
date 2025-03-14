@@ -3,18 +3,22 @@
 //
 #include "../include/Screen.h"
 #include "../include/TextInputArea.h"
-#include "../include/Text.h"
+#include "../include/Menu.h"
 #include "../include/SpeedTypingSession.h"
+#include "../include/Main.h"
 
 
 int main() {
     Screen screen;
 
-    SpeedTypingSession speed_typing_session(30, "Amidst the labyrinthine corridors of the antiquated library, an astute scholar meticulously perused a compendium of esoteric manuscripts. The air was imbued with the musty aroma of aged parchment, mingling with the subdued flicker of incandescent sconces affixed to mahogany walls. Each tome contained a plethora of arcane knowledge, its intricacies demanding unwavering concentration. A colossal grandfather clock punctuated the silence, its pendulum oscillating with measured precision. Beyond the latticed windows, a tempestuous gale howled through the desolate alleyways, sending spirals of detritus skittering across the cobblestone thoroughfare. The scholar, undeterred by the cacophonous symphony of the storm, continued deciphering the convoluted script, fingers tracing the ornate calligraphy etched in gilded ink.");
+    SpeedTypingSession speed_typing_session(30, "A curious rabbit explored the backyard, sniffing the gentle breeze that carried scents of fresh flowers and damp soil. The morning light filtered through the leaves, creating shifting patterns on the wooden fence. Birds chirped softly, their melodies weaving through the air like an unseen symphony. Nearby, a child balanced carefully on a stepping stone, arms stretched wide for stability. His laughter echoed as he leaped onto the grass, feeling the cool blades under his bare feet. The world felt calm yet alive, brimming with quiet energy. In the distance, the sound of a bicycle rolling down the street mixed with the occasional bark of a neighbor’s dog. A woman tended to her garden, trimming overgrown branches and watering the delicate petals of blooming roses. Time moved gently here, marked by the rhythm of daily life.");
 
     ftxui::Component component_ = speed_typing_session.get_speed_typing_session_component();
 
-    screen.loop(component_);
+    Main main;
+    ftxui::Component main_component = main.get_main_component();
+    screen.loop(main_component);
+
 
     return 0;
 }
