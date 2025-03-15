@@ -10,7 +10,7 @@ file(
 file(
         GLOB
         HEADER_FILES
-        ../include/*.h
+        ../include/*/*.h
 )
 
 add_executable(

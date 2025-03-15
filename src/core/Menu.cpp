@@ -2,9 +2,10 @@
 // Created by kil3 on 3/12/25.
 //
 
-#include "../../include/Menu.h"
-
-#include "../../include/Screen.h"
+#include "../../include/core/Menu.h"
+#include "../../include/core/Screen.h"
+#include "../../include/data/GameState.h"
+#include "../../include/data/GameOptions.h"
 
 
 Menu::Menu(ftxui::ScreenInteractive& screen):
@@ -13,7 +14,7 @@ text_radiobox_choice_({"simple", "medium", "hard", "custom"}),
 time_radiobox_choice_({"15s", "30s", "60s"}),
 time_radiobox_(ftxui::Radiobox(&time_radiobox_choice_, &GameOptions::selected_radiobox_time_, radiobox_option_)),
 text_radiobox_(ftxui::Radiobox(&text_radiobox_choice_, &GameOptions::selected_radiobox_text_, radiobox_option_)),
-start_button_(ftxui::Button("Start", [this] {GameOptions::refresh_session_ = not GameOptions::refresh_session_;}, ftxui::ButtonOption::Ascii())),
+start_button_(ftxui::Button("Start", [this] {GameState::refresh_session_ = not GameState::refresh_session_;}, ftxui::ButtonOption::Ascii())),
 exit_button_(ftxui::Button("Exit", [this] {screen_.ExitLoopClosure(); screen_.Exit();}, ftxui::ButtonOption::Ascii())),
 menu_container_(get_menu_container_()),
 radiobox_option_({

@@ -6,9 +6,7 @@
 #define PERFORMANCEAREA_H
 
 #include "ftxui/component/component.hpp"
-
 #include "Timer.h"
-#include "WordCalculator.h"
 
 
 class PerformanceArea {

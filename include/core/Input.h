@@ -6,7 +6,6 @@
 #define INPUT_H
 
 #include "ftxui/component/component.hpp"
-
 #include "Text.h"
 
 

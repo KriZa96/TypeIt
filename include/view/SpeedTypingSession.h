@@ -6,11 +6,11 @@
 #define SPEEDTYPINGSESSION_H
 
 #include "ftxui/component/component.hpp"
-
-#include "ITextSource.h"
-#include "Text.h"
-#include "Input.h"
-#include "PerformanceArea.h"
+#include "../interface/ITextSource.h"
+#include "../core/Input.h"
+#include "../core/PerformanceArea.h"
+#include "../core/Text.h"
+#include "../core/WordCalculator.h"
 #include "TextInputArea.h"
 
 

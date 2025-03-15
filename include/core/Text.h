@@ -7,7 +7,7 @@
 
 #include <memory>
 #include <vector>
-#include "ITextSource.h"
+
 #include "ftxui/component/component.hpp"
 
 

@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "../include/Text.h"
+#include "../include/core/Text.h"
 #undef private
 
 

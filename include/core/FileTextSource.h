@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "ITextSource.h"
+#include "../interface/ITextSource.h"
 
 
 class FileTextSource final : public ITextSource {

@@ -12,7 +12,7 @@ file(
 file(
         GLOB
         HEADER_FILES
-        ../include/*.h
+        ../include/*/*.h
 )
 
 file(

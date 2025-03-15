@@ -2,7 +2,7 @@
 // Created by kil3 on 3/4/25.
 //
 
-#include "../../include/FileTextSource.h"
+#include "../../include/core/FileTextSource.h"
 
 #include <fstream>
 #include <utility>

@@ -2,10 +2,9 @@
 // Created by kil3 on 3/9/25.
 //
 
-#include <utility>
+#include "../../include/core/PerformanceArea.h"
 
-#include "../../include/PerformanceArea.h"
-#include "../../include/GameOptions.h"
+#include <utility>
 
 
 PerformanceArea::PerformanceArea(ftxui::Component timer_component, ftxui::Component word_calculator_component) :

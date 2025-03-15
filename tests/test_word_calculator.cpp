@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "../include/WordCalculator.h"
+#include "../include/core/WordCalculator.h"
 #undef private
 
 

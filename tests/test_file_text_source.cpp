@@ -5,7 +5,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 
-#include "../include/FileTextSource.h"
+#include "../include/core/FileTextSource.h"
 
 
 void create_temp_file(const std::string& filename, const std::string& content) {

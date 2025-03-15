@@ -2,14 +2,14 @@
 // Created by kil3 on 3/8/25.
 //
 
-#include "../../include/Input.h"
+#include "../../include/core/Input.h"
 
 #include <iterator>
 #include <numeric>
 #include <utility>
 
-#include "../../include/FocusPosition.h"
-#include "../../include/GameOptions.h"
+#include "../../include/data/GameState.h"
+#include "../../include/data/FocusPosition.h"
 
 
 Input::Input(std::shared_ptr<Text> text_instance) :
@@ -40,13 +40,14 @@ ftxui::Component Input::get_input_component() {
         }
     ) | ftxui::CatchEvent([&] (const ftxui::Event& event) {
         if (event.character() == "\x14") {
-            GameOptions::game_session_in_progress_ = false;
+            GameState::game_session_in_progress_ = false;
             return true;
         }
         if (event.character() == "\x12") {
-            GameOptions::refresh_session_ = true;
+            GameState::refresh_session_ = true;
             return true;
         }
+        // TODO dodati ovdje provjeru ako je preostalo 0 sekundi da nema vise inputa
         return false;
     });
 }
@@ -75,7 +76,7 @@ void Input::go_to_new_line() {
 
 
 bool Input::should_go_to_next_line() const {
-    return input_text_.back() == ' ' && current_line_index_ < text_instance_->get_text_lines_size() &&
+    return input_text_.back() == ' ' && current_line_index_ < text_instance_->get_text_lines_size() - 1 &&
         current_input_line_.size() + 1 >= text_instance_->get_text_line_size(current_line_index_);
 }
 

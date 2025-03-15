@@ -7,8 +7,6 @@
 
 #include "ftxui/component/component.hpp"
 
-#include "./GameOptions.h"
-
 
 class Menu {
     public:

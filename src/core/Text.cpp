@@ -2,11 +2,12 @@
 // Created by kil3 on 3/8/25.
 //
 
-#include "../../include/Text.h"
-#include "../../include/FocusPosition.h"
 
 #include <numeric>
 #include <utility>
+
+#include "../../include/data/FocusPosition.h"
+#include "../../include/core/Text.h"
 
 
 Text::Text(std::string text):

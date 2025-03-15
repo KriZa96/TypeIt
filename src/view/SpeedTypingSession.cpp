@@ -2,10 +2,9 @@
 // Created by kil3 on 3/9/25.
 //
 
-#include "../../include/SpeedTypingSession.h"
-
-#include "../../include/GameOptions.h"
-#include "../../include/FileTextSource.h"
+#include "../../include/view/SpeedTypingSession.h"
+#include "../../include/core/FileTextSource.h"
+#include "../../include/data/GameOptions.h"
 
 
 SpeedTypingSession::SpeedTypingSession():

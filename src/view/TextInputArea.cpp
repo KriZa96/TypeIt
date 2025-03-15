@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "../../include/TextInputArea.h"
+#include "../../include/view/TextInputArea.h"
 
 
 TextInputArea::TextInputArea(ftxui::Component input_component, ftxui::Component text_component):

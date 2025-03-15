@@ -2,7 +2,7 @@
 // Created by kil3 on 3/8/25.
 //
 
-#include "../../include/WordCalculator.h"
+#include "../../include/core/WordCalculator.h"
 
 
 WordCalculator::WordCalculator(const int& elapsed_time, const int& word_count):

@@ -2,7 +2,7 @@
 // Created by kil3 on 3/4/25.
 //
 
-#include "../../include/Screen.h"
+#include "../../include/core/Screen.h"
 
 
 Screen::Screen():
