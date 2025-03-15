@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "../../include/FocusPosition.h"
+#include "../../include/GameOptions.h"
 
 
 Input::Input(std::shared_ptr<Text> text_instance) :
@@ -37,7 +38,17 @@ ftxui::Component Input::get_input_component() {
                 ftxui::frame |
                 ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
         }
-    );
+    ) | ftxui::CatchEvent([&] (const ftxui::Event& event) {
+        if (event.character() == "\x14") {
+            GameOptions::game_session_in_progress_ = false;
+            return true;
+        }
+        if (event.character() == "\x12") {
+            GameOptions::refresh_session_ = true;
+            return true;
+        }
+        return false;
+    });
 }
 
 

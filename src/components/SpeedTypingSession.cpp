@@ -23,8 +23,7 @@ SpeedTypingSession::SpeedTypingSession():
     performance_area_(timer_ptr_->get_time_component(), word_calculator_ptr_->get_word_calculator_component()),
 
     text_input_area_component_(text_input_area_.get_text_input_component()),
-    performance_area_component_(performance_area_.get_performance_component()),
-    container_(ftxui::Container::Vertical({text_input_area_component_, performance_area_component_}))
+    performance_area_component_(performance_area_.get_performance_component())
 {
     config_.align_content = ftxui::FlexboxConfig::AlignContent::Center;
     config_.align_items = ftxui::FlexboxConfig::AlignItems::Center;
@@ -35,7 +34,7 @@ SpeedTypingSession::SpeedTypingSession():
 
 ftxui::Component SpeedTypingSession::get_speed_typing_session_component() const {
     return ftxui::Renderer(
-        container_,
+        text_input_area_component_,
         [&] {
             return ftxui::flexbox({performance_area_component_->Render(), text_input_area_component_->Render()}, config_) | ftxui::border;
         }
