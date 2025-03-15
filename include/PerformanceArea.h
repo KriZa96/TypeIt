@@ -20,6 +20,10 @@ class PerformanceArea {
         ftxui::Component word_calculator_component_;
         ftxui::FlexboxConfig main_config_;
         ftxui::FlexboxConfig secondary_config_;
+
+        ftxui::Component refresh_button_;
+        ftxui::Component main_menu_button_;
+        ftxui::Component buttons_container_;
 };
 
 

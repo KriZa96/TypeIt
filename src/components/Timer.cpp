@@ -2,6 +2,7 @@
 // Created by kil3 on 3/1/25.
 //
 #include "../../include/Timer.h"
+#include "../../include/GameOptions.h"
 
 #include <format>
 #include <mutex>
@@ -10,10 +11,19 @@
 Timer::Timer(const int total_time):
             start_time_(std::chrono::steady_clock::now()),
             total_time_(total_time),
-            elapsed_time_(0) {}
+            elapsed_time_(0),
+            started_timer_(false)
+{}
 
 
 int Timer::get_elapsed_time() {
+    if (not GameOptions::game_session_in_progress_) {
+        return 0;
+    }
+    if (not started_timer_) {
+        started_timer_ = true;
+        start_time_ = std::chrono::steady_clock::now();
+    }
     if (elapsed_time_ >= total_time_) {
         return total_time_;
     }

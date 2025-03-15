@@ -21,6 +21,7 @@ class Timer {
         std::chrono::steady_clock::time_point start_time_;
         int total_time_;
         int elapsed_time_;
+        bool started_timer_;
 
         std::string get_time_left_str();
 };

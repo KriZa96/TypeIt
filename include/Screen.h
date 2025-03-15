@@ -16,6 +16,7 @@ class Screen {
         Screen();
         ~Screen();
         void loop(const ftxui::Component& component);
+        ftxui::ScreenInteractive& get_screen_reference();
     private:
         ftxui::ScreenInteractive screen_;
         std::atomic<bool> refresh_;

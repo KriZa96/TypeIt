@@ -17,8 +17,8 @@ struct GameOptions {
     };
     inline static int selected_radiobox_text_ = 0;
 
-    inline static bool start_game_ = false;
-    inline static bool game_started_ = false;
+    inline static bool game_session_in_progress_ = false;
+    inline static bool refresh_session_ = false;
 };
 
 #endif //GAMEOPTIONS_H

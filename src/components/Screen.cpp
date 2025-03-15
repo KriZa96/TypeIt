@@ -6,7 +6,7 @@
 
 
 Screen::Screen():
-            screen_(ftxui::ScreenInteractive::Fullscreen())
+screen_(ftxui::ScreenInteractive::Fullscreen())
 {
     start_refresh();
     screen_thread_ = std::thread(
@@ -25,6 +25,11 @@ Screen::~Screen() {
     if (screen_thread_.joinable()) {
         screen_thread_.join();
     }
+}
+
+
+ftxui::ScreenInteractive& Screen::get_screen_reference() {
+    return screen_;
 }
 
 
