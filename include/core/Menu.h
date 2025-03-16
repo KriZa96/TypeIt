@@ -11,7 +11,7 @@
 class Menu {
     public:
         explicit Menu(ftxui::ScreenInteractive& screen);
-        ftxui::Component get_menu_component() const;
+        [[nodiscard]] ftxui::Component get_menu_component() const;
     private:
         ftxui::ScreenInteractive& screen_;
 
@@ -24,9 +24,9 @@ class Menu {
         ftxui::Component start_button_;
         ftxui::Component exit_button_;
 
-        ftxui::Component get_time_radiobox_component_() const;
-        ftxui::Component get_text_radiobox_component_() const;
-        ftxui::Component get_menu_container_() const;
+        [[nodiscard]] ftxui::Component get_time_radiobox_component_() const;
+        [[nodiscard]] ftxui::Component get_text_radiobox_component_() const;
+        [[nodiscard]] ftxui::Component get_menu_container_() const;
 
         ftxui::Component menu_container_;
 };

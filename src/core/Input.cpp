@@ -30,8 +30,10 @@ ftxui::Component Input::get_input_component() {
     return ftxui::Renderer(
         input_component_,
         [&] {
-            render_input_text();
-            set_amount_of_words();
+            if (not GameState::game_finished_) {
+                render_input_text();
+                set_amount_of_words();
+            }
             total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
             return ftxui::vbox(total_input_lines_) |
                 ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
@@ -47,7 +49,10 @@ ftxui::Component Input::get_input_component() {
             GameState::refresh_session_ = true;
             return true;
         }
-        // TODO dodati ovdje provjeru ako je preostalo 0 sekundi da nema vise inputa
+        if (GameState::game_finished_) {
+            GameState::game_session_in_progress_ = false;
+            GameState::game_finished_ = false;
+        }
         return false;
     });
 }
@@ -77,7 +82,7 @@ void Input::go_to_new_line() {
 
 bool Input::should_go_to_next_line() const {
     return input_text_.back() == ' ' && current_line_index_ < text_instance_->get_text_lines_size() - 1 &&
-        current_input_line_.size() + 1 >= text_instance_->get_text_line_size(current_line_index_);
+        current_input_line_.size() > text_instance_->get_text_line_size(current_line_index_);
 }
 
 
@@ -112,12 +117,24 @@ void Input::remove_element() {
 }
 
 
+bool Input::should_add_element() const {
+    const size_t previous_elements_size = get_previous_lines_size() + current_input_line_.size();
+    return (
+        input_text_.size() > previous_elements_size);
+}
+
+
+bool Input::should_remove_element() const {
+    const size_t previous_elements_size = get_previous_lines_size() + current_input_line_.size();
+    return input_text_.size() < previous_elements_size;
+}
+
+
 void Input::render_input_text() {
-    size_t previous_elements_size = get_previous_lines_size() + current_input_line_.size();
-    if (input_text_.size() > previous_elements_size) {
+    if (should_add_element()) {
         add_element();
     }
-    else if (input_text_.size() < previous_elements_size) {
+    else if (should_remove_element()) {
         remove_element();
     }
 }

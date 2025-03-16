@@ -17,7 +17,7 @@ Text::Text(std::string text):
 
 
 void Text::push_line(ftxui::Elements& line, int& num_of_characters){
-    text_lines_.push_back(ftxui::hbox(line) | ftxui::color(ftxui::Color::Grey42));  // TODO mozda ce trebat color stavit na svaki leement
+    text_lines_.push_back(ftxui::hbox(line) | ftxui::color(ftxui::Color::Grey42));
     text_lines_size_.push_back(num_of_characters);
     num_of_characters = 0;
     line.clear();
