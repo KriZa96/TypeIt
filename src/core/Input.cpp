@@ -16,7 +16,7 @@ Input::Input(std::shared_ptr<Text> text_instance) :
     current_line_index_(0),
     input_component_(ftxui::Input(&input_text_)),
     text_instance_(std::move(text_instance)),
-    total_input_lines_(text_instance_->get_text_lines_size(), ftxui::hbox(ftxui::text("")))
+    total_input_lines_(text_instance_->get_text_lines_size()+1, ftxui::hbox(ftxui::text("")))
     {}
 
 
@@ -29,10 +29,12 @@ ftxui::Component Input::get_input_component() {
     return ftxui::Renderer(
         input_component_,
         [&] {
-            if (not GameState::game_finished_) {
+            /*if (not GameState::game_finished_) {
                 render_input_text();
                 set_amount_of_words();
-            }
+            }*/
+            render_input_text();
+            set_amount_of_words();
             total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
             return ftxui::vbox(total_input_lines_) |
                 ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
@@ -47,11 +49,11 @@ ftxui::Component Input::get_input_component() {
         if (event.character() == "\x12") {
             GameState::refresh_session_ = true;
             return true;
-        }
+        }/*
         if (GameState::game_finished_) {
             GameState::game_session_in_progress_ = false;
             GameState::game_finished_ = false;
-        }
+        }*/
         return false;
     });
 }
@@ -75,7 +77,9 @@ void Input::go_to_new_line() {
     total_input_lines_[current_line_index_++] = ftxui::hbox(current_input_line_);
     previous_input_lines_.push_back(current_input_line_);
     current_input_line_.clear();
-    FocusPosition::y++;
+    if (current_line_index_ < text_instance_->get_text_lines_size() - 1) {
+        FocusPosition::y++;
+    }
 }
 
 
@@ -98,12 +102,14 @@ void Input::go_to_previous_line() {
     current_line_index_ ? current_line_index_-- : 0;
     current_input_line_ = previous_input_lines_[current_line_index_];
     previous_input_lines_.pop_back();
-    FocusPosition::y--;
+    if (current_line_index_ < text_instance_->get_text_lines_size() - 2) {
+        FocusPosition::y--;
+    }
 }
 
 
 bool Input::should_go_to_previous_line() const {
-    return !input_text_.empty() && input_text_.size() <= get_previous_lines_size();
+    return !input_text_.empty() && input_text_.size() < get_previous_lines_size();
 }
 
 
