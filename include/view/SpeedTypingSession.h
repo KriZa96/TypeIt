@@ -5,13 +5,13 @@
 #ifndef SPEEDTYPINGSESSION_H
 #define SPEEDTYPINGSESSION_H
 
-#include "ftxui/component/component.hpp"
-#include "../interface/ITextSource.h"
 #include "../core/Input.h"
-#include "../core/PerformanceArea.h"
 #include "../core/Text.h"
 #include "../core/WordCalculator.h"
+#include "../interface/ITextSource.h"
+#include "PerformanceArea.h"
 #include "TextInputArea.h"
+#include "ftxui/component/component.hpp"
 
 
 class SpeedTypingSession {
@@ -31,8 +31,6 @@ class SpeedTypingSession {
         ftxui::Component text_input_area_component_;
         ftxui::Component performance_area_component_;
         ftxui::Component container_;
-
-        ftxui::FlexboxConfig config_;
 };
 
 

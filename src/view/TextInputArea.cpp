@@ -5,16 +5,13 @@
 #include <utility>
 
 #include "../../include/view/TextInputArea.h"
+#include "../../include/data/Style.h"
 
 
 TextInputArea::TextInputArea(ftxui::Component input_component, ftxui::Component text_component):
     input_component_(std::move(input_component)),
     text_component_(std::move(text_component))
-{
-    config_.align_content = ftxui::FlexboxConfig::AlignContent::Center;
-    config_.align_items = ftxui::FlexboxConfig::AlignItems::Center;
-    config_.justify_content = ftxui::FlexboxConfig::JustifyContent::Center;
-}
+{}
 
 
 ftxui::Component TextInputArea::get_text_input_component() const {
@@ -27,7 +24,7 @@ ftxui::Component TextInputArea::get_text_input_component() const {
                 ftxui::border |
                 size(ftxui::HEIGHT, ftxui::EQUAL, 10) |
                 size(ftxui::WIDTH, ftxui::EQUAL, 75)
-            }, config_);
+            }, Style::full_center_config_);
         }
     );
 }

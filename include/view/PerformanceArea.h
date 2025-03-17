@@ -5,8 +5,8 @@
 #ifndef PERFORMANCEAREA_H
 #define PERFORMANCEAREA_H
 
-#include "ftxui/component/component.hpp"
-#include "Timer.h"
+#include "../../cmake-build-debug/vcpkg_installed/x64-linux/include/ftxui/component/component.hpp"
+#include "../core/Timer.h"
 
 
 class PerformanceArea {
@@ -16,8 +16,6 @@ class PerformanceArea {
     private:
         ftxui::Component timer_component_;
         ftxui::Component word_calculator_component_;
-        ftxui::FlexboxConfig main_config_;
-        ftxui::FlexboxConfig secondary_config_;
 };
 
 

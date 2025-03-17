@@ -2,14 +2,13 @@
 // Created by kil3 on 3/8/25.
 //
 
-#include "../../include/core/Input.h"
-
 #include <iterator>
 #include <numeric>
 #include <utility>
 
 #include "../../include/data/GameState.h"
 #include "../../include/data/FocusPosition.h"
+#include "../../include/core/Input.h"
 
 
 Input::Input(std::shared_ptr<Text> text_instance) :
@@ -82,7 +81,7 @@ void Input::go_to_new_line() {
 
 bool Input::should_go_to_next_line() const {
     return input_text_.back() == ' ' && current_line_index_ < text_instance_->get_text_lines_size() - 1 &&
-        current_input_line_.size() > text_instance_->get_text_line_size(current_line_index_);
+        current_input_line_.size() >= text_instance_->get_text_line_size(current_line_index_);
 }
 
 
@@ -119,8 +118,7 @@ void Input::remove_element() {
 
 bool Input::should_add_element() const {
     const size_t previous_elements_size = get_previous_lines_size() + current_input_line_.size();
-    return (
-        input_text_.size() > previous_elements_size);
+    return input_text_.size() > previous_elements_size;
 }
 
 
