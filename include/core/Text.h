@@ -22,12 +22,13 @@ class Text {
         [[nodiscard]] char get_char_at_line_and_position(int line_index, int char_index) const;
     private:
         std::string text_;
+        std::vector<std::string> text_lines_strings_;
         ftxui::Elements text_lines_;
         std::vector<int> text_lines_size_;
 
         void populate_text_lines();
         [[nodiscard]] ftxui::Element get_text_element() const;
-        void push_line(ftxui::Elements& line, int& num_of_characters);
+        void push_line(ftxui::Elements& line, std::string& text, int& num_of_characters);
 };
 
 

@@ -16,29 +16,30 @@ Text::Text(std::string text):
 }
 
 
-void Text::push_line(ftxui::Elements& line, int& num_of_characters){
+void Text::push_line(ftxui::Elements& line, std::string& text, int& num_of_characters){
     text_lines_.push_back(ftxui::hbox(line) | ftxui::color(ftxui::Color::Grey42));
+    text_lines_strings_.push_back(text);
     text_lines_size_.push_back(num_of_characters);
     num_of_characters = 0;
     line.clear();
+    text.clear();
 }
 
 
 void Text::populate_text_lines() {
     int num_of_characters = 0;
     ftxui::Elements line;
+    std::string text;
 
     for (int index = 0; index < text_.size(); index++) {
-        if (text_[index] == '\n') {
-            push_line(line, num_of_characters);
-            continue;
-        }
+        char current_character = text_[index];
 
-        line.push_back(ftxui::text(std::string(1, text_[index])));
+        line.push_back(ftxui::text(std::string(1, current_character == '\n' ? ' ' : current_character)));
+        text += current_character == '\n' ? ' ' : current_character;
         num_of_characters++;
 
-        if (text_[index] == ' ' && line.size() >= 55 || index == text_.size() - 1) {
-            push_line(line, num_of_characters);
+        if (current_character == '\n' || (current_character == ' ' && line.size() >= 55 || index == text_.size() - 1)) {
+            push_line(line, text, num_of_characters);
         }
     }
 }
@@ -84,13 +85,8 @@ std::string Text::get_text() const {
 }
 
 char Text::get_char_at_line_and_position(const int line_index, const int char_index) const {
-    if (line_index < 0 || line_index >= text_lines_.size() || char_index < 0 || char_index >= text_lines_size_[line_index]) {
+    if (line_index < 0 || line_index >= text_lines_strings_.size() || char_index < 0 || char_index >= text_lines_size_[line_index]) {
         return '\0';
     }
-    const int previous_lines_size = std::accumulate(
-        text_lines_size_.begin(),
-        text_lines_size_.begin() + line_index,
-        0
-    );
-    return text_[previous_lines_size + char_index];
+    return text_lines_strings_[line_index][char_index];
 }

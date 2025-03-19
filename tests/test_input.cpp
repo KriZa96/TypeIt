@@ -53,14 +53,14 @@ TEST_F(InputTest, Initialization) {
     EXPECT_EQ(input.get_word_count_reference(), 3);
     EXPECT_EQ(input.current_line_index_, 0);
     EXPECT_TRUE(input.input_text_.empty());
-    EXPECT_EQ(input.total_input_lines_.size(), text->get_text_lines_size());
+    EXPECT_EQ(input.total_input_lines_.size(), text->get_text_lines_size()+1);
 }
 
 
-TEST_F(InputTest, LineTransitionOnSpace) {
-    EXPECT_EQ(text->get_text_lines_size(), 2);
+TEST_F(InputTestMultiLine, LineTransitionOnSpace) {
+    EXPECT_EQ(text->get_text_lines_size(), 5);
 
-    for (const auto& letter : "line1 ") {
+    for (const auto& letter : std::string("line1 ")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
@@ -70,8 +70,8 @@ TEST_F(InputTest, LineTransitionOnSpace) {
 }
 
 
-TEST_F(InputTest, BackspaceAtLineStart) {
-    for (const auto& letter: "line1 ") {
+TEST_F(InputTestMultiLine, BackspaceAtLineStart) {
+    for (const auto& letter: std::string("line1 ")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
@@ -105,45 +105,49 @@ TEST_F(InputTest, EventHandlingTerminateRefresh) {
 
 
 TEST_F(InputTestMultiLine, ShouldGoToNextLine) {
-    for (const auto& letter: "line1") {
+    for (const auto& letter: std::string("line1")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
 
     input.input_text_ += " ";
+    input.current_input_line_.push_back(ftxui::text(L" "));
 
     EXPECT_TRUE(input.should_go_to_next_line());
 }
 
 TEST_F(InputTestMultiLine, ShouldNotGoToNextLine) {
-    for (const auto& letter: "line") {
+    for (const auto& letter: std::string("line")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
 
     input.input_text_ += " ";
+    input.current_input_line_.push_back(ftxui::text(L" "));
 
     EXPECT_FALSE(input.should_go_to_next_line());
 }
 
 
 TEST_F(InputTestMultiLine, ShouldNotGoToNextLineLastLine) {
-    for (const auto& letter: "line1 line 2 Thrid line second last line finally last line.J") {
+    for (const auto& letter: std::string("line1 line 2 Thrid line second last line finally last line.J")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
 
     input.input_text_ += " ";
+    input.current_input_line_.push_back(ftxui::text(L" "));
 
     EXPECT_FALSE(input.should_go_to_next_line());
 }
 
 
 TEST_F(InputTestMultiLine, ShouldGoToPreviousLine) {
-    for (const auto& letter: "line1 ") {
+    for (const auto& letter: std::string("line1 ")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
+    ASSERT_EQ(input.current_line_index_, 1);
 
     input.input_text_.pop_back();
 
@@ -152,7 +156,7 @@ TEST_F(InputTestMultiLine, ShouldGoToPreviousLine) {
 
 
 TEST_F(InputTestMultiLine, ShouldNotGoToPreviousLine) {
-    for (const auto& letter: "line1 l") {
+    for (const auto& letter: std::string("line1 l")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
@@ -164,7 +168,7 @@ TEST_F(InputTestMultiLine, ShouldNotGoToPreviousLine) {
 
 
 TEST_F(InputTestMultiLine, ShouldNotGoToPreviousLineBeforeGoingToNext) {
-    for (const auto& letter: "line1") {
+    for (const auto& letter: std::string("line1")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
@@ -230,7 +234,7 @@ TEST_F(InputTestMultiLine, PreviousLinesSizeWhenFirstLine) {
 
 
 TEST_F(InputTestMultiLine, PreviousLinesSizeWhenSecondLine) {
-    for (const auto& letter: "line1 ") {
+    for (const auto& letter: std::string("line1 ")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
@@ -240,7 +244,7 @@ TEST_F(InputTestMultiLine, PreviousLinesSizeWhenSecondLine) {
 
 
 TEST_F(InputTestMultiLine, PreviousLinesSize) {
-    for (const auto& letter: "line1 line 2 Thrid line second last line") {
+    for (const auto& letter: std::string("line1 line 2 Thrid line second last line")) {
         input.input_text_ += letter;
         input.render_input_text();
     }
@@ -334,4 +338,11 @@ TEST_F(InputTest, SetWordsWordCountCalculation) {
 }
 
 
-// TODO TEST FOCUS POSITIONS
+TEST_F(InputTestMultiLine, PercentageOfCorrectInput) {
+    for (const auto& letter: std::string("line1 line 2 Thrid line second last line finally last line.")) {
+        input.input_text_ += letter;
+        input.render_input_text();
+    }
+
+    EXPECT_EQ(input.get_percentage_of_correct_input(), 100.);
+}

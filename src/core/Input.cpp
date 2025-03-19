@@ -59,16 +59,18 @@ ftxui::Component Input::get_input_component() {
 }
 
 
-ftxui::Element Input::get_next_character() const {
+ftxui::Element Input::get_next_character() {
     ftxui::Element new_character = ftxui::text(std::string(1, input_text_.back()));
     if (input_text_.back() == text_instance_->get_char_at_line_and_position(
         current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
     )) {
+        character_correctnes_.push_back(true);
         return new_character | ftxui::color(ftxui::Color::Grey82);
     }
     if (input_text_.back() == ' ') {
         new_character = ftxui::text(std::string(1, '_'));
     }
+    character_correctnes_.push_back(false);
     return new_character | ftxui::color(ftxui::Color::Salmon1);
 }
 
@@ -118,6 +120,7 @@ void Input::remove_element() {
         go_to_previous_line();
         return;
     }
+    character_correctnes_.pop_back();
     current_input_line_.pop_back();
 }
 
@@ -161,4 +164,13 @@ void Input::set_amount_of_words() {
         std::distance(std::istream_iterator<std::string>(stream),
         std::istream_iterator<std::string>())
     );
+}
+
+
+float Input::get_percentage_of_correct_input() const {
+    return 100.f * std::count(
+        character_correctnes_.begin(),
+        character_correctnes_.end(),
+        true
+        ) / static_cast<float>(character_correctnes_.size());
 }
