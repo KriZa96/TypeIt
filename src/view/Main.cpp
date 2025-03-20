@@ -3,6 +3,8 @@
 //
 
 #include "../../include/view/Main.h"
+
+#include "../../include/data/FocusPosition.h"
 #include "../../include/data/GameState.h"
 
 Main::Main():
@@ -40,6 +42,7 @@ ftxui::Component Main::get_main_component() {
         container_,
         [this] {
             if (GameState::refresh_session_) {
+                FocusPosition::reset();
                 GameState::refresh_session_ = false;
                 GameState::game_session_in_progress_ = true;
                 refresh_game_session();

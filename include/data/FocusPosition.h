@@ -9,6 +9,11 @@
 struct FocusPosition {
     inline static int x = 0;
     inline static int y = 0;
+
+    static void reset() {
+        x = 0;
+        y = 0;
+    }
 };
 
 
