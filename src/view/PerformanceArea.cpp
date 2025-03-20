@@ -22,12 +22,11 @@ ftxui::Component PerformanceArea::get_performance_component() const {
                 timer_component_->Render(),
                 ftxui::text("Refresh [Ctrl+r]"),
                 ftxui::text("Menu [Ctrl+t]"),
-                word_calculator_component_->Render()}, Style::space_between_config_)) |
-                size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
-                size(ftxui::WIDTH, ftxui::EQUAL, 65)}, Style::space_around_config_)) |
-                ftxui::border |
-                size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
-                size(ftxui::WIDTH, ftxui::EQUAL, 75);
+                word_calculator_component_->Render()},
+                Style::space_between_config_)) |
+                Style::performance_component_inside},
+                Style::space_around_config_)) |
+                Style::performance_component_outside;
         }
     );
 }

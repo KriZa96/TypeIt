@@ -168,9 +168,9 @@ void Input::set_amount_of_words() {
 
 
 float Input::get_percentage_of_correct_input() const {
-    return 100.f * std::count(
+    return 100.f * static_cast<float>(std::count(
         character_correctnes_.begin(),
         character_correctnes_.end(),
         true
-        ) / static_cast<float>(character_correctnes_.size());
+        )) / static_cast<float>(character_correctnes_.size());
 }

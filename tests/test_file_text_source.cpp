@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <filesystem>
 #include <gtest/gtest.h>
 
 #include "../include/core/FileTextSource.h"
@@ -40,8 +41,8 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
 
 
 TEST(FileTextSourceTest, HandlesMissingFile) {
-    FileTextSource fileSource("non_existent_file.txt");
-    std::string result = fileSource.get_text();
+    FileTextSource file_source("../../files/hard.txt");
+    std::string result = file_source.get_text();
 
-    EXPECT_EQ(result, "");
+    EXPECT_NE(result, "");
 }

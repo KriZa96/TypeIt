@@ -18,10 +18,10 @@ Timer::Timer(const int total_time):
 
 
 int Timer::get_elapsed_time() {
-    if (not GameState::game_session_in_progress_) {
+    if (!GameState::game_session_in_progress_) {
         return 0;
     }
-    if (not started_timer_) {
+    if (!started_timer_) {
         started_timer_ = true;
         start_time_ = std::chrono::steady_clock::now();
     }

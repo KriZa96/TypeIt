@@ -10,6 +10,7 @@ struct GameState {
     inline static bool game_session_in_progress_ = false;
     inline static bool refresh_session_ = false;
     inline static bool game_finished_ = false;
+    inline static bool show_info_ = false;
 };
 
 

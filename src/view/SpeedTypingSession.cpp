@@ -27,13 +27,15 @@ SpeedTypingSession::SpeedTypingSession():
 {}
 
 
-
 ftxui::Component SpeedTypingSession::get_speed_typing_session_component() const {
     return ftxui::Renderer(
         text_input_area_component_,
         [&] {
             return ftxui::flexbox(
-                {performance_area_component_->Render(), text_input_area_component_->Render()},
+                {
+                    performance_area_component_->Render(),
+                    text_input_area_component_->Render()
+                },
                 Style::full_center_config_
             ) | ftxui::border;
         }
