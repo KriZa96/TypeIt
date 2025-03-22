@@ -29,10 +29,6 @@ ftxui::Component Input::get_input_component() {
     return ftxui::Renderer(
         input_component_,
         [&] {
-            /*if (not GameState::game_finished_) {
-                render_input_text();
-                set_amount_of_words();
-            }*/
             render_input_text();
             set_amount_of_words();
             total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
@@ -49,11 +45,10 @@ ftxui::Component Input::get_input_component() {
         if (event.character() == "\x12") {
             GameState::refresh_session_ = true;
             return true;
-        }/*
+        }
         if (GameState::game_finished_) {
-            GameState::game_session_in_progress_ = false;
-            GameState::game_finished_ = false;
-        }*/
+            return true;
+        }
         return false;
     });
 }
@@ -64,13 +59,13 @@ ftxui::Element Input::get_next_character() {
     if (input_text_.back() == text_instance_->get_char_at_line_and_position(
         current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
     )) {
-        character_correctnes_.push_back(true);
+        character_accuracy_.push_back(true);
         return new_character | ftxui::color(ftxui::Color::Grey82);
     }
     if (input_text_.back() == ' ') {
         new_character = ftxui::text(std::string(1, '_'));
     }
-    character_correctnes_.push_back(false);
+    character_accuracy_.push_back(false);
     return new_character | ftxui::color(ftxui::Color::Salmon1);
 }
 
@@ -92,6 +87,12 @@ bool Input::should_go_to_next_line() const {
 
 
 void Input::add_element() {
+    if (
+        current_line_index_ >= text_instance_->get_text_lines_size() &&
+        current_input_line_.size() >= text_instance_->get_text_line_size(current_line_index_)
+        ) {
+        GameState::game_finished_ = true;
+    }
     current_input_line_.push_back(get_next_character());
     if (should_go_to_next_line()) {
         go_to_new_line();
@@ -120,7 +121,6 @@ void Input::remove_element() {
         go_to_previous_line();
         return;
     }
-    character_correctnes_.pop_back();
     current_input_line_.pop_back();
 }
 
@@ -168,9 +168,29 @@ void Input::set_amount_of_words() {
 
 
 float Input::get_percentage_of_correct_input() const {
+    const float character_accuracy_size = character_accuracy_.size();
+    if (character_accuracy_size <= 0) {
+        return 0;
+    }
     return 100.f * static_cast<float>(std::count(
-        character_correctnes_.begin(),
-        character_correctnes_.end(),
+        character_accuracy_.begin(),
+        character_accuracy_.end(),
         true
-        )) / static_cast<float>(character_correctnes_.size());
+        )) / character_accuracy_size;
 }
+
+
+ftxui::Element Input::get_accuracy_element_() const {
+    return ftxui::text(std::format("acc: {:.1f}%", get_percentage_of_correct_input()));
+}
+
+
+ftxui::Component Input::get_accuracy_component() const {
+    return ftxui::Renderer(
+        [this] {
+            return get_accuracy_element_();
+        }
+    );
+}
+
+

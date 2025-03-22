@@ -19,7 +19,7 @@ Timer::Timer(const int total_time):
 
 int Timer::get_elapsed_time() {
     if (!GameState::game_session_in_progress_) {
-        return 0;
+        return elapsed_time_;
     }
     if (!started_timer_) {
         started_timer_ = true;

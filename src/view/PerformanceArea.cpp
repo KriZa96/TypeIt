@@ -9,8 +9,13 @@
 
 
 
-PerformanceArea::PerformanceArea(ftxui::Component timer_component, ftxui::Component word_calculator_component) :
+PerformanceArea::PerformanceArea(
+    ftxui::Component timer_component,
+    ftxui::Component accuracy_component,
+    ftxui::Component word_calculator_component
+):
     timer_component_(std::move(timer_component)),
+    accuracy_component_(std::move(accuracy_component)),
     word_calculator_component_(std::move(word_calculator_component))
 {}
 
@@ -19,9 +24,8 @@ ftxui::Component PerformanceArea::get_performance_component() const {
     return ftxui::Renderer(
         [&] {
             return ftxui::dbox(ftxui::flexbox({ftxui::dbox(ftxui::flexbox({
+                accuracy_component_->Render(),
                 timer_component_->Render(),
-                ftxui::text("Refresh [Ctrl+r]"),
-                ftxui::text("Menu [Ctrl+t]"),
                 word_calculator_component_->Render()},
                 Style::space_between_config_)) |
                 Style::performance_component_inside},

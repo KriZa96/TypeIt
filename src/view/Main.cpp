@@ -43,6 +43,7 @@ ftxui::Component Main::get_main_component() {
         [this] {
             if (GameState::refresh_session_) {
                 FocusPosition::reset();
+                GameState::game_finished_ = false;
                 GameState::refresh_session_ = false;
                 GameState::game_session_in_progress_ = true;
                 refresh_game_session();

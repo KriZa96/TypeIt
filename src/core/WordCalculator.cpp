@@ -33,5 +33,5 @@ ftxui::Element WordCalculator::get_word_per_minute_element() const {
 
 
 std::string WordCalculator::get_words_per_minute_string() const{
-    return std::format("{} wpm", calculate_words_per_minute());
+    return std::format("wpm: {}", calculate_words_per_minute());
 }

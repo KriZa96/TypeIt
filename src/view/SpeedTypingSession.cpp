@@ -13,15 +13,17 @@ SpeedTypingSession::SpeedTypingSession():
     text_ptr_(std::make_shared<Text>(text_source_->get_text())),
     input_ptr_(std::make_shared<Input>(text_ptr_)),
     timer_ptr_(std::make_shared<Timer>(GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_])),
-    word_calculator_ptr_(
-        std::make_shared<WordCalculator>(
+    word_calculator_ptr_(std::make_shared<WordCalculator>(
             timer_ptr_->get_elapsed_time_reference(),
-            input_ptr_->get_word_count_reference())
+            input_ptr_->get_word_count_reference()
+        )
     ),
-
     text_input_area_(input_ptr_->get_input_component(), text_ptr_->get_text_component()),
-    performance_area_(timer_ptr_->get_time_component(), word_calculator_ptr_->get_word_calculator_component()),
-
+    performance_area_(
+        timer_ptr_->get_time_component(),
+        input_ptr_->get_accuracy_component(),
+        word_calculator_ptr_->get_word_calculator_component()
+    ),
     text_input_area_component_(text_input_area_.get_text_input_component()),
     performance_area_component_(performance_area_.get_performance_component())
 {}
@@ -33,11 +35,19 @@ ftxui::Component SpeedTypingSession::get_speed_typing_session_component() const 
         [&] {
             return ftxui::flexbox(
                 {
-                    performance_area_component_->Render(),
-                    text_input_area_component_->Render()
+                    ftxui::vbox(
+                        performance_area_component_->Render(),
+                        text_input_area_component_->Render(),
+                        ftxui::dbox(ftxui::flexbox({ftxui::dbox(ftxui::flexbox({
+                            ftxui::text("Refresh [Ctrl+r]"),
+                            ftxui::text("Menu [Ctrl+t]")},
+                            Style::space_between_config_)) |
+                            Style::game_session_actions},
+                            Style::space_around_config_))
+                    )
                 },
                 Style::full_center_config_
-            ) | ftxui::border;
+            );
         }
     );
 }

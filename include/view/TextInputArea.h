@@ -16,6 +16,8 @@ class TextInputArea {
     private:
         ftxui::Component input_component_;
         ftxui::Component text_component_;
+        ftxui::Component session_end_component_;
+        ftxui::Component main_component_;
 };
 
 

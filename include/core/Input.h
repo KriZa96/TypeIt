@@ -13,6 +13,7 @@ class Input {
     public:
         explicit Input(std::shared_ptr<Text> text_instance);
         ftxui::Component get_input_component();
+        ftxui::Component get_accuracy_component() const;
         [[nodiscard]] const int& get_word_count_reference() const;
         [[nodiscard]] float get_percentage_of_correct_input() const;
     private:
@@ -24,7 +25,7 @@ class Input {
         ftxui::Elements current_input_line_;
         std::vector<ftxui::Elements> previous_input_lines_;
         ftxui::Elements total_input_lines_;
-        std::vector<bool> character_correctnes_;
+        std::vector<bool> character_accuracy_;
 
         void add_element();
         void remove_element();
@@ -32,6 +33,7 @@ class Input {
         void render_input_text();
         void go_to_previous_line();
         void set_amount_of_words();
+        ftxui::Element get_accuracy_element_() const;
         [[nodiscard]] bool should_add_element() const;
         [[nodiscard]] bool should_remove_element() const;
         [[nodiscard]] bool should_go_to_previous_line() const;

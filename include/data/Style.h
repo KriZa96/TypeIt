@@ -28,17 +28,25 @@ struct Style {
        size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
        size(ftxui::WIDTH, ftxui::EQUAL, 75);
 
+
+    inline static const ftxui::Decorator game_session_actions =
+       size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
+       size(ftxui::WIDTH, ftxui::EQUAL, 35);
+
+
     inline static const ftxui::FlexboxConfig full_center_config_{
         .justify_content = ftxui::FlexboxConfig::JustifyContent::Center,
         .align_items = ftxui::FlexboxConfig::AlignItems::Center,
         .align_content = ftxui::FlexboxConfig::AlignContent::Center
     };
 
+
     inline static const ftxui::FlexboxConfig space_around_config_{
         .justify_content = ftxui::FlexboxConfig::JustifyContent::SpaceAround,
         .align_items = ftxui::FlexboxConfig::AlignItems::Center,
         .align_content = ftxui::FlexboxConfig::AlignContent::Center
     };
+
 
     inline static const ftxui::FlexboxConfig space_between_config_{
         .justify_content = ftxui::FlexboxConfig::JustifyContent::SpaceBetween,

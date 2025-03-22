@@ -11,10 +11,15 @@
 
 class PerformanceArea {
     public:
-        PerformanceArea(ftxui::Component timer_component, ftxui::Component word_calculator_component);
+        PerformanceArea(
+            ftxui::Component timer_component,
+            ftxui::Component accuracy_component,
+            ftxui::Component word_calculator_component
+        );
         [[nodiscard]] ftxui::Component get_performance_component() const;
     private:
         ftxui::Component timer_component_;
+        ftxui::Component accuracy_component_;
         ftxui::Component word_calculator_component_;
 };
 
