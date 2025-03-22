@@ -1,0 +1,33 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "windows-cl",
+      "description": "Windows with MSVC compiler (cl)",
+      "generator": "Ninja",
+      "binaryDir": "cmake-build-debug",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_MAKE_PROGRAM": "ninja",
+        "CMAKE_TOOLCHAIN_FILE": "${CMAKE_SOURCE_DIR}/external/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON"
+      }
+    },
+    {
+      "name": "linux-gcc",
+      "description": "Linux with GCC compiler",
+      "generator": "Ninja",
+      "binaryDir": "cmake-build-debug",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_MAKE_PROGRAM": "ninja",
+        "CMAKE_TOOLCHAIN_FILE": "${CMAKE_SOURCE_DIR}/external/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON"
+      }
+    }
+  ]
+}

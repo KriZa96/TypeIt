@@ -5,7 +5,7 @@
 #ifndef PERFORMANCEAREA_H
 #define PERFORMANCEAREA_H
 
-#include "../../cmake-build-debug/vcpkg_installed/x64-linux/include/ftxui/component/component.hpp"
+#include "ftxui/component/component.hpp"
 #include "../core/Timer.h"
 
 
