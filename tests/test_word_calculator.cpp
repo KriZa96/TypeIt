@@ -65,7 +65,7 @@ TEST(WordCalculatorTest, TestGetWordsPerMinuteString) {
 
     WordCalculator word_calculator(elapsed_time, word_count);
 
-    ASSERT_EQ(word_calculator.get_words_per_minute_string(), "60 wpm");
+    ASSERT_EQ(word_calculator.get_words_per_minute_string(), "wpm: 60");
 }
 
 
@@ -75,5 +75,5 @@ TEST(WordCalculatorTest, TestWordsPerMinuteStringElapsedTime0) {
 
     WordCalculator word_calculator(elapsed_time, word_count);
 
-    ASSERT_EQ(word_calculator.get_words_per_minute_string(), "0 wpm");
+    ASSERT_EQ(word_calculator.get_words_per_minute_string(), "wpm: 0");
 }
