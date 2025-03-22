@@ -20,7 +20,7 @@ time_radiobox_(ftxui::Radiobox(&time_radiobox_choice_, &GameOptions::selected_ra
 text_radiobox_(ftxui::Radiobox(&text_radiobox_choice_, &GameOptions::selected_radiobox_text_, radiobox_option_)),
 start_button_(ftxui::Button("Start", [this] {
     std::string path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
-    if (FileTextSource::is_text_file(path) && FileTextSource::has_text_stream(path)) {
+    if (FileTextSource::has_text_stream(path)) {
         GameState::refresh_session_ = not GameState::refresh_session_;
     }}, ftxui::ButtonOption::Ascii())),
 exit_button_(ftxui::Button("Exit", [this] {screen_.ExitLoopClosure(); screen_.Exit();}, ftxui::ButtonOption::Ascii())),
@@ -45,7 +45,7 @@ input_option_({.transform = [&](ftxui::InputState state) {
 
     if (state.hovered || state.focused) {
         std::string path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
-        if (FileTextSource::is_text_file(path) && FileTextSource::has_text_stream(path)) {
+        if (FileTextSource::has_text_stream(path)) {
             state.element |= Style::input_text_color_good;
         }
         else {
