@@ -13,7 +13,7 @@
 class Main {
     public:
         Main();
-        void start();
+        static void Start();
     private:
         Screen screen;
         Menu menu_;
@@ -24,7 +24,11 @@ class Main {
         ftxui::Component container_;
 
         void refresh_game_session();
+        void start_main_session();
         ftxui::Component get_main_component();
+        ftxui::Component get_main_component_maybe() const;
+        ftxui::Component get_speed_typing_session_component_maybe() const;
+
 };
 
 

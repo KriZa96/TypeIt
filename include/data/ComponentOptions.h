@@ -8,6 +8,8 @@
 #include "ftxui/component/component.hpp"
 
 #include "Style.h"
+#include "GameOptions.h"
+#include "GameState.h"
 
 struct ComponentOptions {
     static inline ftxui::RadioboxOption menu_radiobox_option = {
@@ -67,6 +69,25 @@ struct ComponentOptions {
         return state.element;
     }};
 
+    static inline ftxui::ComponentDecorator input_component_decorator = ftxui::CatchEvent([] (const ftxui::Event& event) {
+        const std::string ctrl_t =  "\x14";
+        if (event.character() == ctrl_t) {
+            GameState::game_session_in_progress = false;
+            return true;
+        }
+
+        const std::string ctrl_r = "\x12";
+        if (event.character() == ctrl_r) {
+            GameState::refresh_session = true;
+            return true;
+        }
+
+        if (GameState::game_finished) {
+            return true;
+        }
+
+        return false;
+    });
 };
 
 #endif //COMPONENTOPTIONS_H

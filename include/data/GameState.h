@@ -10,22 +10,13 @@
 #include "GameOptions.h"
 
 struct GameState {
-    inline static bool game_session_in_progress_ = false;
-    inline static bool refresh_session_ = false;
-    inline static bool game_finished_ = false;
-    inline static bool show_info_ = false;
+    inline static bool game_session_in_progress = false;
+    inline static bool refresh_session = false;
+    inline static bool game_finished = true;
+    inline static bool show_info = false;
 
-    static void toggle_game_session_display() {
-        game_session_in_progress_ = !game_session_in_progress_;
-    }
-    static void toggle_refresh_session() {
-        refresh_session_ = !refresh_session_;
-    }
-    static void toggle_game_finished() {
-        game_finished_ = !game_finished_;
-    }
     static void toggle_info_display() {
-        show_info_ = !show_info_;
+        show_info = !show_info;
     }
 
     static bool is_file_valid(const std::string& path) {
@@ -42,7 +33,7 @@ struct GameState {
         const std::string& path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
         const int time = GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_];
         if (is_file_valid(path) && is_time_valid(time)) {
-            toggle_refresh_session();
+            refresh_session = true;
         }
     }
 

@@ -2,13 +2,16 @@
 // Created by kil3 on 3/8/25.
 //
 
+#include "../../include/core/Input.h"
+
 #include <iterator>
 #include <numeric>
 #include <utility>
 
-#include "../../include/data/GameState.h"
+#include "../../include/data/ComponentOptions.h"
 #include "../../include/data/FocusPosition.h"
-#include "../../include/core/Input.h"
+#include "../../include/data/GameState.h"
+#include "../../include/data/Style.h"
 
 
 Input::Input(std::shared_ptr<Text> text_instance) :
@@ -32,25 +35,9 @@ ftxui::Component Input::get_input_component() {
             render_input_text();
             set_amount_of_words();
             total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
-            return ftxui::vbox(total_input_lines_) |
-                ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
-                ftxui::frame |
-                ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+            return ftxui::vbox(total_input_lines_) | Style::text_input_element_style;
         }
-    ) | ftxui::CatchEvent([&] (const ftxui::Event& event) {
-        if (event.character() == "\x14") {
-            GameState::game_session_in_progress_ = false;
-            return true;
-        }
-        if (event.character() == "\x12") {
-            GameState::refresh_session_ = true;
-            return true;
-        }
-        if (GameState::game_finished_) {
-            return true;
-        }
-        return false;
-    });
+    ) | ComponentOptions::input_component_decorator;
 }
 
 
@@ -60,13 +47,13 @@ ftxui::Element Input::get_next_character() {
         current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
     )) {
         character_accuracy_.push_back(true);
-        return new_character | ftxui::color(ftxui::Color::Grey82);
+        return new_character | Style::input_text_color_good;
     }
     if (input_text_.back() == ' ') {
         new_character = ftxui::text(std::string(1, '_'));
     }
     character_accuracy_.push_back(false);
-    return new_character | ftxui::color(ftxui::Color::Salmon1);
+    return new_character | Style::input_text_color_bad;
 }
 
 
@@ -91,7 +78,7 @@ void Input::add_element() {
         current_line_index_ >= text_instance_->get_text_lines_size() &&
         current_input_line_.size() >= text_instance_->get_text_line_size(current_line_index_)
         ) {
-        GameState::game_finished_ = true;
+        GameState::game_finished = true;
     }
     current_input_line_.push_back(get_next_character());
     if (should_go_to_next_line()) {

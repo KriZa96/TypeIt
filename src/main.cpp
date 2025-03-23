@@ -6,8 +6,7 @@
 
 int main() {
 
-    Main main;
-    main.start();
+    Main::Start();
 
     return 0;
 }

@@ -68,14 +68,12 @@ ftxui::Component Menu::get_info_component_() const {
             return ftxui::window(
                 ftxui::text("Info"),
                 ftxui::paragraph(
-                "If you want to use custom file, when inputting the file path"
-                    ", on valid input color will change from salmon to white/gray."
-                    " Same goes for custom time input, if input is valid color will "
-                    "change from salmon to white/gray."
+                "Custom inputs will change color from "
+                    "salmon to grey/white, on valid input."
                 )
             );
         }
-    ), &GameState::show_info_);
+    ), &GameState::show_info);
 }
 
 

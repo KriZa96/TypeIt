@@ -19,9 +19,9 @@ protected:
           input(text) {}
 
     void SetUp() override {
-        GameState::game_session_in_progress_ = true;
-        GameState::game_finished_ = false;
-        GameState::refresh_session_ = false;
+        GameState::game_session_in_progress = true;
+        GameState::game_finished = false;
+        GameState::refresh_session = false;
         FocusPosition::x = 0;
         FocusPosition::y = 0;
     }
@@ -38,9 +38,9 @@ protected:
           input(text) {}
 
     void SetUp() override {
-        GameState::game_session_in_progress_ = true;
-        GameState::game_finished_ = false;
-        GameState::refresh_session_ = false;
+        GameState::game_session_in_progress = true;
+        GameState::game_finished = false;
+        GameState::refresh_session = false;
         FocusPosition::x = 0;
         FocusPosition::y = 0;
     }
@@ -91,7 +91,7 @@ TEST_F(InputTest, EventHandlingTerminateMenu) {
     bool event_handled = input.get_input_component()->OnEvent(event);
 
     EXPECT_TRUE(event_handled);
-    EXPECT_FALSE(GameState::game_session_in_progress_);
+    EXPECT_FALSE(GameState::game_session_in_progress);
 }
 
 
@@ -100,7 +100,7 @@ TEST_F(InputTest, EventHandlingTerminateRefresh) {
     bool event_handled = input.get_input_component()->OnEvent(event);
 
     EXPECT_TRUE(event_handled);
-    EXPECT_TRUE(GameState::refresh_session_);
+    EXPECT_TRUE(GameState::refresh_session);
 }
 
 

@@ -23,8 +23,8 @@ TextInputArea::TextInputArea(ftxui::Component input_component, ftxui::Component 
         ftxui::Maybe(ftxui::Container::Stacked( {
             text_component_,
             input_component_
-        }), [&] {return !GameState::game_finished_;}),
-        ftxui::Maybe(session_end_component_, [&] {return GameState::game_finished_;})
+        }), [&] {return !GameState::game_finished;}),
+        ftxui::Maybe(session_end_component_, [&] {return GameState::game_finished;})
     }
     ))
 {}
@@ -34,7 +34,7 @@ ftxui::Component TextInputArea::get_text_input_component() const {
         input_component_,
         [&] {
             ftxui::Element main_element = ftxui::dbox(text_component_->Render(), input_component_->Render());
-            if (GameState::game_finished_) {
+            if (GameState::game_finished) {
                 main_element = ftxui::text("Session Finished!!!");
             }
             return ftxui::flexbox({

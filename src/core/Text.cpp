@@ -3,10 +3,9 @@
 //
 
 
-#include <numeric>
 #include <utility>
 
-#include "../../include/data/FocusPosition.h"
+#include "../../include/data/Style.h"
 #include "../../include/core/Text.h"
 
 
@@ -38,7 +37,10 @@ void Text::populate_text_lines() {
         text += current_character == '\n' ? ' ' : current_character;
         num_of_characters++;
 
-        if (current_character == '\n' || (current_character == ' ' && line.size() >= 55 || index == text_.size() - 1)) {
+        bool should_go_to_next_line = (
+            current_character == '\n' || (current_character == ' ' && line.size() >= 55 || index == text_.size() - 1)
+        );
+        if (should_go_to_next_line) {
             push_line(line, text, num_of_characters);
         }
     }
@@ -46,10 +48,7 @@ void Text::populate_text_lines() {
 
 
 ftxui::Element Text::get_text_element() const {
-    return ftxui::vbox(text_lines_) |
-                ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
-                ftxui::frame |
-                ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+    return ftxui::vbox(text_lines_) | Style::text_input_element_style;
 }
 
 
@@ -84,8 +83,14 @@ std::string Text::get_text() const {
     return text_;
 }
 
+
 char Text::get_char_at_line_and_position(const int line_index, const int char_index) const {
-    if (line_index < 0 || line_index >= text_lines_strings_.size() || char_index < 0 || char_index >= text_lines_size_[line_index]) {
+    bool character_out_of_bounds = (
+        line_index < 0 || line_index >= text_lines_strings_.size() ||
+        char_index < 0 || char_index >= text_lines_size_[line_index]
+    );
+
+    if (character_out_of_bounds) {
         return '\0';
     }
     return text_lines_strings_[line_index][char_index];

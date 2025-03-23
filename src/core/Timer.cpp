@@ -18,7 +18,7 @@ Timer::Timer(const int total_time):
 
 
 int Timer::get_elapsed_time() {
-    if (!GameState::game_session_in_progress_) {
+    if (!GameState::game_session_in_progress) {
         return elapsed_time_;
     }
     if (!started_timer_) {
@@ -26,7 +26,7 @@ int Timer::get_elapsed_time() {
         start_time_ = std::chrono::steady_clock::now();
     }
     if (elapsed_time_ >= total_time_) {
-        GameState::game_finished_ = true;
+        GameState::game_finished = true;
         return total_time_;
     }
     elapsed_time_ = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(
