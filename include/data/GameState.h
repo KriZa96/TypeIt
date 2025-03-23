@@ -26,9 +26,11 @@ struct GameState {
         const std::ifstream file_stream(path);
         return file_stream ? true : false;
     }
+
     static bool is_time_valid(const int time) {
         return time > 0;
     }
+
     static void start_game_session() {
         const std::string& path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
         const int time = GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_];

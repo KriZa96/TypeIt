@@ -52,6 +52,3 @@ if [[ "$user_response" =~ (^[Yy]$|^$) ]]; then
 else
     echo "Skipping symlink creation."
 fi
-
-echo "Linux installation and build completed successfully."
-echo "Run game with command TypeIt"
