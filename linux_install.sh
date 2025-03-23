@@ -37,7 +37,6 @@ echo "Initializing and updating Git submodules..."
 git submodule update --init --recursive
 
 echo "Running CMake configuration using linux-gcc preset..."
-# Let CMake handle build directory via preset
 cmake --preset linux-gcc
 
 echo "Building the project..."
