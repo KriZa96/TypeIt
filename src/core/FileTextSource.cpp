@@ -12,15 +12,6 @@
 FileTextSource::FileTextSource(std::string  file_path) : file_path_(std::move(file_path)) {}
 
 
-bool FileTextSource::has_text_stream(const std::string& path) {
-    if (std::filesystem::is_directory(path)) {
-        return false;
-    }
-    const std::ifstream file_stream(path);
-    return file_stream ? true : false;
-}
-
-
 std::string FileTextSource::get_text() const {
     std::ifstream fileStream(file_path_);
     if (!fileStream) {

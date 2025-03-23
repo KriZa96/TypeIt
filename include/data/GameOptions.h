@@ -9,8 +9,9 @@
 #include <vector>
 
 struct GameOptions {
-    inline static std::vector<int> time_radiobox_values_{15, 30, 60};
+    inline static std::vector<int> time_radiobox_values_{15, 30, 60, 0};
     inline static int selected_radiobox_time_ = 0;
+    inline static std::string custom_radiobox_input_;
 
     inline static std::vector<std::string> text_radiobox_values_{
         "../../files/simple.txt", "../../files/medium.txt", "../../files/hard.txt", ""
