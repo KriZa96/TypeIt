@@ -25,7 +25,7 @@ int Timer::get_elapsed_time() {
         started_timer_ = true;
         start_time_ = std::chrono::steady_clock::now();
     }
-    if (elapsed_time_ >= total_time_) {
+    if (elapsed_time_ >= total_time_ || GameState::game_finished) {
         GameState::game_finished = true;
         return total_time_;
     }
