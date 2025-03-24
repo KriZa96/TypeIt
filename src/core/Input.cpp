@@ -35,7 +35,10 @@ ftxui::Component Input::get_input_component() {
             render_input_text();
             set_amount_of_words();
             total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
-            return ftxui::vbox(total_input_lines_) | Style::text_input_element_style;
+            return ftxui::vbox(total_input_lines_) |
+                ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
+                ftxui::frame |
+                Style::text_input_element_style;
         }
     ) | ComponentOptions::input_component_decorator;
 }
@@ -75,10 +78,11 @@ bool Input::should_go_to_next_line() const {
 
 void Input::add_element() {
     if (
-        current_line_index_ >= text_instance_->get_text_lines_size() &&
-        current_input_line_.size() >= text_instance_->get_text_line_size(current_line_index_)
+        current_line_index_ + 1 >= text_instance_->get_text_lines_size() &&
+        current_input_line_.size() + 1 >= text_instance_->get_text_line_size(current_line_index_)
         ) {
         GameState::game_finished = true;
+        return;
     }
     current_input_line_.push_back(get_next_character());
     if (should_go_to_next_line()) {

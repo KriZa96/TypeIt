@@ -191,6 +191,16 @@ TEST_F(InputTestMultiLine, ShouldAddElement) {
     EXPECT_TRUE(input.should_add_element());
 }
 
+TEST_F(InputTestMultiLine, AddElementGameFinish) {
+    std::string full_text = "line1 line 2 Thrid line second last line finally last line.";
+    for (const auto& letter: full_text) {
+        input.input_text_ += letter;
+        EXPECT_TRUE(input.should_add_element());
+        input.render_input_text();
+    }
+
+    EXPECT_TRUE(GameState::game_finished);
+}
 
 TEST_F(InputTestMultiLine, ShouldRemoveElement) {
     input.input_text_ = "l";
@@ -203,7 +213,7 @@ TEST_F(InputTestMultiLine, ShouldRemoveElement) {
 
 
 TEST_F(InputTestMultiLine, ShouldAddAndRemoveElement) {
-    std::string full_text = "line1 line 2 Thrid line second last line finally last line.";
+    std::string full_text = "line1 line 2 Thrid line second last line finally last line";
     for (const auto& letter: full_text) {
         input.input_text_ += letter;
         EXPECT_TRUE(input.should_add_element());
@@ -346,3 +356,8 @@ TEST_F(InputTestMultiLine, PercentageOfCorrectInput) {
 
     EXPECT_EQ(input.get_percentage_of_correct_input(), 100.);
 }
+
+TEST_F(InputTestMultiLine, PercentageOfCorrectInputOnStart) {
+    EXPECT_EQ(input.get_percentage_of_correct_input(), 0.);
+}
+

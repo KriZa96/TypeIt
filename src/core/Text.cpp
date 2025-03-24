@@ -48,7 +48,10 @@ void Text::populate_text_lines() {
 
 
 ftxui::Element Text::get_text_element() const {
-    return ftxui::vbox(text_lines_) | Style::text_input_element_style;
+    return ftxui::vbox(text_lines_) |
+        ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
+        ftxui::frame |
+        Style::text_input_element_style;
 }
 
 
@@ -58,11 +61,6 @@ ftxui::Component Text::get_text_component() const {
             return get_text_element();
         }
     );
-}
-
-
-int Text::get_text_size() const {
-    return static_cast<int>(text_.size());
 }
 
 

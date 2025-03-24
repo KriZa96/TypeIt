@@ -34,10 +34,7 @@ struct Style {
        size(ftxui::HEIGHT, ftxui::EQUAL, 3) |
        size(ftxui::WIDTH, ftxui::EQUAL, 35);
 
-    inline static const ftxui::Decorator text_input_element_style =
-        ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
-        ftxui::frame |
-        ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
+    inline static const ftxui::Decorator text_input_element_style = ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 3);
 
     inline static const ftxui::FlexboxConfig full_center_config_{
         .justify_content = ftxui::FlexboxConfig::JustifyContent::Center,

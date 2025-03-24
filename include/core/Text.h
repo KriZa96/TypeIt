@@ -15,7 +15,6 @@ class Text {
     public:
         explicit Text(std::string text);
         [[nodiscard]] ftxui::Component get_text_component() const;
-        [[nodiscard]] int get_text_size() const;
         [[nodiscard]] std::string get_text() const;
         [[nodiscard]] int get_text_lines_size() const;
         [[nodiscard]] int get_text_line_size(int index) const;
