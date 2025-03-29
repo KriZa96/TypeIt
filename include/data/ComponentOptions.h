@@ -56,7 +56,7 @@ struct ComponentOptions {
 
         if (state.hovered || state.focused) {
             const int time = GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_];
-            if (GameState::is_time_valid(time)) {
+            if (time > 0) {
                 state.element |= Style::input_text_color_good;
             }
             else {
