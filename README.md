@@ -84,11 +84,7 @@ Verify the installation of the required tools:
 
 ### *WINDOWS*
 
-****
-
-> **Note**: Ensure you have CMake is in your PATH
-
-****
+> **Note**: Ensure CMake is in your PATH
 
 *Setup CMake:*
 ```shell
