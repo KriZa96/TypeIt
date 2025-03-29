@@ -2,6 +2,11 @@
 
 **TypeIt** is a terminal-based touch typing game designed to test your typing skills. The game offers three base levels of difficulty. However, to keep things interesting, you can input custom text files for a personalized experience! While typing, you can see your accuracy and words per minute in real-time. The application is built with an interactive interface using the **FTXUI** library.
 
+> **Note**: FTXUI does not support ćčšđž. When those letters are inputed
+> nothing is shown but application calculates it as input, if you see
+> that your input is shown as incorrect, just delete one character before
+> you inputed ćčšđž.
+
 ## **Technologies**
 
 - **Language**: [C++20](https://isocpp.org/)
@@ -27,9 +32,9 @@ Before building and running the project, ensure you have the following tools ins
 
 - **Git**: To clone the repository.
 - **CMake >= 3.15**: To configure the project and manage dependencies.
-- **Ninja**: The build tool used in this project.
-- **GCC/G++**: C and C++ compilers for Linux.
-- **CL (MSVC)**: C and C++ compiler for Windows.
+- **Ninja**: The build tool used in this project. -> Linux
+- **GCC/G++**: C and C++ compilers for Linux. -> Linux
+- Visual Studio 2022 with C++ Development tools (Windows)
 
 > **Note**: The C++ compiler must support the C++20 standard.
 
@@ -76,3 +81,26 @@ Verify the installation of the required tools:
   TypeIt
 ```
 ****
+
+### *WINDOWS*
+
+****
+
+> **Note**: Ensure you have CMake is in your PATH
+
+****
+
+*Setup CMake:*
+```shell
+   cmake -G "Visual Studio 17 2022" -S . -B cmake-build 
+```
+
+*Build The Project:*
+```shell
+  cmake --build cmake-build 
+```
+
+*Move TypeIt.exe To Appropriate Place (Example copies to Desktop)<br>Or just start it from the folder noted in example*
+```shell
+  Copy-Item "cmake-build\src\Debug\TypeIt.exe" -Destination "$env:USERPROFILE\Desktop\"
+```
