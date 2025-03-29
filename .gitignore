@@ -34,5 +34,6 @@
 vcpkg_installed
 build
 cmake-build-debug
+cmake-build
 
 .idea
