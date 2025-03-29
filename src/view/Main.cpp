@@ -45,9 +45,10 @@ ftxui::Component Main::get_main_component() {
     return ftxui::Renderer(
         container_,
         [this] {
-            if (GameState::refresh_session) {
+            if (GameState::refresh_session || GameState::start_session) {
                 FocusPosition::reset();
                 GameState::game_finished = false;
+                GameState::start_session = false;
                 GameState::refresh_session = false;
                 GameState::game_session_in_progress = true;
                 refresh_game_session();

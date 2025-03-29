@@ -33,13 +33,13 @@ class Input {
         void render_input_text();
         void go_to_previous_line();
         void set_amount_of_words();
-        ftxui::Element get_accuracy_element_() const;
         [[nodiscard]] bool should_add_element() const;
         [[nodiscard]] bool should_remove_element() const;
         [[nodiscard]] bool should_go_to_previous_line() const;
         [[nodiscard]] bool should_go_to_next_line() const;
         [[nodiscard]] int get_previous_lines_size() const;
         [[nodiscard]] ftxui::Element get_next_character();
+        [[nodiscard]] ftxui::Element get_accuracy_element_() const;
 };
 
 

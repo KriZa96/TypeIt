@@ -10,6 +10,7 @@
 #include "Style.h"
 #include "GameOptions.h"
 #include "GameState.h"
+#include "../core/FileTextSource.h"
 
 struct ComponentOptions {
     static inline ftxui::RadioboxOption menu_radiobox_option = {
@@ -32,7 +33,7 @@ struct ComponentOptions {
 
         if (state.hovered || state.focused) {
             const std::string& path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
-            if (GameState::is_file_valid(path)) {
+            if (FileTextSource::is_file_valid(path)) {
                 state.element |= Style::input_text_color_good;
             }
             else {
