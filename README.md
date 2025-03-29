@@ -40,6 +40,8 @@ Before building and running the project, ensure you have the following tools ins
 
 ## **Installation**
 
+> **Note**: Position yourself to root folder of the project.
+
 ****
 
 ### **Initialize Git Submodule**
