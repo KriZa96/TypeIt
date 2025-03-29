@@ -5,7 +5,7 @@
 > **Note**: FTXUI does not support ćčšđž. When those letters are inputed
 > nothing is shown but application calculates it as input, if you see
 > that your input is shown as incorrect, just delete one character before
-> you inputed ćčšđž.
+> you inputed ćčšđž -> [Online Test](https://arthursonzogni.github.io/FTXUI/examples/?file=component/input).
 
 ## **Technologies**
 
@@ -66,7 +66,7 @@ Verify the installation of the required tools:
 
 *Setup CMake:*
 ```bash
-  cmake -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_TOOLCHAIN_FILE=./external/vcpkg/scripts/buildsystems/vcpkg.cmake -G Ninja -S . -B cmake-build -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+  cmake -DCMAKE_MAKE_PROGRAM=ninja -G Ninja -S . -B cmake-build
 ```
 *Build The Project:*
 ```bash
