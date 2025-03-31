@@ -7,9 +7,10 @@
 #include "../include/data/GameState.h"
 #include "../include/data/FocusPosition.h"
 
-#define private public
+class InputTest;
+class InputTestMultiLine;
+
 #include "../include/core/Input.h"
-#undef private
 
 
 class InputTest : public ::testing::Test {

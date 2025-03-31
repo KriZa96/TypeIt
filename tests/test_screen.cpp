@@ -4,9 +4,7 @@
 #include <thread>
 #include <gtest/gtest.h>
 
-#define private public
 #include "../include/core/Screen.h"
-#undef private
 
 
 TEST(ScreenTest, TestIsRunning) {

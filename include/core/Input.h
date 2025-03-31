@@ -5,6 +5,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 #include "Text.h"
 
@@ -40,6 +41,9 @@ class Input {
         [[nodiscard]] int get_previous_lines_size() const;
         [[nodiscard]] ftxui::Element get_next_character();
         [[nodiscard]] ftxui::Element get_accuracy_element_() const;
+
+        friend class InputTest;
+        friend class InputTestMultiLine;
 };
 
 

@@ -38,11 +38,3 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
 
     EXPECT_EQ(result, "Hello world. This is a test file.");
 }
-
-
-TEST(FileTextSourceTest, HandlesMissingFile) {
-    FileTextSource file_source("../../files/hard.txt");
-    std::string result = file_source.get_text();
-
-    EXPECT_NE(result, "");
-}

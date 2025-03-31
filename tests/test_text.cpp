@@ -3,9 +3,7 @@
 //
 #include <gtest/gtest.h>
 
-#define private public
 #include "../include/core/Text.h"
-#undef private
 
 
 TEST(TextTest, TestTextEmpty) {

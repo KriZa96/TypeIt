@@ -7,6 +7,7 @@
 
 #include <chrono>
 
+#include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 
 
@@ -24,6 +25,14 @@ class Timer {
         bool started_timer_;
 
         std::string get_time_left_str();
+
+        FRIEND_TEST(TimerTest, ElapsedTimeStartsAtZero);
+        FRIEND_TEST(TimerTest, ElapsedTimeAfterDelay);
+        FRIEND_TEST(TimerTest, ElapsedTimeAfterMaxTime);
+        FRIEND_TEST(TimerTest, RemainingTimeImmediate);
+        FRIEND_TEST(TimerTest, RemainingTimeStringAfter1Sec);
+        FRIEND_TEST(TimerTest, RemainingTimeStringAfterMaxTime);
+        FRIEND_TEST(TimerTest, DosentCalculateWhenStartGameFalse);
 };
 
 

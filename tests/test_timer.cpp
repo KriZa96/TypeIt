@@ -5,9 +5,7 @@
 #include <thread>
 #include <gtest/gtest.h>
 
-#define private public
 #include "../include/core/Timer.h"
-#undef private
 #include "../include/data/GameState.h"
 
 

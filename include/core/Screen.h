@@ -7,6 +7,7 @@
 
 #include <thread>
 
+#include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
 
@@ -24,6 +25,12 @@ class Screen {
 
         void start_refresh();
         void stop_refresh();
+
+        FRIEND_TEST(ScreenTest, TestIsRunning);
+        FRIEND_TEST(ScreenTest, TestIsRunningAfterSomeTime);
+        FRIEND_TEST(ScreenTest, TestIsStopped);
+        FRIEND_TEST(ScreenTest, TestIsStoppedAfterSomeTime);
+        FRIEND_TEST(ScreenTest, TestIsRunningAndStoppedAfterSomeTime);
 };
 
 

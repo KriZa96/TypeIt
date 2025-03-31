@@ -3,9 +3,7 @@
 //
 #include <gtest/gtest.h>
 
-#define private public
 #include "../include/core/WordCalculator.h"
-#undef private
 
 
 TEST(WordCalculatorTest, TestMemberVariables) {
