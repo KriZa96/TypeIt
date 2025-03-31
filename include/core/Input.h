@@ -42,8 +42,35 @@ class Input {
         [[nodiscard]] ftxui::Element get_next_character();
         [[nodiscard]] ftxui::Element get_accuracy_element_() const;
 
-        friend class InputTest;
-        friend class InputTestMultiLine;
+        FRIEND_TEST(InputTest, Initialization);
+        FRIEND_TEST(InputTestMultiLine, LineTransitionOnSpace);
+        FRIEND_TEST(InputTestMultiLine, BackspaceAtLineStart);
+        FRIEND_TEST(InputTestMultiLine, ShouldGoToNextLine);
+        FRIEND_TEST(InputTestMultiLine, ShouldNotGoToNextLine);
+        FRIEND_TEST(InputTestMultiLine, ShouldNotGoToNextLineLastLine);
+        FRIEND_TEST(InputTestMultiLine, ShouldGoToPreviousLine);
+        FRIEND_TEST(InputTestMultiLine, ShouldNotGoToPreviousLine);
+        FRIEND_TEST(InputTestMultiLine, ShouldNotGoToPreviousLineBeforeGoingToNext);
+        FRIEND_TEST(InputTestMultiLine, ShouldNotAddOrRemoveElement);
+        FRIEND_TEST(InputTestMultiLine, ShouldAddElement);
+        FRIEND_TEST(InputTestMultiLine, AddElementGameFinish);
+        FRIEND_TEST(InputTestMultiLine, ShouldRemoveElement);
+        FRIEND_TEST(InputTestMultiLine, ShouldAddAndRemoveElement);
+        FRIEND_TEST(InputTestMultiLine, PreviousLinesSizeWhenNothingInputed);
+        FRIEND_TEST(InputTestMultiLine, PreviousLinesSizeWhenFirstLine);
+        FRIEND_TEST(InputTestMultiLine, PreviousLinesSizeWhenSecondLine);
+        FRIEND_TEST(InputTestMultiLine, PreviousLinesSize);
+        FRIEND_TEST(InputTest, SetWordsNone);
+        FRIEND_TEST(InputTest, SetWordsOne);
+        FRIEND_TEST(InputTest, SetWordsOneSpaceAround);
+        FRIEND_TEST(InputTest, SetWordsOneSpaceAfter);
+        FRIEND_TEST(InputTest, SetWordsOneSpaceBefore);
+        FRIEND_TEST(InputTest, SetWordsTwo);
+        FRIEND_TEST(InputTest, SetWordsTwoWithTwoSpacesBetween);
+        FRIEND_TEST(InputTest, SetWordsTwoWithMultipleSpacesBetweenAndAround);
+        FRIEND_TEST(InputTest, SetWordsTwoNewLine);
+        FRIEND_TEST(InputTest, SetWordsWordCountCalculation);
+        FRIEND_TEST(InputTestMultiLine, PercentageOfCorrectInput);
 };
 
 
