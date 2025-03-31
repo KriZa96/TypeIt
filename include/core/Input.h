@@ -9,6 +9,7 @@
 #include "ftxui/component/component.hpp"
 #include "Text.h"
 #include "../engines/InputAccuracyEngine.h"
+#include "../engines/InputWordCountEngine.h"
 
 
 class Input {
@@ -18,7 +19,6 @@ class Input {
         [[nodiscard]] ftxui::Component get_accuracy_component() const;
         [[nodiscard]] const int& get_word_count_reference() const;
     private:
-        int word_count_;
         int current_line_index_;
         std::string input_text_;
         ftxui::Component input_component_;
@@ -27,13 +27,13 @@ class Input {
         std::vector<ftxui::Elements> previous_input_lines_;
         ftxui::Elements total_input_lines_;
         InputAccuracyEngine input_accuracy_;
+        InputWordCountEngine input_word_count_;
 
         void add_element();
         void remove_element();
         void go_to_new_line();
         void render_input_text();
         void go_to_previous_line();
-        void set_amount_of_words();
         [[nodiscard]] bool should_add_element() const;
         [[nodiscard]] bool should_remove_element() const;
         [[nodiscard]] bool should_go_to_previous_line() const;
@@ -59,17 +59,6 @@ class Input {
         FRIEND_TEST(InputTestMultiLine, PreviousLinesSizeWhenFirstLine);
         FRIEND_TEST(InputTestMultiLine, PreviousLinesSizeWhenSecondLine);
         FRIEND_TEST(InputTestMultiLine, PreviousLinesSize);
-        FRIEND_TEST(InputTest, SetWordsNone);
-        FRIEND_TEST(InputTest, SetWordsOne);
-        FRIEND_TEST(InputTest, SetWordsOneSpaceAround);
-        FRIEND_TEST(InputTest, SetWordsOneSpaceAfter);
-        FRIEND_TEST(InputTest, SetWordsOneSpaceBefore);
-        FRIEND_TEST(InputTest, SetWordsTwo);
-        FRIEND_TEST(InputTest, SetWordsTwoWithTwoSpacesBetween);
-        FRIEND_TEST(InputTest, SetWordsTwoWithMultipleSpacesBetweenAndAround);
-        FRIEND_TEST(InputTest, SetWordsTwoNewLine);
-        FRIEND_TEST(InputTest, SetWordsWordCountCalculation);
-        FRIEND_TEST(InputTestMultiLine, PercentageOfCorrectInput);
 };
 
 

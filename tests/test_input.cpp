@@ -51,7 +51,7 @@ protected:
 };
 
 TEST_F(InputTest, Initialization) {
-    EXPECT_EQ(input.get_word_count_reference(), 3);
+    EXPECT_EQ(input.get_word_count_reference(), 0);
     EXPECT_EQ(input.current_line_index_, 0);
     EXPECT_TRUE(input.input_text_.empty());
     EXPECT_EQ(input.total_input_lines_.size(), text->get_text_lines_size()+1);
@@ -263,102 +263,4 @@ TEST_F(InputTestMultiLine, PreviousLinesSize) {
     EXPECT_EQ(input.get_previous_lines_size(), 24);
 }
 
-
-TEST_F(InputTest, SetWordsNone) {
-    input.input_text_ = "";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 0);
-}
-
-
-TEST_F(InputTest, SetWordsOne) {
-    input.input_text_ = "one";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 1);
-}
-
-
-TEST_F(InputTest, SetWordsOneSpaceAround) {
-    input.input_text_ = " one ";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 1);
-}
-
-
-TEST_F(InputTest, SetWordsOneSpaceAfter) {
-    input.input_text_ = "one ";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 1);
-}
-
-
-TEST_F(InputTest, SetWordsOneSpaceBefore) {
-    input.input_text_ = " one";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 1);
-}
-
-
-TEST_F(InputTest, SetWordsTwo) {
-    input.input_text_ = "one two";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 2);
-}
-
-
-TEST_F(InputTest, SetWordsTwoWithTwoSpacesBetween) {
-    input.input_text_ = "one  two";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 2);
-}
-
-
-TEST_F(InputTest, SetWordsTwoWithMultipleSpacesBetweenAndAround) {
-    input.input_text_ = "  one     two   ";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 2);
-}
-
-
-TEST_F(InputTest, SetWordsTwoNewLine) {
-    input.input_text_ = "one\ntwo";
-    input.set_amount_of_words();
-
-    EXPECT_EQ(input.word_count_, 2);
-}
-
-
-TEST_F(InputTest, SetWordsWordCountCalculation) {
-    const int& word_count = input.get_word_count_reference();
-
-    input.input_text_ = "one two three";
-    input.set_amount_of_words();
-    EXPECT_EQ(word_count, 3);
-
-    input.input_text_ = "   leading spaces";
-    input.set_amount_of_words();
-    EXPECT_EQ(word_count, 2);
-}
-
-
-TEST_F(InputTestMultiLine, PercentageOfCorrectInput) {
-    for (const auto& letter: std::string("line1 line 2 Thrid line second last line finally last line.")) {
-        input.input_text_ += letter;
-        input.render_input_text();
-    }
-
-    EXPECT_EQ(input.get_percentage_of_correct_input(), 100.);
-}
-
-TEST_F(InputTestMultiLine, PercentageOfCorrectInputOnStart) {
-    EXPECT_EQ(input.get_percentage_of_correct_input(), 0.);
-}
 

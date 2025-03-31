@@ -15,7 +15,6 @@
 
 
 Input::Input(std::shared_ptr<Text> text_instance) :
-    word_count_(3),
     current_line_index_(0),
     input_component_(ftxui::Input(&input_text_)),
     text_instance_(std::move(text_instance)),
@@ -24,7 +23,7 @@ Input::Input(std::shared_ptr<Text> text_instance) :
 
 
 const int& Input::get_word_count_reference() const {
-    return word_count_;
+    return input_word_count_.get_word_count_reference();
 }
 
 
@@ -33,7 +32,7 @@ ftxui::Component Input::get_input_component() {
         input_component_,
         [&] {
             render_input_text();
-            set_amount_of_words();
+            input_word_count_.set_word_count(input_text_);
             total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
             return ftxui::vbox(total_input_lines_) |
                 ftxui::focusPosition(FocusPosition::x, FocusPosition::y) |
@@ -148,14 +147,6 @@ int Input::get_previous_lines_size() const {
         });
 }
 
-
-void Input::set_amount_of_words() {
-    std::istringstream stream(input_text_);
-    word_count_ = static_cast<int>(
-        std::distance(std::istream_iterator<std::string>(stream),
-        std::istream_iterator<std::string>())
-    );
-}
 
 ftxui::Component Input::get_accuracy_component() const {
     return ftxui::Renderer(
