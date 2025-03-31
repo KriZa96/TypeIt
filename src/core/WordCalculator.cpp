@@ -19,19 +19,6 @@ ftxui::Component WordCalculator::get_word_calculator_component() const {
 }
 
 
-int WordCalculator::calculate_words_per_minute() const {
-    if (elapsed_time_ <= 1) {
-        return 0;
-    }
-    return static_cast<int>(60. * word_count_ / elapsed_time_);
-}
-
-
 ftxui::Element WordCalculator::get_word_per_minute_element() const {
-    return ftxui::text(get_words_per_minute_string());
-}
-
-
-std::string WordCalculator::get_words_per_minute_string() const{
-    return std::format("wpm: {}", calculate_words_per_minute());
+    return ftxui::text(engine_.get_words_per_minute_string(elapsed_time_, word_count_));
 }

@@ -8,6 +8,7 @@
 
 #include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
+#include "../engines/WordCalculatorEngine.h"
 
 
 class WordCalculator {
@@ -17,18 +18,9 @@ class WordCalculator {
     private:
         const int& elapsed_time_;
         const int& word_count_;
+        const WordCalculatorEngine engine_;
 
-        [[nodiscard]] int calculate_words_per_minute() const;
         [[nodiscard]] ftxui::Element get_word_per_minute_element() const;
-        [[nodiscard]] std::string get_words_per_minute_string() const;
-
-        FRIEND_TEST(WordCalculatorTest, TestMemberVariables);
-        FRIEND_TEST(WordCalculatorTest, TestWordsPerMinute60Words);
-        FRIEND_TEST(WordCalculatorTest, TestWordsPerMinuteAbove60Words);
-        FRIEND_TEST(WordCalculatorTest, TestWordsPerMinuteBelow60Words);
-        FRIEND_TEST(WordCalculatorTest, TestWordsPerMinuteElapsedTime0);
-        FRIEND_TEST(WordCalculatorTest, TestGetWordsPerMinuteString);
-        FRIEND_TEST(WordCalculatorTest, TestWordsPerMinuteStringElapsedTime0);
 };
 
 

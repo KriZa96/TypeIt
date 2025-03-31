@@ -14,7 +14,7 @@ class Input {
     public:
         explicit Input(std::shared_ptr<Text> text_instance);
         ftxui::Component get_input_component();
-        ftxui::Component get_accuracy_component() const;
+        [[nodiscard]] ftxui::Component get_accuracy_component() const;
         [[nodiscard]] const int& get_word_count_reference() const;
         [[nodiscard]] float get_percentage_of_correct_input() const;
     private:
