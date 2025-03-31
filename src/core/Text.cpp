@@ -93,3 +93,8 @@ char Text::get_char_at_line_and_position(const int line_index, const int char_in
     }
     return text_lines_strings_[line_index][char_index];
 }
+
+ftxui::Elements Text::get_text_lines() const {
+    return text_lines_;
+}
+

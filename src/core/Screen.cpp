@@ -46,3 +46,8 @@ void Screen::start_refresh() {
 void Screen::stop_refresh() {
     refresh_ = false;
 }
+
+bool Screen::is_screen_refreshing() const {
+    return refresh_;
+}
+

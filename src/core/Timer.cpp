@@ -22,7 +22,7 @@ int Timer::get_elapsed_time() {
         return elapsed_time_;
     }
     if (!started_timer_) {
-        started_timer_ = true;
+        start_timer();
         start_time_ = std::chrono::steady_clock::now();
     }
     if (elapsed_time_ >= total_time_ || GameState::game_finished) {
@@ -57,4 +57,9 @@ ftxui::Component Timer::get_time_component() {
 
 int& Timer::get_elapsed_time_reference() {
     return elapsed_time_;
+}
+
+
+void Timer::start_timer() {
+    started_timer_ = true;
 }

@@ -9,21 +9,21 @@
 
 TEST(ScreenTest, TestIsRunning) {
     Screen screen;
-    ASSERT_TRUE(screen.refresh_);
+    ASSERT_TRUE(screen.is_screen_refreshing());
 }
 
 
 TEST(ScreenTest, TestIsRunningAfterSomeTime) {
     Screen screen;
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    ASSERT_TRUE(screen.refresh_);
+    ASSERT_TRUE(screen.is_screen_refreshing());
 }
 
 
 TEST(ScreenTest, TestIsStopped) {
     Screen screen;
     screen.stop_refresh();
-    ASSERT_FALSE(screen.refresh_);
+    ASSERT_FALSE(screen.is_screen_refreshing());
 }
 
 
@@ -31,16 +31,16 @@ TEST(ScreenTest, TestIsStoppedAfterSomeTime) {
     Screen screen;
     std::this_thread::sleep_for(std::chrono::seconds(1));
     screen.stop_refresh();
-    ASSERT_FALSE(screen.refresh_);
+    ASSERT_FALSE(screen.is_screen_refreshing());
 }
 
 
 TEST(ScreenTest, TestIsRunningAndStoppedAfterSomeTime) {
     Screen screen;
-    ASSERT_TRUE(screen.refresh_);
+    ASSERT_TRUE(screen.is_screen_refreshing());
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     screen.stop_refresh();
-    ASSERT_FALSE(screen.refresh_);
+    ASSERT_FALSE(screen.is_screen_refreshing());
 }

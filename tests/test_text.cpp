@@ -9,35 +9,35 @@
 TEST(TextTest, TestTextEmpty) {
     Text text("");
 
-    EXPECT_TRUE(text.text_lines_.empty());
+    EXPECT_TRUE(text.get_text_lines().empty());
 }
 
 
 TEST(TextTest, TestTextNotEmpty) {
     Text text("Hello");
 
-    EXPECT_FALSE(text.text_lines_.empty());
+    EXPECT_FALSE(text.get_text_lines().empty());
 }
 
 
 TEST(TextTest, TestWithnewlineChar) {
     Text text("Hello\nNo\nHello");
 
-    ASSERT_EQ(text.text_lines_.size(), 3);
+    ASSERT_EQ(text.get_text_lines_size(), 3);
 }
 
 
 TEST(TextTest, TestWithOnlyNewlineChar) {
     Text text("\n\n");
 
-    ASSERT_EQ(text.text_lines_.size(), 2);
+    ASSERT_EQ(text.get_text_lines_size(), 2);
 }
 
 
 TEST(TextTest, TestWithNewlineCharAndOneChar) {
     Text text("\n\nA");
 
-    ASSERT_EQ(text.text_lines_.size(), 3);
+    ASSERT_EQ(text.get_text_lines_size(), 3);
 }
 
 
@@ -46,7 +46,7 @@ TEST(TextTest, TestWithSpacesOneLine) {
 
     Text text(text_);
 
-    ASSERT_EQ(text.text_lines_.size(), 1);
+    ASSERT_EQ(text.get_text_lines_size(), 1);
 }
 
 
@@ -55,7 +55,7 @@ TEST(TextTest, TestWithSpacesTwoLine) {
 
     Text text(text_);
 
-    ASSERT_EQ(text.text_lines_.size(), 2);
+    ASSERT_EQ(text.get_text_lines_size(), 2);
 }
 
 
@@ -64,7 +64,7 @@ TEST(TextTest, TestWithSpacesThreeLines) {
 
     Text text(text_);
 
-    ASSERT_EQ(text.text_lines_.size(), 3);
+    ASSERT_EQ(text.get_text_lines_size(), 3);
 }
 
 
@@ -73,5 +73,5 @@ TEST(TextTest, TestWithSpacesAndNewLineThreeLines) {
 
     Text text(text_);
 
-    ASSERT_EQ(text.text_lines_.size(), 3);
+    ASSERT_EQ(text.get_text_lines_size(), 3);
 }

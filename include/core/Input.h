@@ -8,6 +8,7 @@
 #include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 #include "Text.h"
+#include "../engines/InputAccuracyEngine.h"
 
 
 class Input {
@@ -16,7 +17,6 @@ class Input {
         ftxui::Component get_input_component();
         [[nodiscard]] ftxui::Component get_accuracy_component() const;
         [[nodiscard]] const int& get_word_count_reference() const;
-        [[nodiscard]] float get_percentage_of_correct_input() const;
     private:
         int word_count_;
         int current_line_index_;
@@ -26,7 +26,7 @@ class Input {
         ftxui::Elements current_input_line_;
         std::vector<ftxui::Elements> previous_input_lines_;
         ftxui::Elements total_input_lines_;
-        std::vector<bool> character_accuracy_;
+        InputAccuracyEngine input_accuracy_;
 
         void add_element();
         void remove_element();
@@ -40,7 +40,6 @@ class Input {
         [[nodiscard]] bool should_go_to_next_line() const;
         [[nodiscard]] int get_previous_lines_size() const;
         [[nodiscard]] ftxui::Element get_next_character();
-        [[nodiscard]] ftxui::Element get_accuracy_element_() const;
 
         FRIEND_TEST(InputTest, Initialization);
         FRIEND_TEST(InputTestMultiLine, LineTransitionOnSpace);
