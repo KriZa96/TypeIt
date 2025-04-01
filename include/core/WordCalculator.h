@@ -7,7 +7,6 @@
 
 
 #include "ftxui/component/component.hpp"
-#include "../engines/WordCalculatorEngine.h"
 
 
 class WordCalculator {
@@ -17,7 +16,6 @@ class WordCalculator {
     private:
         const int& elapsed_time_;
         const int& word_count_;
-        const WordCalculatorEngine engine_;
 
         [[nodiscard]] ftxui::Element get_word_per_minute_element() const;
 };
