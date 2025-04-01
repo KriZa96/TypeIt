@@ -16,7 +16,7 @@ Text::Text(std::string text):
 
 
 void Text::push_line(ftxui::Elements& line, std::string& text, int& num_of_characters){
-    text_lines_.push_back(ftxui::hbox(line) | ftxui::color(ftxui::Color::Grey42));
+    text_lines_.push_back(ftxui::hbox(line) | Style::underlying_text_color);
     text_lines_strings_.push_back(text);
     text_lines_size_.push_back(num_of_characters);
     num_of_characters = 0;
@@ -94,7 +94,7 @@ char Text::get_char_at_line_and_position(const int line_index, const int char_in
     return text_lines_strings_[line_index][char_index];
 }
 
+
 ftxui::Elements Text::get_text_lines() const {
     return text_lines_;
 }
-

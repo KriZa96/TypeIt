@@ -2,11 +2,10 @@
 // Created by kriza on 01/04/2025.
 //
 
-#include "../../include/engines/InputLineEngine.h"
-
 #include <numeric>
 #include <utility>
 
+#include "../../include/engines/InputLineEngine.h"
 #include "../../include/data/Style.h"
 #include "../../include/data/GameState.h"
 
@@ -39,8 +38,8 @@ void InputLineEngine::go_to_new_line() {
 }
 
 
-bool InputLineEngine::should_go_to_next_line(char last_letter) const {
-    return last_letter == ' ' && current_line_index_ < text_instance_->get_text_lines_size() - 1 &&
+bool InputLineEngine::should_go_to_next_line(char next_character) const {
+    return next_character == ' ' && current_line_index_ < text_instance_->get_text_lines_size() - 1 &&
            current_input_line_.size() >= text_instance_->get_text_line_size(current_line_index_);
 }
 
@@ -51,13 +50,13 @@ bool InputLineEngine::should_finish_game() {
 }
 
 
-void InputLineEngine::add_element(char last_letter) {
+void InputLineEngine::add_element(char next_character) {
     if (should_finish_game()) {
         GameState::game_finished = true;
         return;
     }
-    current_input_line_.push_back(get_next_character(last_letter));
-    if (should_go_to_next_line(last_letter)) {
+    current_input_line_.push_back(get_next_character(next_character));
+    if (should_go_to_next_line(next_character)) {
         go_to_new_line();
     }
 }
@@ -74,13 +73,8 @@ void InputLineEngine::go_to_previous_line() {
 }
 
 
-bool InputLineEngine::should_go_to_previous_line(const std::string& input_text) const {
-    return !input_text.empty() && input_text.size() < get_previous_lines_size();
-}
-
-
-void InputLineEngine::remove_element(const std::string& input_text) {
-    if (should_go_to_previous_line(input_text)) {
+void InputLineEngine::remove_element(std::size_t input_text_size) {
+    if (input_text_size < get_previous_lines_size()) {
         go_to_previous_line();
         return;
     }
@@ -100,26 +94,26 @@ bool InputLineEngine::should_remove_element(std::size_t input_text_size) const {
 }
 
 
-void InputLineEngine::render_input_text(const std::string& input_text) {
-    if (should_add_element(input_text.size())) {
-        add_element(input_text.back());
+void InputLineEngine::render_input_text(char next_character, std::size_t input_text_size) {
+    if (should_add_element(input_text_size)) {
+        add_element(next_character);
     }
-    else if (should_remove_element(input_text.size())) {
-        remove_element(input_text);
+    else if (should_remove_element(input_text_size)) {
+        remove_element(input_text_size);
     }
     total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
 }
 
 
-[[nodiscard]] ftxui::Element InputLineEngine::get_next_character(const char last_letter) {
-    ftxui::Element new_character = ftxui::text(std::string(1, last_letter));
-    if (last_letter == text_instance_->get_char_at_line_and_position(
+[[nodiscard]] ftxui::Element InputLineEngine::get_next_character(const char next_character) {
+    ftxui::Element new_character = ftxui::text(std::string(1, next_character));
+    if (next_character == text_instance_->get_char_at_line_and_position(
   current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
           )) {
         input_accuracy_.push_character_accuracy(true);
         return new_character | Style::input_text_color_good;
     }
-    if (last_letter == ' ') {
+    if (next_character == ' ') {
         new_character = ftxui::text(std::string(1, '_'));
     }
     input_accuracy_.push_character_accuracy(false);
@@ -134,6 +128,14 @@ float InputLineEngine::get_percentage_of_correct_input() const {
 
 ftxui::Elements InputLineEngine::get_total_input_lines() const {
     return total_input_lines_;
-};
+}
 
 
+std::size_t InputLineEngine::get_current_line_index() const {
+    return current_line_index_;
+}
+
+
+[[nodiscard]] std::size_t InputLineEngine::get_current_line_size() const {
+    return current_input_line_.size();
+}

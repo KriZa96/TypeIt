@@ -23,7 +23,7 @@ ftxui::Component Input::get_input_component() {
         input_component_,
         [&] {
            if (!input_text_.empty()) {
-               input_line_.render_input_text(input_text_);
+               input_line_.render_input_text(input_text_.back(), input_text_.size());
                input_word_count_.set_word_count(input_text_);
            }
             return ftxui::vbox(input_line_.get_total_input_lines()) |

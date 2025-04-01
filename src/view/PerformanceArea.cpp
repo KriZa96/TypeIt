@@ -8,7 +8,6 @@
 #include "../../include/data/Style.h"
 
 
-
 PerformanceArea::PerformanceArea(
     ftxui::Component timer_component,
     ftxui::Component accuracy_component,

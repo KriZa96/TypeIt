@@ -6,7 +6,6 @@
 #define WORDCALCULATOR_H
 
 
-#include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 #include "../engines/WordCalculatorEngine.h"
 

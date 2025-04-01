@@ -26,6 +26,7 @@ add_executable(
         ${HEADER_FILES}
         ${SRC_FILES}
         ${TEST_FILES}
+        test_input_line_engine.cpp
 )
 
 target_link_libraries(

@@ -1,11 +1,12 @@
 //
 // Created by kil3 on 3/1/25.
 //
-#include "../../include/core/Timer.h"
+
 
 #include <format>
 #include <mutex>
 
+#include "../../include/core/Timer.h"
 #include "../../include/data/GameState.h"
 
 

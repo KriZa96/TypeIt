@@ -15,7 +15,5 @@ endif()
 
 project(TypeIt)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
 add_subdirectory(src)

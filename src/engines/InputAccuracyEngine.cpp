@@ -16,9 +16,9 @@ void InputAccuracyEngine::push_character_accuracy(bool value){
         return 0;
     }
     return 100.f * static_cast<float>(
-   std::count(
-       character_accuracy_.begin(),
-       character_accuracy_.end(),
-       true
-   )) / character_accuracy_size;
-}
+        std::count(
+           character_accuracy_.begin(),
+           character_accuracy_.end(),
+           true
+        )) / character_accuracy_size;
+    }

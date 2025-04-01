@@ -5,7 +5,6 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 #include "Text.h"
 #include "../engines/InputWordCountEngine.h"
@@ -14,7 +13,7 @@
 class Input {
     public:
         explicit Input(const std::shared_ptr<Text>& text_instance);
-        ftxui::Component get_input_component();
+        [[nodiscard]] ftxui::Component get_input_component();
         [[nodiscard]] ftxui::Component get_accuracy_component() const;
         [[nodiscard]] const int& get_word_count_reference() const;
     private:

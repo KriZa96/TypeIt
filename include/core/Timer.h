@@ -7,7 +7,6 @@
 
 #include <chrono>
 
-#include "gtest/gtest_prod.h"
 #include "ftxui/component/component.hpp"
 
 
@@ -21,10 +20,10 @@ class Timer {
         ftxui::Element get_time_element();
         ftxui::Component get_time_component();
     private:
-        std::chrono::steady_clock::time_point start_time_;
         int total_time_;
         int elapsed_time_;
         bool started_timer_;
+        std::chrono::steady_clock::time_point start_time_;
 };
 
 

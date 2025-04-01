@@ -2,10 +2,9 @@
 // Created by kil3 on 3/9/25.
 //
 
-#include "../../include/view/TextInputArea.h"
-
 #include <utility>
 
+#include "../../include/view/TextInputArea.h"
 #include "../../include/data/GameState.h"
 #include "../../include/data/Style.h"
 
