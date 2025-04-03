@@ -24,3 +24,10 @@ TEST_F(InputAccuracyTest, PercentageOfCorrectInput) {
 TEST_F(InputAccuracyTest, PercentageOfCorrectInputOnStart) {
     EXPECT_EQ(input_accuracy.get_percentage_of_correct_input(), 0.);
 }
+
+TEST_F(InputAccuracyTest, PercentageOfCorrectInput50Percent) {
+    input_accuracy.push_character_accuracy(true);
+    input_accuracy.push_character_accuracy(false);
+
+    EXPECT_EQ(input_accuracy.get_percentage_of_correct_input(), 50.);
+}
