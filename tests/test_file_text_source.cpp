@@ -38,3 +38,27 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
 
     EXPECT_EQ(result, "Hello world. This is a test file.");
 }
+
+
+TEST(FileTextSourceTest, IsFileValidTrue) {
+    std::string temp_filename = "temp_test.txt";
+    std::string expected_content = "Hello world.\nThis is a test file.";
+    create_temp_file(temp_filename, expected_content);
+
+    EXPECT_TRUE(FileTextSource::is_file_valid(temp_filename));
+}
+
+TEST(FileTextSourceTest, IsFileValidFalse) {
+    std::string temp_filename = "temp_test_.txt";
+
+    EXPECT_FALSE(FileTextSource::is_file_valid(temp_filename));
+}
+
+
+TEST(FileTextSourceTest, IsFileValidEmptyFile) {
+    std::string temp_filename = "temp_test_.txt";
+    std::string expected_content = "    ";
+    create_temp_file(temp_filename, expected_content);
+
+    EXPECT_FALSE(FileTextSource::is_file_valid(temp_filename));
+}

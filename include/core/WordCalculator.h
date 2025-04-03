@@ -21,5 +21,4 @@ class WordCalculator {
 };
 
 
-
 #endif //WORDCALCULATOR_H
