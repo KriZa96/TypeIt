@@ -123,6 +123,17 @@ TEST_F(InputLineTest, ShouldGoToPreviousLine) {
 }
 
 
+TEST_F(InputLineTest, ShouldRemoveFirstElement) {
+    input.render_input_text('a', 1);
+
+    ASSERT_EQ(input.get_current_line_size(), 1);
+
+    input.render_input_text(' ', 0);
+
+    EXPECT_EQ(input.get_current_line_size(), 0);
+}
+
+
 TEST_F(InputLineTest, ShouldNotGoToPreviousLine) {
     int i = 0;
     for (const auto& letter: std::string("line1 l")) {
