@@ -12,14 +12,14 @@
 
 class Input {
     public:
-        explicit Input(const std::shared_ptr<Text>& text_instance);
+        explicit Input(const Text& text_instance);
         [[nodiscard]] ftxui::Component get_input_component();
         [[nodiscard]] ftxui::Component get_accuracy_component() const;
         [[nodiscard]] const int& get_word_count_reference() const;
     private:
         std::string input_text_;
         ftxui::Component input_component_;
-        std::shared_ptr<Text> text_instance_;
+        const Text& text_instance_;
         InputWordCountEngine input_word_count_;
         InputLineEngine input_line_;
 };

@@ -11,7 +11,7 @@
 
 class InputLineEngine {
 public:
-    explicit InputLineEngine(std::shared_ptr<Text> text_instance);
+    explicit InputLineEngine(const Text& text_instance);
     void render_input_text(char next_character, std::size_t input_text_size);
     [[nodiscard]] float get_percentage_of_correct_input() const;
     [[nodiscard]] ftxui::Elements get_total_input_lines() const;
@@ -20,7 +20,7 @@ public:
 private:
     std::size_t current_line_index_;
     InputAccuracyEngine input_accuracy_;
-    std::shared_ptr<Text> text_instance_;
+    const Text& text_instance_;
     ftxui::Elements current_input_line_;
     ftxui::Elements total_input_lines_;
     std::vector<ftxui::Elements> previous_input_lines_;

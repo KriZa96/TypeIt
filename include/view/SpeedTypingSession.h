@@ -5,12 +5,15 @@
 #ifndef SPEEDTYPINGSESSION_H
 #define SPEEDTYPINGSESSION_H
 
+#include "../core/Timer.h"
 #include "../core/Input.h"
 #include "../core/Text.h"
 #include "../core/WordCalculator.h"
 #include "../interface/ITextSource.h"
+
 #include "PerformanceArea.h"
 #include "TextInputArea.h"
+
 #include "ftxui/component/component.hpp"
 
 
@@ -20,10 +23,10 @@ class SpeedTypingSession {
         [[nodiscard]] ftxui::Component get_speed_typing_session_component() const;
     private:
         std::shared_ptr<ITextSource> text_source_;
-        std::shared_ptr<Text> text_ptr_;
-        std::shared_ptr<Input> input_ptr_;
-        std::shared_ptr<Timer> timer_ptr_;
-        std::shared_ptr<WordCalculator> word_calculator_ptr_;
+        Text text_;
+        Input input_;
+        Timer timer_;
+        WordCalculator word_calculator_;
 
         TextInputArea text_input_area_;
         PerformanceArea performance_area_;

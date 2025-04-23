@@ -6,7 +6,7 @@
 #include "../../include/data/ComponentOptions.h"
 
 
-Input::Input(const std::shared_ptr<Text>& text_instance) :
+Input::Input(const Text& text_instance) :
     text_instance_(text_instance),
     input_line_(text_instance),
     input_component_(ftxui::Input(&input_text_))

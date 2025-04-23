@@ -12,7 +12,7 @@
 class InputLineTest : public ::testing::Test {
 protected:
     InputLineTest()
-        : text(std::make_shared<Text>("line1\nline 2\nThrid line\nsecond last line\nfinally last line.")),
+        : text("line1\nline 2\nThrid line\nsecond last line\nfinally last line."),
         input(text) {}
 
     void SetUp() override {
@@ -23,19 +23,19 @@ protected:
         FocusPosition::y = 0;
     }
 
-    std::shared_ptr<Text> text;
+    Text text;
     InputLineEngine input;
 };
 
 
 TEST_F(InputLineTest, Initialization) {
     EXPECT_EQ(input.get_current_line_index(), 0);
-    EXPECT_EQ(input.get_total_input_lines().size(), text->get_text_lines_size()+1);
+    EXPECT_EQ(input.get_total_input_lines().size(), text.get_text_lines_size()+1);
 }
 
 
 TEST_F(InputLineTest, LineTransitionOnSpace) {
-    EXPECT_EQ(text->get_text_lines_size(), 5);
+    EXPECT_EQ(text.get_text_lines_size(), 5);
 
     int i = 0;
     for (const auto& letter : std::string("line1 ")) {
@@ -86,7 +86,7 @@ TEST_F(InputLineTest, ShouldNotGoToNextLine) {
 TEST_F(InputLineTest, DoNothingWhenNoElements) {
     input.render_input_text(' ', 0);
     EXPECT_EQ(input.get_current_line_index(), 0);
-}
+}=
 
 
 TEST_F(InputLineTest, ShouldNotGoToNextLineLastLine) {

@@ -5,8 +5,6 @@
 #ifndef GAMESTATE_H
 #define GAMESTATE_H
 
-#include <filesystem>
-#include <fstream>
 #include "GameOptions.h"
 #include "../core/FileTextSource.h"
 

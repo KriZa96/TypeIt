@@ -10,10 +10,10 @@
 #include "../../include/data/GameState.h"
 
 
-InputLineEngine::InputLineEngine(std::shared_ptr<Text> text_instance):
+InputLineEngine::InputLineEngine(const Text& text_instance):
     current_line_index_(0),
     text_instance_(std::move(text_instance)),
-    total_input_lines_(text_instance_->get_text_lines_size()+1, ftxui::hbox(ftxui::text("")))
+    total_input_lines_(text_instance_.get_text_lines_size()+1, ftxui::hbox(ftxui::text("")))
 {}
 
 
@@ -32,21 +32,21 @@ void InputLineEngine::go_to_new_line() {
     total_input_lines_[current_line_index_++] = ftxui::hbox(current_input_line_);
     previous_input_lines_.push_back(current_input_line_);
     current_input_line_.clear();
-    if (current_line_index_ < text_instance_->get_text_lines_size() - 1) {
+    if (current_line_index_ < text_instance_.get_text_lines_size() - 1) {
         FocusPosition::y++;
     }
 }
 
 
 bool InputLineEngine::should_go_to_next_line(char next_character) const {
-    return next_character == ' ' && current_line_index_ < text_instance_->get_text_lines_size() - 1 &&
-           current_input_line_.size() >= text_instance_->get_text_line_size(current_line_index_);
+    return next_character == ' ' && current_line_index_ < text_instance_.get_text_lines_size() - 1 &&
+           current_input_line_.size() >= text_instance_.get_text_line_size(current_line_index_);
 }
 
 
 bool InputLineEngine::should_finish_game() {
-    return current_line_index_ + 1 >= text_instance_->get_text_lines_size() &&
-           current_input_line_.size() + 1 >= text_instance_->get_text_line_size(current_line_index_);
+    return current_line_index_ + 1 >= text_instance_.get_text_lines_size() &&
+           current_input_line_.size() + 1 >= text_instance_.get_text_line_size(current_line_index_);
 }
 
 
@@ -67,7 +67,7 @@ void InputLineEngine::go_to_previous_line() {
     current_line_index_ ? current_line_index_-- : 0;
     current_input_line_ = previous_input_lines_[current_line_index_];
     previous_input_lines_.pop_back();
-    if (current_line_index_ < text_instance_->get_text_lines_size() - 2) {
+    if (current_line_index_ < text_instance_.get_text_lines_size() - 2) {
         FocusPosition::y--;
     }
 }
@@ -109,7 +109,7 @@ void InputLineEngine::render_input_text(char next_character, std::size_t input_t
 // Transforms character to ftxui element.
 [[nodiscard]] ftxui::Element InputLineEngine::get_next_character(const char next_character) {
     ftxui::Element new_character = ftxui::text(std::string(1, next_character));
-    if (next_character == text_instance_->get_char_at_line_and_position(
+    if (next_character == text_instance_.get_char_at_line_and_position(
   current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
           )) {
         input_accuracy_.push_character_accuracy(true);

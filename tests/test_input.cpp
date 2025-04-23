@@ -12,7 +12,7 @@
 class InputTest : public ::testing::Test {
 protected:
     InputTest()
-        : text(std::make_shared<Text>("line1\nline2")),
+        : text("line1\nline2"),
         input(text) {}
 
     void SetUp() override {
@@ -23,7 +23,7 @@ protected:
         FocusPosition::y = 0;
     }
 
-    std::shared_ptr<Text> text;
+    Text text;
     Input input;
 };
 
