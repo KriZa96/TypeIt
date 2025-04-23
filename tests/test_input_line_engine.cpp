@@ -86,7 +86,7 @@ TEST_F(InputLineTest, ShouldNotGoToNextLine) {
 TEST_F(InputLineTest, DoNothingWhenNoElements) {
     input.render_input_text(' ', 0);
     EXPECT_EQ(input.get_current_line_index(), 0);
-}=
+}
 
 
 TEST_F(InputLineTest, ShouldNotGoToNextLineLastLine) {
