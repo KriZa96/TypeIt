@@ -8,6 +8,8 @@
 Screen::Screen():
 screen_(ftxui::ScreenInteractive::Fullscreen())
 {
+    // Launch a background thread to periodically trigger UI refreshes.
+    // This ensures real-time updates for the timer, WPM, and typing accuracy.
     start_refresh();
     screen_thread_ = std::thread(
         [this] {

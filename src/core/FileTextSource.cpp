@@ -9,6 +9,7 @@
 #include <utility>
 #include <algorithm>
 
+
 FileTextSource::FileTextSource(std::string  file_path) : file_path_(std::move(file_path)) {}
 
 
@@ -23,6 +24,7 @@ std::string FileTextSource::get_text() const {
         content += line + " ";
     }
 
+    // Remove trailing space added after the last line.
     content.pop_back();
 
     return content;
@@ -38,6 +40,7 @@ bool FileTextSource::is_file_valid(const std::string& path) {
         return false;
     }
 
+    // Checks if at least one line contains non-whitespace characters.
     std::string line;
     while (std::getline(file_stream, line)) {
         if (!line.empty() &&

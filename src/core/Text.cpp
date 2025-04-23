@@ -33,10 +33,16 @@ void Text::populate_text_lines() {
     for (int index = 0; index < text_.size(); index++) {
         char current_character = text_[index];
 
+        // Newline characters are treated as spaces to simulate uninterrupted flow.
+        // This ensures users type as if the text is a single continuous line
         line.push_back(ftxui::text(std::string(1, current_character == '\n' ? ' ' : current_character)));
         text += current_character == '\n' ? ' ' : current_character;
         num_of_characters++;
 
+        // Determine whether to start a new visual line:
+        // - If the current character is a newline
+        // - If the line exceeds 55 characters and ends at a space
+        // - If this is the last character in the input
         bool should_go_to_next_line = (
             current_character == '\n' || (current_character == ' ' && line.size() >= 55 || index == text_.size() - 1)
         );

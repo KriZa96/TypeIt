@@ -4,7 +4,6 @@
 
 
 #include <format>
-#include <mutex>
 
 #include "../../include/core/Timer.h"
 #include "../../include/data/GameState.h"
@@ -19,13 +18,17 @@ Timer::Timer(const int total_time):
 
 
 int Timer::get_elapsed_time() {
+    // If no game session is active, return the previously stored elapsed time.
     if (!GameState::game_session_in_progress) {
         return elapsed_time_;
     }
+    // If game session started but timer not started yet, start the timer.
     if (!started_timer_) {
         start_timer();
         start_time_ = std::chrono::steady_clock::now();
     }
+    // If the allowed time has elapsed or the game has already finished,
+    // mark the game as finished and return the capped total time.
     if (elapsed_time_ >= total_time_ || GameState::game_finished) {
         GameState::game_finished = true;
         return total_time_;

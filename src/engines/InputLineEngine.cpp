@@ -101,10 +101,12 @@ void InputLineEngine::render_input_text(char next_character, std::size_t input_t
     else if (should_remove_element(input_text_size)) {
         remove_element(input_text_size);
     }
+    // Update total input line with current line
     total_input_lines_[current_line_index_] = ftxui::hbox(current_input_line_);
 }
 
 
+// Transforms character to ftxui element.
 [[nodiscard]] ftxui::Element InputLineEngine::get_next_character(const char next_character) {
     ftxui::Element new_character = ftxui::text(std::string(1, next_character));
     if (next_character == text_instance_->get_char_at_line_and_position(
@@ -113,6 +115,7 @@ void InputLineEngine::render_input_text(char next_character, std::size_t input_t
         input_accuracy_.push_character_accuracy(true);
         return new_character | Style::input_text_color_good;
     }
+    // If the character is a space, replace it with an underscore for visual purposes.
     if (next_character == ' ') {
         new_character = ftxui::text(std::string(1, '_'));
     }

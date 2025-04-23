@@ -40,5 +40,3 @@ ftxui::Component Input::get_accuracy_component() const {
         }
     );
 }
-
-

@@ -4,7 +4,6 @@
 
 #include "../../include/core/Menu.h"
 
-#include "../../include/core/FileTextSource.h"
 #include "../../include/core/Screen.h"
 #include "../../include/data/GameOptions.h"
 #include "../../include/data/GameState.h"
