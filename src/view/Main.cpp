@@ -9,7 +9,7 @@
 
 Main::Main():
     menu_(screen.get_screen_reference()),
-    speed_typing_session_(std::make_shared<SpeedTypingSession>()),
+    speed_typing_session_(std::make_unique<SpeedTypingSession>()),
     speed_typing_session_component_(speed_typing_session_->get_speed_typing_session_component()),
     menu_component_(menu_.get_menu_component()),
     container_(
@@ -34,7 +34,7 @@ ftxui::Component Main::get_speed_typing_session_component_maybe() const {
 }
 
 void Main::refresh_game_session() {
-    speed_typing_session_ = std::make_shared<SpeedTypingSession>();
+    speed_typing_session_ = std::make_unique<SpeedTypingSession>();
     speed_typing_session_component_ = speed_typing_session_->get_speed_typing_session_component();
     container_->DetachAllChildren();
     container_->Add(get_main_component_maybe());

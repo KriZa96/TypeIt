@@ -17,7 +17,7 @@ class Main {
     private:
         Screen screen;
         Menu menu_;
-        std::shared_ptr<SpeedTypingSession> speed_typing_session_;
+        std::unique_ptr<SpeedTypingSession> speed_typing_session_;
 
         ftxui::Component speed_typing_session_component_;
         ftxui::Component menu_component_;
