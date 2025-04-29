@@ -1,5 +1,5 @@
 //
-// Created by kil3 on 3/13/25.
+// Created by Kristijan Zalac on 3/13/25.
 //
 
 #ifndef GAMEOPTIONS_H

@@ -1,5 +1,5 @@
 //
-// Created by kriza on 31/03/2025.
+// Created by Kristijan Zalac on 31/03/2025.
 // Tracks the accuracy of user input by storing a vector of boolean values.
 //
 
