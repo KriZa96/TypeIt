@@ -5,7 +5,10 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <memory>
+
 #include "ftxui/component/component.hpp"
+
 #include "../core/Menu.h"
 #include "../core/Screen.h"
 #include "SpeedTypingSession.h"
@@ -28,7 +31,6 @@ class Main {
         ftxui::Component get_main_component();
         ftxui::Component get_main_component_maybe() const;
         ftxui::Component get_speed_typing_session_component_maybe() const;
-
 };
 
 

@@ -7,35 +7,40 @@
 
 
 TEST(TextTest, TestTextEmpty) {
-    Text text("");
+    std::string text_ = "";
+    Text text(text_);
 
     EXPECT_TRUE(text.get_text_lines().empty());
 }
 
 
 TEST(TextTest, TestTextNotEmpty) {
-    Text text("Hello");
+    std::string text_ = "Hello";
+    Text text(text_);
 
     EXPECT_FALSE(text.get_text_lines().empty());
 }
 
 
 TEST(TextTest, TestWithnewlineChar) {
-    Text text("Hello\nNo\nHello");
+    std::string text_ = "Hello\nNo\nHello";
+    Text text(text_);
 
     ASSERT_EQ(text.get_text_lines_size(), 3);
 }
 
 
 TEST(TextTest, TestWithOnlyNewlineChar) {
-    Text text("\n\n");
+    std::string text_ = "\n\n";
+    Text text(text_);
 
     ASSERT_EQ(text.get_text_lines_size(), 2);
 }
 
 
 TEST(TextTest, TestWithNewlineCharAndOneChar) {
-    Text text("\n\nA");
+    std::string text_ = "\n\nA";
+    Text text(text_);
 
     ASSERT_EQ(text.get_text_lines_size(), 3);
 }

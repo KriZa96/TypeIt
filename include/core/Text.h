@@ -5,7 +5,6 @@
 #ifndef TEXT_H
 #define TEXT_H
 
-#include <memory>
 #include <vector>
 
 #include "ftxui/component/component.hpp"
