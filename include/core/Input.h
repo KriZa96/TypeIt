@@ -19,7 +19,6 @@ class Input {
     private:
         std::string input_text_;
         ftxui::Component input_component_;
-        Text text_instance_;
         InputWordCountEngine input_word_count_;
         InputLineEngine input_line_;
 };
