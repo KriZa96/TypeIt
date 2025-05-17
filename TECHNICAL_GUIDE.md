@@ -1,3 +1,9 @@
+---
+title: Technical Guide
+layout: template
+filename: TECHNICAL_GUIDE.md
+--- 
+
 # Speed Typing Application - Technical Guide
 
 ## Table of Contents
