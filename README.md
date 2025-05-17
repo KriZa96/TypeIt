@@ -102,3 +102,6 @@ Verify the installation of the required tools:
 ```shell
   Copy-Item "cmake-build\src\Debug\TypeIt.exe" -Destination "$env:USERPROFILE\Desktop\"
 ```
+
+
+Go to [Technical Guide](TECHNICAL_GUIDE.md)
