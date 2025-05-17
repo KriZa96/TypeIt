@@ -1,6 +1,7 @@
 //
 // Created by Kristijan Zalac on 31/03/2025.
 //
+
 #include <gtest/gtest.h>
 
 #include "../include/engines/InputWordCountEngine.h"

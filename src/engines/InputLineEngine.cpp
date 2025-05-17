@@ -12,7 +12,7 @@
 
 InputLineEngine::InputLineEngine(const Text& text_instance):
     current_line_index_(0),
-    text_instance_(std::move(text_instance)),
+    text_instance_(text_instance),
     total_input_lines_(text_instance_.get_text_lines_size()+1, ftxui::hbox(ftxui::text("")))
 {}
 
