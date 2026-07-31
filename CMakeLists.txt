@@ -11,7 +11,7 @@ include(CompilerWarnings)
 option(TYPEIT_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
 include(Dependencies)
 
-# src first: it exports the source list the test target reuses.
+# src first: it defines the typeit_legacy target the test binary links.
 add_subdirectory(src)
 
 # enable_testing() belongs at the top level, or ctest run from the build

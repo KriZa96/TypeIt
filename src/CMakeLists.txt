@@ -1,6 +1,11 @@
 # Sources are listed, not globbed: a glob does not trigger a reconfigure, so a
 # new file silently is not built until someone works out why.
-set(TYPEIT_LEGACY_SOURCES
+#
+# typeit_legacy exists only so the executable and the test binary stop
+# compiling the same fifteen files twice. It is deleted whole at the Phase 4
+# cutover (TI-097); nothing new should be added to it.
+add_library(
+    typeit_legacy STATIC
     core/FileTextSource.cpp
     core/Input.cpp
     core/Menu.cpp
@@ -17,13 +22,12 @@ set(TYPEIT_LEGACY_SOURCES
     view/SpeedTypingSession.cpp
     view/TextInputArea.cpp)
 
-list(TRANSFORM TYPEIT_LEGACY_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-set(TYPEIT_LEGACY_SOURCES
-    ${TYPEIT_LEGACY_SOURCES}
-    PARENT_SCOPE)
+target_link_libraries(typeit_legacy PUBLIC ftxui::dom ftxui::screen ftxui::component)
 
-add_executable(TypeIt main.cpp ${TYPEIT_LEGACY_SOURCES})
+typeit_set_warnings(typeit_legacy)
 
-target_link_libraries(TypeIt PRIVATE ftxui::dom ftxui::screen ftxui::component)
+add_executable(TypeIt main.cpp)
+
+target_link_libraries(TypeIt PRIVATE typeit_legacy)
 
 typeit_set_warnings(TypeIt)

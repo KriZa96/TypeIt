@@ -10,10 +10,9 @@ add_executable(
     test_text.cpp
     test_timer.cpp
     test_word_calculator.cpp
-    test_word_count.cpp
-    ${TYPEIT_LEGACY_SOURCES})
+    test_word_count.cpp)
 
-target_link_libraries(tests PRIVATE GTest::gtest GTest::gtest_main ftxui::dom ftxui::screen ftxui::component)
+target_link_libraries(tests PRIVATE typeit_legacy GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(tests)
