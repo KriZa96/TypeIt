@@ -3,6 +3,7 @@
 //
 
 
+#include <algorithm>
 #include <format>
 
 #include "../../include/core/Timer.h"

@@ -17,10 +17,26 @@ defaults:
     shell: bash
 
 jobs:
-  linux-gcc-debug:
-    name: linux-gcc-debug
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - name: linux-gcc-debug
+            os: ubuntu-latest
+            compiler: gcc
+            build-type: Debug
+            cmake-args: ""
+          # First time this codebase has ever been compiled by MSVC. `-utf-8`
+          # rather than `/utf-8`: a `/`-prefixed argument is mangled into a
+          # Windows path by the MSYS layer under `shell: bash`.
+          - name: windows-msvc-debug
+            os: windows-latest
+            compiler: msvc
+            build-type: Debug
+            cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -31,8 +47,9 @@ jobs:
       # and bootstraps vcpkg itself on first configure.
       - uses: ./.github/actions/setup-build
         with:
-          compiler: gcc
-          build-type: Debug
+          compiler: ${{ matrix.compiler }}
+          build-type: ${{ matrix.build-type }}
+          cmake-args: ${{ matrix.cmake-args }}
 
       - name: Build
         run: cmake --build build --parallel
@@ -44,12 +61,12 @@ jobs:
 
       - name: Summarise test results
         if: always()
-        run: scripts/junit-summary.py junit.xml linux-gcc-debug
+        run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/junit-summary.py junit.xml "${{ matrix.name }}"
 
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: junit-linux-gcc-debug
+          name: junit-${{ matrix.name }}
           path: junit.xml
           if-no-files-found: ignore
