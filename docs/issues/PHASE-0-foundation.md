@@ -207,9 +207,11 @@ test succeeds. This is the acceptance test.
 
 **Type** build · **Size** XS · **Priority** P0 · **Depends on** TI-007 · **Docs** [REVIEW D1, D2](../CODEBASE_REVIEW.md#5-build-tooling-and-ci)
 
-The top-level `CMakeLists.txt` forces `CMAKE_C_COMPILER`/`CMAKE_CXX_COMPILER` to `gcc`/`cl` and
-sets `CMAKE_TOOLCHAIN_FILE` as a normal variable, so clang and clang-cl cannot be used and the
-toolchain cannot be overridden from the command line.
+The top-level `CMakeLists.txt` sets `CMAKE_C_COMPILER`/`CMAKE_CXX_COMPILER` and
+`CMAKE_TOOLCHAIN_FILE` as normal variables. **Partly addressed by CI-005**, which had to make
+both conditional — otherwise the `linux-clang-debug` and `windows-clang-cl` jobs would have
+silently built with gcc and cl. They are still assigned, just no longer unconditionally, and
+this issue deletes the block outright.
 
 **Scope**
 - In: delete both `set()` blocks; compiler comes from the preset or `CC`/`CXX`; toolchain comes

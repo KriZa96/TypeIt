@@ -46,7 +46,7 @@ jobs:
 
       # Pinned exactly: two clang-format releases disagree about enough to make
       # an unpinned check a coin toss.
-      - run: pip install --quiet clang-format==18.1.8
+      - run: python3 -m pip install --quiet clang-format==18.1.8
 
       - run: git ls-files '*.cpp' '*.h' | xargs clang-format --dry-run --Werror
 
