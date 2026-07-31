@@ -1,0 +1,61 @@
+name: Sanitizers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  asan-ubsan:
+    name: asan-ubsan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          submodules: recursive # TI-008 removes the vcpkg submodule
+          persist-credentials: false
+
+      # `-fno-sanitize-recover=all` so a finding aborts rather than printing and
+      # carrying on with a green exit code. `_GLIBCXX_ASSERTIONS` turns an
+      # out-of-range operator[] into a clean abort, which is the class of bug
+      # the current line engine avoids only by accident.
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: clang
+          build-type: Debug
+          cmake-args: >-
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer
+            -fno-sanitize-recover=all -D_GLIBCXX_ASSERTIONS"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: ctest --test-dir build/tests --output-on-failure --output-junit "$GITHUB_WORKSPACE/junit.xml"
+
+      - name: Summarise test results
+        if: always()
+        run: python3 scripts/junit-summary.py junit.xml asan-ubsan
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: junit-asan-ubsan
+          path: junit.xml
+          if-no-files-found: ignore
