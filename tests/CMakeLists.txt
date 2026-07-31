@@ -10,6 +10,7 @@ add_executable(
     test_text.cpp
     test_timer.cpp
     test_word_calculator.cpp
+    test_version.cpp
     test_word_count.cpp)
 
 target_link_libraries(tests PRIVATE typeit_legacy GTest::gtest GTest::gtest_main)

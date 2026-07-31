@@ -1,0 +1,23 @@
+// Generated from cmake/Version.h.in. Do not edit, and do not write a version
+// literal anywhere else: this file is the only place one exists (VERSIONING
+// section 6).
+#ifndef TYPEIT_CORE_VERSION_H
+#define TYPEIT_CORE_VERSION_H
+
+namespace typeit {
+
+inline constexpr int kVersionMajor = @PROJECT_VERSION_MAJOR@;
+inline constexpr int kVersionMinor = @PROJECT_VERSION_MINOR@;
+inline constexpr int kVersionPatch = @PROJECT_VERSION_PATCH@;
+inline constexpr const char* kVersionPrerelease = "@TYPEIT_VERSION_PRERELEASE@";
+
+/// "2.0.0" or "2.0.0-alpha.1".
+inline constexpr const char* kVersionString = "@TYPEIT_VERSION_FULL@";
+
+/// "v2.0.0-alpha.1-3-gabc1234", or empty in a tarball with no git history.
+/// Diagnostic only: never branch on this.
+inline constexpr const char* kGitDescribe = "@TYPEIT_GIT_DESCRIBE@";
+
+}  // namespace typeit
+
+#endif  // TYPEIT_CORE_VERSION_H

@@ -22,7 +22,7 @@ add_library(
     view/SpeedTypingSession.cpp
     view/TextInputArea.cpp)
 
-target_link_libraries(typeit_legacy PUBLIC ftxui::dom ftxui::screen ftxui::component)
+target_link_libraries(typeit_legacy PUBLIC typeit_version ftxui::dom ftxui::screen ftxui::component)
 
 typeit_set_warnings(typeit_legacy)
 typeit_enable_sanitizers(typeit_legacy)

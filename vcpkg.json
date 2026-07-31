@@ -1,6 +1,5 @@
   {
     "name" : "typeit",
-    "version-string" : "1.0.0",
     "dependencies" : [ {
       "name" : "ftxui",
       "version>=" : "5.0.0"
