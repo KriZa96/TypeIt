@@ -1,0 +1,172 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "TYPEIT_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "linux-base",
+      "hidden": true,
+      "inherits": "base",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "inherits": "base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "linux-gcc-debug",
+      "displayName": "Linux gcc Debug",
+      "description": "The everyday build. Warnings are errors here so they are found before CI finds them.",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TYPEIT_WERROR": "ON"
+      }
+    },
+    {
+      "name": "linux-gcc-release",
+      "displayName": "Linux gcc RelWithDebInfo",
+      "description": "Optimised, with symbols. Catches what only appears at -O2.",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "linux-clang-debug",
+      "displayName": "Linux clang Debug",
+      "description": "A second front end. clang and gcc disagree about plenty.",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux-clang-asan",
+      "displayName": "Linux clang ASan + UBSan",
+      "description": "Requires TYPEIT_SANITIZERS, which lands in TI-013.",
+      "inherits": "linux-clang-debug",
+      "cacheVariables": {
+        "TYPEIT_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "linux-tidy",
+      "displayName": "Linux clang-tidy",
+      "description": "Requires TYPEIT_CLANG_TIDY, which lands in TI-014.",
+      "inherits": "linux-clang-debug",
+      "cacheVariables": {
+        "TYPEIT_CLANG_TIDY": "ON"
+      }
+    },
+    {
+      "name": "linux-coverage",
+      "displayName": "Linux gcc coverage",
+      "description": "Requires TYPEIT_COVERAGE, which lands with the coverage workflow in CI-009.",
+      "inherits": "linux-gcc-debug",
+      "cacheVariables": {
+        "TYPEIT_WERROR": "OFF",
+        "TYPEIT_COVERAGE": "ON"
+      }
+    },
+    {
+      "name": "windows-msvc-debug",
+      "displayName": "Windows MSVC Debug",
+      "description": "Run from a developer command prompt, or with the MSVC environment already set.",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Windows MSVC RelWithDebInfo",
+      "inherits": "windows-msvc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "windows-clang-cl",
+      "displayName": "Windows clang-cl Debug",
+      "description": "Catches MSVC-specific workarounds that are actually bugs.",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "vcpkg",
+      "displayName": "vcpkg toolchain",
+      "description": "Dependencies through vcpkg instead of FetchContent. Needs VCPKG_ROOT set.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    }
+  ],
+  "buildPresets": [
+    {"name": "linux-gcc-debug", "configurePreset": "linux-gcc-debug"},
+    {"name": "linux-gcc-release", "configurePreset": "linux-gcc-release"},
+    {"name": "linux-clang-debug", "configurePreset": "linux-clang-debug"},
+    {"name": "linux-clang-asan", "configurePreset": "linux-clang-asan"},
+    {"name": "linux-tidy", "configurePreset": "linux-tidy"},
+    {"name": "linux-coverage", "configurePreset": "linux-coverage"},
+    {"name": "windows-msvc-debug", "configurePreset": "windows-msvc-debug"},
+    {"name": "windows-msvc-release", "configurePreset": "windows-msvc-release"},
+    {"name": "windows-clang-cl", "configurePreset": "windows-clang-cl"},
+    {"name": "vcpkg", "configurePreset": "vcpkg"}
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error"}
+    },
+    {"name": "linux-gcc-debug", "inherits": "base", "configurePreset": "linux-gcc-debug"},
+    {"name": "linux-gcc-release", "inherits": "base", "configurePreset": "linux-gcc-release"},
+    {"name": "linux-clang-debug", "inherits": "base", "configurePreset": "linux-clang-debug"},
+    {"name": "linux-clang-asan", "inherits": "base", "configurePreset": "linux-clang-asan"},
+    {"name": "linux-tidy", "inherits": "base", "configurePreset": "linux-tidy"},
+    {"name": "linux-coverage", "inherits": "base", "configurePreset": "linux-coverage"},
+    {"name": "windows-msvc-debug", "inherits": "base", "configurePreset": "windows-msvc-debug"},
+    {"name": "windows-msvc-release", "inherits": "base", "configurePreset": "windows-msvc-release"},
+    {"name": "windows-clang-cl", "inherits": "base", "configurePreset": "windows-clang-cl"},
+    {"name": "vcpkg", "inherits": "base", "configurePreset": "vcpkg"}
+  ]
+}

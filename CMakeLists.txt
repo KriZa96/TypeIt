@@ -11,7 +11,10 @@ include(CompilerWarnings)
 option(TYPEIT_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
 include(Dependencies)
 
+# enable_testing() belongs at the top level, or ctest run from the build
+# root -- which is what `ctest --preset` does -- finds nothing.
 if(TYPEIT_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 

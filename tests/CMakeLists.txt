@@ -1,5 +1,3 @@
-enable_testing()
-
 file(
         GLOB
         SRC_FILES
