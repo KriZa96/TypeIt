@@ -1,6 +1,3 @@
-find_package(GTest CONFIG REQUIRED)
-find_package(ftxui CONFIG REQUIRED)
-
 enable_testing()
 
 file(
