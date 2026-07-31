@@ -17,11 +17,36 @@ defaults:
     shell: bash
 
 jobs:
+  # The workflow itself always triggers: a path filter on `on:` would stop the
+  # aggregator reporting at all, and a required check that never reports blocks
+  # the pull request forever.
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: filter
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: scripts/changed-paths.sh
+
   build:
     name: ${{ matrix.name }}
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    continue-on-error: ${{ matrix.optional }}
     strategy:
+      # One platform failing must not hide whether the others are broken too.
+      fail-fast: false
       matrix:
         include:
           - name: linux-gcc-debug
@@ -29,14 +54,47 @@ jobs:
             compiler: gcc
             build-type: Debug
             cmake-args: ""
-          # First time this codebase has ever been compiled by MSVC. `-utf-8`
-          # rather than `/utf-8`: a `/`-prefixed argument is mangled into a
-          # Windows path by the MSYS layer under `shell: bash`.
+            optional: false
+          - name: linux-gcc-release
+            os: ubuntu-latest
+            compiler: gcc
+            build-type: RelWithDebInfo
+            cmake-args: ""
+            optional: false
+          - name: linux-clang-debug
+            os: ubuntu-latest
+            compiler: clang
+            build-type: Debug
+            cmake-args: ""
+            optional: false
+          # `-utf-8` rather than `/utf-8`: a `/`-prefixed argument is mangled
+          # into a Windows path by the MSYS layer under `shell: bash`.
           - name: windows-msvc-debug
             os: windows-latest
             compiler: msvc
             build-type: Debug
             cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+            optional: false
+          - name: windows-msvc-release
+            os: windows-latest
+            compiler: msvc
+            build-type: RelWithDebInfo
+            cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+            optional: false
+          - name: windows-clang-cl
+            os: windows-latest
+            compiler: clang-cl
+            build-type: Debug
+            cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+            optional: false
+          # macOS is not a supported platform. It is here because libc++ finds
+          # what neither libstdc++ nor MSVC will, and it never blocks a merge.
+          - name: macos-clang-debug
+            os: macos-latest
+            compiler: clang
+            build-type: Debug
+            cmake-args: ""
+            optional: true
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -70,3 +128,20 @@ jobs:
           name: junit-${{ matrix.name }}
           path: junit.xml
           if-no-files-found: ignore
+
+  # The single required status check. It exists so that a docs-only pull
+  # request, where `build` is legitimately skipped, can still be merged.
+  all-checks-passed:
+    name: all-checks-passed
+    if: always()
+    needs: [changes, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check results
+        run: |
+          echo "changes=${{ needs.changes.result }} build=${{ needs.build.result }}"
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "::error::a required job failed or was cancelled"
+            exit 1
+          fi
