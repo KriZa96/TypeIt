@@ -25,9 +25,11 @@ add_library(
 target_link_libraries(typeit_legacy PUBLIC ftxui::dom ftxui::screen ftxui::component)
 
 typeit_set_warnings(typeit_legacy)
+typeit_enable_sanitizers(typeit_legacy)
 
 add_executable(TypeIt main.cpp)
 
 target_link_libraries(TypeIt PRIVATE typeit_legacy)
 
 typeit_set_warnings(TypeIt)
+typeit_enable_sanitizers(TypeIt)
