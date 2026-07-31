@@ -44,16 +44,6 @@ Before building and running the project, ensure you have the following tools ins
 
 ****
 
-### **Initialize Git Submodule**
-
-Regardless of whether you're on Windows or Linux, you must initialize the Git submodule:
-
-```bash
-   git submodule update --init --recursive
-```
-
-****
-
 ### *LINUX*
 
 Verify the installation of the required tools:

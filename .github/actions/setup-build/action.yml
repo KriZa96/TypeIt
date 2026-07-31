@@ -15,18 +15,11 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Cache locations and dependency pins
-      id: pins
+    - name: Cache location
       shell: bash
       run: |
-        mkdir -p .vcpkg-cache .deps
-        {
-          echo "VCPKG_DEFAULT_BINARY_CACHE=$GITHUB_WORKSPACE/.vcpkg-cache"
-          echo "FETCHCONTENT_BASE_DIR=$GITHUB_WORKSPACE/.deps"
-        } >> "$GITHUB_ENV"
-        # The vcpkg submodule commit is a dependency pin like any other; it
-        # disappears with TI-008 and the FetchContent pins take over.
-        echo "vcpkg=$(git rev-parse HEAD:external/vcpkg 2>/dev/null || echo none)" >> "$GITHUB_OUTPUT"
+        mkdir -p .deps
+        echo "FETCHCONTENT_BASE_DIR=$GITHUB_WORKSPACE/.deps" >> "$GITHUB_ENV"
 
     - name: Toolchain (Linux)
       if: runner.os == 'Linux'
@@ -64,10 +57,8 @@ runs:
       id: deps
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
-        path: |
-          .vcpkg-cache
-          .deps
-        key: deps-${{ runner.os }}-${{ inputs.compiler }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'cmake/Dependencies.cmake') }}-${{ steps.pins.outputs.vcpkg }}
+        path: .deps
+        key: deps-${{ runner.os }}-${{ inputs.compiler }}-${{ hashFiles('cmake/Dependencies.cmake', 'vcpkg.json') }}
 
     - name: Compiler cache
       uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1

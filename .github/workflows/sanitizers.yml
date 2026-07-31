@@ -24,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          submodules: recursive # TI-008 removes the vcpkg submodule
           persist-credentials: false
 
       # `-fno-sanitize-recover=all` so a finding aborts rather than printing and
