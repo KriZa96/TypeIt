@@ -21,3 +21,4 @@ add_test(all_tests tests)
 
 typeit_set_warnings(tests)
 typeit_enable_sanitizers(tests)
+typeit_enable_static_analysis(tests)

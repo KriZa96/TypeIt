@@ -1,6 +1,9 @@
-# Static analysis. TI-014 finalises this set; what has to be true today is that
-# new code is checked from its first line and that the legacy tree is excluded
-# explicitly rather than by silence (see src/.clang-tidy).
+# Static analysis for everything outside the legacy tree, which carries its own
+# override in src/.clang-tidy and tests/.clang-tidy.
+#
+# The exclusions are the checks that argue with this project's style rather
+# than finding defects in it; everything else stays on, and new code is clean
+# from its first line.
 Checks: >
   -*,
   bugprone-*,
@@ -13,4 +16,5 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-magic-numbers
 WarningsAsErrors: "*"
-HeaderFilterRegex: "^(libs|include)/"
+# include/ is legacy and is not checked; new headers live under libs/.
+HeaderFilterRegex: "^libs/"

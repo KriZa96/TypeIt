@@ -1,0 +1,10 @@
+# Legacy tree. Added 2026-07-31 (TI-014); deleted by TI-097, which deletes the
+# code it covers.
+#
+# The check set is emptied rather than the directory skipped, so a new
+# directory added tomorrow inherits the root .clang-tidy instead of this. The
+# one check left enabled is a construct this code does not contain: clang-tidy
+# refuses to run at all with no checks enabled, so "-*" alone would fail the
+# build rather than pass it quietly.
+Checks: "-*,bugprone-spuriously-wake-up-functions"
+WarningsAsErrors: ""

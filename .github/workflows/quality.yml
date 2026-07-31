@@ -60,9 +60,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # clang, not gcc: clang-tidy reads this compile database, and the
+      # gcc-only warning flags in it are unknown-warning-option errors to
+      # clang-tidy.
       - uses: ./.github/actions/setup-build
         with:
-          compiler: gcc
+          compiler: clang
           cmake-args: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: cppcheck
