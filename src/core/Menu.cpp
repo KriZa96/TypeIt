@@ -31,10 +31,7 @@ Menu::Menu(ftxui::ScreenInteractive& screen) :
     menu_container_(get_menu_container_()) {}
 
 
-void Menu::exit_application() const {
-    screen_.ExitLoopClosure();
-    screen_.Exit();
-}
+void Menu::exit_application() const { screen_.Exit(); }
 
 
 ftxui::Component Menu::get_menu_component() const {
