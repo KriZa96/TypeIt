@@ -12,24 +12,26 @@
 #include "ftxui/component/component.hpp"
 
 struct ComponentOptions {
-    static inline ftxui::RadioboxOption menu_radiobox_option = {.transform = [](const ftxui::EntryState& state) {
+    static inline ftxui::RadioboxOption menu_radiobox_option = {
+            .entries = {}, .transform = [](const ftxui::EntryState& state) {
 #if defined(FTXUI_MICROSOFT_TERMINAL_FALLBACK)
-        auto prefix = ftxui::text(state.state ? "(*) " : "( ) ") | ftxui::color(ftxui::Color::Grey85);
+                auto prefix = ftxui::text(state.state ? "(*) " : "( ) ") | ftxui::color(ftxui::Color::Grey85);
 #else
             auto prefix = ftxui::text(state.state ? "◉ " : "○ ") | Style::input_text_color_good;
 #endif
-        auto t = ftxui::text(state.label) | Style::input_text_color_good;
-        if (state.focused) {
-            t |= ftxui::inverted;
-        }
-        return ftxui::hbox({prefix, t});
-    }};
+                auto t = ftxui::text(state.label) | Style::input_text_color_good;
+                if (state.focused) {
+                    t |= ftxui::inverted;
+                }
+                return ftxui::hbox({prefix, t});
+            }};
 
     static inline ftxui::InputOption menu_path_input_option = {.transform = [](ftxui::InputState state) {
         state.element |= ftxui::border;
 
         if (state.hovered || state.focused) {
-            const std::string& path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
+            const std::string& path =
+                    GameOptions::text_radiobox_values_[static_cast<std::size_t>(GameOptions::selected_radiobox_text_)];
             if (FileTextSource::is_file_valid(path)) {
                 state.element |= Style::input_text_color_good;
             } else {
@@ -51,7 +53,8 @@ struct ComponentOptions {
         state.element |= ftxui::border;
 
         if (state.hovered || state.focused) {
-            const int time = GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_];
+            const int time =
+                    GameOptions::time_radiobox_values_[static_cast<std::size_t>(GameOptions::selected_radiobox_time_)];
             if (time > 0) {
                 state.element |= Style::input_text_color_good;
             } else {

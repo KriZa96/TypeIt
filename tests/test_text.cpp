@@ -84,3 +84,39 @@ TEST(TextTest, TestWithSpacesAndNewLineThreeLines) {
 
     ASSERT_EQ(text.get_text_lines_size(), 3);
 }
+
+
+// TI-004 parenthesised the wrap condition in Text::populate_text_lines. The
+// grouping was already what the compiler picked -- `&&` binds tighter than
+// `||` -- so this pins the line counts across that edit, on the same inputs
+// the tests above use plus the boundary cases the condition actually turns on.
+TEST(TextTest, WrapConditionUnchangedAfterParenthesisation) {
+    const std::vector<std::pair<std::string, int>> cases = {
+            {"", 0},
+            {"Hello", 1},
+            {"Hello\nNo\nHello", 3},
+            {"\n\n", 2},
+            {"\n\nA", 3},
+            {"Lorem ipsum dolor sit amet, consectetur adipiscing.", 1},
+            {"Lorem ipsum dolor sit amet, consectetur adipiscing elit yo.", 2},
+            {"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla convallis, urna id fringilla volutpat, "
+             "sapien justo tincidunt urna.",
+             3},
+            {"Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit. Nulla convallis,\n urna id fringilla volutpat, "
+             "sapien justo tincidunt urna.",
+             3},
+            // The wrap threshold itself: a space is the 54th element on the
+            // line and does not wrap, the 55th does. Both counts verified
+            // against the pre-parenthesisation code, not assumed.
+            {std::string(53, 'a') + " b", 1},
+            {std::string(54, 'a') + " b", 2},
+            {" ", 1},
+            {"a b ", 1},
+            {"\n", 1},
+    };
+
+    for (const auto& [input, expected_lines]: cases) {
+        Text text(input);
+        EXPECT_EQ(text.get_text_lines_size(), expected_lines) << "input: " << input;
+    }
+}

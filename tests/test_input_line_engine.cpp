@@ -36,7 +36,7 @@ TEST_F(InputLineTest, Initialization) {
 TEST_F(InputLineTest, LineTransitionOnSpace) {
     EXPECT_EQ(text.get_text_lines_size(), 5);
 
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 ")) {
         input.render_input_text(letter, ++i);
     }
@@ -47,7 +47,7 @@ TEST_F(InputLineTest, LineTransitionOnSpace) {
 
 
 TEST_F(InputLineTest, BackspaceAtLineStart) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 ")) {
         input.render_input_text(letter, ++i);
     }
@@ -63,7 +63,7 @@ TEST_F(InputLineTest, BackspaceAtLineStart) {
 
 
 TEST_F(InputLineTest, ShouldGoToNextLine) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 ")) {
         input.render_input_text(letter, ++i);
     }
@@ -73,7 +73,7 @@ TEST_F(InputLineTest, ShouldGoToNextLine) {
 
 
 TEST_F(InputLineTest, ShouldNotGoToNextLine) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1")) {
         input.render_input_text(letter, ++i);
     }
@@ -89,7 +89,7 @@ TEST_F(InputLineTest, DoNothingWhenNoElements) {
 
 
 TEST_F(InputLineTest, ShouldNotGoToNextLineLastLine) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 line 2 Third line second last line finally last line.J ")) {
         input.render_input_text(letter, ++i);
     }
@@ -99,7 +99,7 @@ TEST_F(InputLineTest, ShouldNotGoToNextLineLastLine) {
 
 
 TEST_F(InputLineTest, FinishGameOnFullInput) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 line 2 Third line second last line finally last line. ")) {
         input.render_input_text(letter, ++i);
     }
@@ -109,7 +109,7 @@ TEST_F(InputLineTest, FinishGameOnFullInput) {
 
 
 TEST_F(InputLineTest, ShouldGoToPreviousLine) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 ")) {
         input.render_input_text(letter, ++i);
     }
@@ -133,7 +133,7 @@ TEST_F(InputLineTest, ShouldRemoveFirstElement) {
 
 
 TEST_F(InputLineTest, ShouldNotGoToPreviousLine) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("line1 l")) {
         input.render_input_text(letter, ++i);
     }
@@ -146,7 +146,7 @@ TEST_F(InputLineTest, ShouldNotGoToPreviousLine) {
 
 
 TEST_F(InputLineTest, ShouldNotAddOrRemoveElement) {
-    int i = 0;
+    std::size_t i = 0;
     for (const auto& letter: std::string("lin")) {
         input.render_input_text(letter, ++i);
     }

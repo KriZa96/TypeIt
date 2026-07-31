@@ -7,7 +7,7 @@
 #include "../../include/data/ComponentOptions.h"
 
 
-Input::Input(const Text& text_instance) : input_line_(text_instance), input_component_(ftxui::Input(&input_text_)) {}
+Input::Input(const Text& text_instance) : input_component_(ftxui::Input(&input_text_)), input_line_(text_instance) {}
 
 
 const int& Input::get_word_count_reference() const { return input_word_count_.get_word_count_reference(); }

@@ -22,12 +22,12 @@ Menu::Menu(ftxui::ScreenInteractive& screen) :
                                    ComponentOptions::menu_radiobox_option)),
     text_radiobox_(ftxui::Radiobox(&text_radiobox_choice_, &GameOptions::selected_radiobox_text_,
                                    ComponentOptions::menu_radiobox_option)),
+    start_button_(ftxui::Button(
+            "Start", [] { GameState::start_game_session(); }, ftxui::ButtonOption::Ascii())),
     exit_button_(ftxui::Button(
             "Exit", [this] { exit_application(); }, ftxui::ButtonOption::Ascii())),
     info_button_(ftxui::Button(
-            "Info", [this] { GameState::toggle_info_display(); }, ftxui::ButtonOption::Ascii())),
-    start_button_(ftxui::Button(
-            "Start", [this] { GameState::start_game_session(); }, ftxui::ButtonOption::Ascii())),
+            "Info", [] { GameState::toggle_info_display(); }, ftxui::ButtonOption::Ascii())),
     menu_container_(get_menu_container_()) {}
 
 

@@ -18,8 +18,10 @@ struct GameState {
     static void toggle_info_display() { show_info = !show_info; }
 
     static void start_game_session() {
-        const std::string& path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
-        const int time = GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_];
+        const std::string& path =
+                GameOptions::text_radiobox_values_[static_cast<std::size_t>(GameOptions::selected_radiobox_text_)];
+        const int time =
+                GameOptions::time_radiobox_values_[static_cast<std::size_t>(GameOptions::selected_radiobox_time_)];
         if (FileTextSource::is_file_valid(path) && time > 0) {
             start_session = true;
         }

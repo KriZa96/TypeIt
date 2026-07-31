@@ -12,7 +12,7 @@
 
 
 Timer::Timer(const int total_time) :
-    start_time_(std::chrono::steady_clock::now()), total_time_(total_time), elapsed_time_(0), started_timer_(false) {}
+    total_time_(total_time), elapsed_time_(0), started_timer_(false), start_time_(std::chrono::steady_clock::now()) {}
 
 
 int Timer::get_elapsed_time() {

@@ -28,7 +28,7 @@ void Text::populate_text_lines() {
     ftxui::Elements line;
     std::string text;
 
-    for (int index = 0; index < text_.size(); index++) {
+    for (std::size_t index = 0; index < text_.size(); index++) {
         char current_character = text_[index];
 
         // Newline characters are treated as spaces to simulate uninterrupted flow.
@@ -42,7 +42,7 @@ void Text::populate_text_lines() {
         // - If the line exceeds 55 characters and ends at a space
         // - If this is the last character in the input
         bool should_go_to_next_line = (current_character == '\n' ||
-                                       (current_character == ' ' && line.size() >= 55 || index == text_.size() - 1));
+                                       ((current_character == ' ' && line.size() >= 55) || index == text_.size() - 1));
         if (should_go_to_next_line) {
             push_line(line, text, num_of_characters);
         }
@@ -65,10 +65,10 @@ int Text::get_text_lines_size() const { return static_cast<int>(text_lines_.size
 
 
 int Text::get_text_line_size(const int index) const {
-    if (index < 0 || index >= text_lines_size_.size()) {
+    if (index < 0 || index >= static_cast<int>(text_lines_size_.size())) {
         return 0;
     }
-    return text_lines_size_[index];
+    return text_lines_size_[static_cast<std::size_t>(index)];
 }
 
 
@@ -76,13 +76,14 @@ std::string Text::get_text() const { return text_; }
 
 
 char Text::get_char_at_line_and_position(const int line_index, const int char_index) const {
-    bool character_out_of_bounds = (line_index < 0 || line_index >= text_lines_strings_.size() || char_index < 0 ||
-                                    char_index >= text_lines_size_[line_index]);
+    bool character_out_of_bounds =
+            (line_index < 0 || line_index >= static_cast<int>(text_lines_strings_.size()) || char_index < 0 ||
+             char_index >= text_lines_size_[static_cast<std::size_t>(line_index)]);
 
     if (character_out_of_bounds) {
         return '\0';
     }
-    return text_lines_strings_[line_index][char_index];
+    return text_lines_strings_[static_cast<std::size_t>(line_index)][static_cast<std::size_t>(char_index)];
 }
 
 

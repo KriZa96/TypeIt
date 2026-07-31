@@ -14,7 +14,7 @@ TEST(TimerTest, ElapsedTimeStartsAtZero) {
     GameState::game_session_in_progress = true;
     timer.start_timer();
     GameState::game_finished = false;
-    EXPECT_FLOAT_EQ(timer.get_elapsed_time(), 0);
+    EXPECT_EQ(timer.get_elapsed_time(), 0);
 }
 
 

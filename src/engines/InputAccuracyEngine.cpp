@@ -10,7 +10,7 @@ void InputAccuracyEngine::push_character_accuracy(bool value) { character_accura
 
 
 [[nodiscard]] float InputAccuracyEngine::get_percentage_of_correct_input() const {
-    const float character_accuracy_size = character_accuracy_.size();
+    const float character_accuracy_size = static_cast<float>(character_accuracy_.size());
     if (character_accuracy_size <= 0) {
         return 0;
     }

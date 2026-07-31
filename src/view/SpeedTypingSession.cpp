@@ -10,10 +10,10 @@
 
 
 SpeedTypingSession::SpeedTypingSession() :
-    text_source_(
-            std::make_shared<FileTextSource>(GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_])),
+    text_source_(std::make_shared<FileTextSource>(
+            GameOptions::text_radiobox_values_[static_cast<std::size_t>(GameOptions::selected_radiobox_text_)])),
     text_(text_source_->get_text()), input_(text_),
-    timer_(GameOptions::time_radiobox_values_[GameOptions::selected_radiobox_time_]),
+    timer_(GameOptions::time_radiobox_values_[static_cast<std::size_t>(GameOptions::selected_radiobox_time_)]),
     word_calculator_(timer_.get_elapsed_time_reference(), input_.get_word_count_reference()),
     text_input_area_(input_.get_input_component(), text_.get_text_component()),
     performance_area_(timer_.get_time_component(), input_.get_accuracy_component(),
