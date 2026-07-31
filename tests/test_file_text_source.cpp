@@ -40,6 +40,36 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
 }
 
 
+TEST(FileTextSourceTest, ReadsEmptyFileReturnsEmptyString) {
+    std::string temp_filename = "temp_empty.txt";
+    create_temp_file(temp_filename, "");
+
+    FileTextSource fileSource(temp_filename);
+
+    EXPECT_EQ(fileSource.get_text(), "");
+}
+
+
+TEST(FileTextSourceTest, ReadsWhitespaceOnlyFile) {
+    std::string temp_filename = "temp_whitespace.txt";
+    create_temp_file(temp_filename, "   ");
+
+    FileTextSource fileSource(temp_filename);
+
+    EXPECT_EQ(fileSource.get_text(), "   ");
+}
+
+
+TEST(FileTextSourceTest, ReadsSingleCharacterFile) {
+    std::string temp_filename = "temp_single.txt";
+    create_temp_file(temp_filename, "a");
+
+    FileTextSource fileSource(temp_filename);
+
+    EXPECT_EQ(fileSource.get_text(), "a");
+}
+
+
 TEST(FileTextSourceTest, IsFileValidTrue) {
     std::string temp_filename = "temp_test.txt";
     std::string expected_content = "Hello world.\nThis is a test file.";

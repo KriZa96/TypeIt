@@ -24,12 +24,12 @@ std::string FileTextSource::get_text() const {
         content += line + " ";
     }
 
-    // Remove trailing space added after the last line.
-    // Undefined behaviour on an empty file: review defect C1, fixed under
-    // TI-005 with the tests that have to fail first. Suppressed rather than
-    // patched here so that ordering stays provable.
-    // cppcheck-suppress containerOutOfBounds
-    content.pop_back();
+    // Remove the trailing space added after the last line. An existing but
+    // empty file never enters the loop, and pop_back on an empty string is
+    // undefined behaviour.
+    if (!content.empty()) {
+        content.pop_back();
+    }
 
     return content;
 }
