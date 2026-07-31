@@ -1,0 +1,95 @@
+name: Set up build
+description: Toolchain, caches and a configured build tree, shared by every build job.
+
+inputs:
+  compiler:
+    description: gcc | clang | msvc | clang-cl
+    default: gcc
+  build-type:
+    description: CMAKE_BUILD_TYPE
+    default: Debug
+  cmake-args:
+    description: Extra arguments appended to the configure command
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Cache locations and dependency pins
+      id: pins
+      shell: bash
+      run: |
+        mkdir -p .vcpkg-cache .deps
+        {
+          echo "VCPKG_DEFAULT_BINARY_CACHE=$GITHUB_WORKSPACE/.vcpkg-cache"
+          echo "FETCHCONTENT_BASE_DIR=$GITHUB_WORKSPACE/.deps"
+        } >> "$GITHUB_ENV"
+        # The vcpkg submodule commit is a dependency pin like any other; it
+        # disappears with TI-008 and the FetchContent pins take over.
+        echo "vcpkg=$(git rev-parse HEAD:external/vcpkg 2>/dev/null || echo none)" >> "$GITHUB_OUTPUT"
+
+    - name: Toolchain (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        case "${{ inputs.compiler }}" in
+          gcc)   packages="gcc-14 g++-14"; cc=gcc-14; cxx=g++-14 ;;
+          clang) packages="clang";         cc=clang;  cxx=clang++ ;;
+          *) echo "::error::compiler '${{ inputs.compiler }}' is not available on Linux"; exit 1 ;;
+        esac
+        sudo apt-get update
+        sudo apt-get install --yes ninja-build $packages
+        { echo "CC=$cc"; echo "CXX=$cxx"; } >> "$GITHUB_ENV"
+
+    - name: Toolchain (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: brew install ninja
+
+    - name: Toolchain (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+      with:
+        arch: x64
+
+    - name: Select clang-cl (Windows)
+      if: runner.os == 'Windows' && inputs.compiler == 'clang-cl'
+      shell: bash
+      run: |
+        { echo "CC=clang-cl"; echo "CXX=clang-cl"; } >> "$GITHUB_ENV"
+
+    # Keyed on the dependency pins only, so a source change reuses it and a
+    # pin change does not.
+    - name: Dependency cache
+      id: deps
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: |
+          .vcpkg-cache
+          .deps
+        key: deps-${{ runner.os }}-${{ inputs.compiler }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'cmake/Dependencies.cmake') }}-${{ steps.pins.outputs.vcpkg }}
+
+    - name: Compiler cache
+      uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1
+      with:
+        key: ${{ runner.os }}-${{ inputs.compiler }}-${{ inputs.build-type }}
+        variant: ${{ runner.os == 'Windows' && 'sccache' || 'ccache' }}
+
+    - name: Configure
+      shell: bash
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} \
+          ${{ inputs.cmake-args }}
+
+    - name: Cache report
+      shell: bash
+      run: |
+        {
+          echo "### Caches — ${{ runner.os }} / ${{ inputs.compiler }} / ${{ inputs.build-type }}"
+          echo "- dependencies: ${{ steps.deps.outputs.cache-hit == 'true' && 'hit' || 'miss' }}"
+          echo '```'
+          if command -v ccache >/dev/null; then ccache --show-stats; fi
+          if command -v sccache >/dev/null; then sccache --show-stats; fi
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
