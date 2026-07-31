@@ -1,0 +1,189 @@
+# Phase 5 — History and analytics
+
+**Milestone:** `v2.0.0-alpha.6` · **Issues:** TI-099 – TI-109 · **Goal:** make the recorded
+history visible and useful.
+
+Every run has been recorded since Phase 4. This phase turns that data into something a person
+can learn from. Widget tests are snapshot-based; the aggregation work is tested against
+synthetic histories of known shape.
+
+---
+
+## TI-099 — `Sparkline` widget
+
+**Type** feat · **Size** S · **Priority** P1 · **Depends on** TI-095 · **Docs** [UX §5](../UX.md#5-glyph-sets)
+
+Compact single-line trend using `▁▂▃▄▅▆▇█`, with an ASCII fallback of `.:-=+*%@`.
+
+**Unit tests** (`SparklineTest.cpp`)
+- N values render to N cells.
+- All-equal values render as a flat mid-level line, not as all-minimum or a division by zero.
+- A single value renders one cell.
+- Zero values renders empty, not a crash.
+- Negative values are rejected or clamped per the documented rule.
+- More values than available width downsamples deterministically.
+- ASCII fallback emits no byte above 0x7F.
+- Snapshot for a known series.
+
+---
+
+## TI-100 — `LineChart` widget
+
+**Type** feat · **Size** M · **Priority** P1 · **Depends on** TI-095 · **Docs** [UX §3.4](../UX.md#34-results)
+
+Axis-labelled chart for per-second WPM, with error markers overlaid.
+
+**Unit tests** (`LineChartTest.cpp`)
+- Axis ticks are chosen at readable intervals for ranges 0–10, 0–100, 0–1000.
+- Y range adapts to the data with sensible padding; a flat series still renders.
+- Error markers (`×`) land at the correct x position for their timestamp.
+- An overlay series (the race pacer curve) renders distinctly from the primary series.
+- Empty data renders an empty chart with axes and a message, not a crash.
+- Very narrow widths degrade gracefully rather than overflowing.
+- Snapshots at 80 and 120 columns.
+
+---
+
+## TI-101 — `Histogram` widget
+
+**Type** feat · **Size** S · **Priority** P2 · **Depends on** TI-095
+
+Distribution of WPM across runs.
+
+**Unit tests** (`HistogramTest.cpp`)
+- Bucketing is correct for known inputs; boundary values land in exactly one bucket.
+- Bucket count adapts to the available width.
+- A single data point renders one bar.
+- Empty input renders empty.
+- Bar heights scale to the tallest bucket.
+
+---
+
+## TI-102 — `Heatmap` widget
+
+**Type** feat · **Size** M · **Priority** P1 · **Depends on** TI-095 · **Docs** [UX §3.5](../UX.md#35-history)
+
+Keyboard layout coloured by error rate — the payoff for recording per-key statistics, turning
+thousands of keystrokes into one glance that says which fingers to work on.
+
+**Unit tests** (`HeatmapTest.cpp`)
+- QWERTY layout renders in the correct physical arrangement.
+- Error-rate → intensity mapping is monotonic.
+- Keys with no data render as "no data", visibly distinct from "zero errors" — conflating those
+  two would be actively misleading.
+- Works at all four colour depths; in `Mono` the intensity is encoded by glyph density.
+- Non-letter keys (punctuation, space) are included.
+- Snapshot for a known stat set.
+
+---
+
+## TI-103 — `HistoryScreen`
+
+**Type** feat · **Size** L · **Priority** P1 · **Depends on** TI-099 – TI-102, TI-069 · **Docs** [UX §3.5](../UX.md#35-history)
+
+Trend chart, filters, personal bests, distribution, streaks, totals, heatmap, and a session
+list.
+
+**Unit tests** (`HistoryScreenTest.cpp`)
+- Mode and date-range filters change the displayed data and are combinable.
+- Empty history renders a helpful empty state, not a blank screen or a crash.
+- Session list paginates and scrolls; selecting a row opens `SessionDetailScreen`.
+- Personal bests display per `(mode, parameter)` — a 15 s best and a 60 s best are separate
+  records, because they measure different things.
+- Totals and streak figures match `HistoryService` for a known history.
+- Snapshots at 80×24 and 120×40.
+
+---
+
+## TI-104 — `SessionDetailScreen`
+
+**Type** feat · **Size** S · **Priority** P2 · **Depends on** TI-103
+
+A single past run in full.
+
+**Unit tests** (`SessionDetailScreenTest.cpp`)
+- All stored metrics render, including the timeline chart.
+- A session whose text has since been deleted (`text_id` NULL) renders without a crash.
+- A session recorded by an older `app_version` is displayed with a note, since metric
+  definitions may differ across a MAJOR version
+  ([VERSIONING §9](../VERSIONING.md#9-compatibility-promises)).
+- Back returns to the history screen with filters and scroll position preserved.
+
+---
+
+## TI-105 — `ResultsScreen` enrichment
+
+**Type** feat · **Size** M · **Priority** P1 · **Depends on** TI-100, TI-093 · **Docs** [UX §3.4](../UX.md#34-results)
+
+Upgrade the parity version with the per-second chart, error markers, comparison against average
+and personal best, worst error pairs, and slowest bigrams.
+
+**Unit tests** (`ResultsScreenTest.cpp`, extended)
+- The chart matches the session timeline.
+- Comparison lines are correct, and are **absent rather than wrong** when there is no history to
+  compare against.
+- A new personal best is announced distinctly.
+- Worst pairs and slowest bigrams show the top five, with fewer shown gracefully when data is
+  sparse.
+- Multi-byte graphemes display correctly in the pair list.
+
+---
+
+## TI-106 — Menu recent-runs sparkline
+
+**Type** feat · **Size** XS · **Priority** P2 · **Depends on** TI-099, TI-091
+
+The last ten runs, plus average, best, and accuracy — on the menu, because the point of
+recording history is to see it without asking.
+
+**Unit tests**
+- Fewer than ten runs renders correctly.
+- Zero runs renders a neutral prompt, not an empty box.
+- Figures match `HistoryService`.
+
+---
+
+## TI-107 — Streaks and daily goals
+
+**Type** feat · **Size** S · **Priority** P2 · **Depends on** TI-069
+
+**Unit tests** (`StreakTest.cpp`)
+- Consecutive days increment; a gap resets.
+- Two sessions in one day count as one day.
+- The day boundary uses local time, documented, and is tested across a DST transition.
+- Goal met by time and goal met by run count both work.
+- Longest streak is retained after the current streak breaks.
+- A session started before midnight and finished after it is attributed per the documented
+  rule.
+
+---
+
+## TI-108 — Export from the UI
+
+**Type** feat · **Size** XS · **Priority** P3 · **Depends on** TI-077, TI-103
+
+**Unit tests**
+- Export writes to the chosen path and reports success or failure visibly.
+- An unwritable path produces a clear message rather than silent failure.
+- Exported content matches the CLI export byte for byte.
+
+---
+
+## TI-109 — History performance
+
+**Type** perf · **Size** M · **Priority** P1 · **Depends on** TI-103 · **Docs** [ARCHITECTURE §6.5](../ARCHITECTURE.md#65-performance-budget)
+
+**Scope**
+- In: push aggregation into SQL rather than loading rows and summing in C++; add indexes where
+  the query plan needs them; a benchmark test with a synthetic 10,000-session database.
+- Out: —
+
+**Unit tests** (`HistoryPerfTest.cpp`)
+- History screen data loads in < 200 ms with 10,000 sessions and 300,000 samples.
+- Trend aggregation is performed by SQL — asserted by inspecting `EXPLAIN QUERY PLAN` for an
+  index scan rather than a full table scan.
+- Memory use during load is bounded and does not scale with total history.
+- A database seeded to 10k sessions is generated by a fixture, not committed.
+
+**Acceptance**
+- [ ] The budget is met and enforced by a test that fails if it regresses.
