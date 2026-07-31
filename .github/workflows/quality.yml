@@ -18,7 +18,7 @@ defaults:
 
 jobs:
   workflows:
-    name: Workflow lint
+    name: Workflow and shell lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -31,3 +31,111 @@ jobs:
 
       - name: Every action is pinned to a commit SHA
         run: scripts/pin-actions.sh
+
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
+
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # Pinned exactly: two clang-format releases disagree about enough to make
+      # an unpinned check a coin toss.
+      - run: pip install --quiet clang-format==18.1.8
+
+      - run: git ls-files '*.cpp' '*.h' | xargs clang-format --dry-run --Werror
+
+  analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          submodules: recursive # TI-008 removes the vcpkg submodule
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: gcc
+          cmake-args: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cppcheck
+          cppcheck --enable=warning,portability --inline-suppr \
+            --suppress=missingInclude --suppress=missingIncludeSystem \
+            --error-exitcode=1 --quiet -I include src tests
+
+      # The legacy tree is deleted wholesale at the Phase 4 cutover (TI-097),
+      # so its findings are noise: this code is being replaced, not fixed. New
+      # code lands outside it and is checked from its first line.
+      - name: clang-tidy
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: |
+          if [[ -n $BASE ]] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            listing=$(git diff --name-only --diff-filter=d "$BASE" HEAD)
+          else
+            listing=$(git ls-files)
+          fi
+          mapfile -t files < <(grep -E '\.cpp$' <<<"$listing" | grep -vE '^(src|include|tests)/' || true)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "Nothing to check: every source in this change is in the legacy tree (TI-097)."
+            exit 0
+          fi
+          clang-tidy -p build "${files[@]}"
+
+  docs:
+    name: Spelling, markdown and links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: crate-ci/typos@392b78fe18a52790c53f42456e46124f77346842 # v1.34.0
+
+      - name: markdownlint
+        run: npx --yes markdownlint-cli2@0.23.2
+
+      # Relative links and their fragments. External URLs are deliberately not
+      # checked on every push: rate limits make that a flaky gate, and link rot
+      # off-site is not a reason to block a merge.
+      - name: Link check
+        uses: lycheeverse/lychee-action@82202e5e9c2f4ef1a55a3d02563e1cb6041e5332 # v2.4.1
+        with:
+          args: --offline --include-fragments --no-progress --exclude-path src/docs './**/*.md'
+          fail: true
+
+  pr-title:
+    name: Pull request title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Squash-merge makes the pull request title the commit subject, so this
+      # is where Conventional Commits is actually enforced (STYLE section 11).
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            test
+            docs
+            build
+            ci
+            perf
+            chore
+            style

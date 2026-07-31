@@ -1,0 +1,17 @@
+# Markdown lint. The disabled rules are the ones this project's documentation
+# deliberately does not follow; everything else is enforced.
+config:
+  MD007: false # README list indentation, rewritten by TI-021
+  MD013: false # prose wraps at 100, tables and link-heavy lines do not wrap
+  MD024: # phase documents repeat "Scope" and "Acceptance" under each issue
+    siblings_only: true
+  MD030: false # README list marker spacing, rewritten by TI-021
+  MD032: false # lists follow their lead-in sentence with no blank line
+  MD033: false # a little inline HTML in the README
+  MD036: false # **Scope** and **Acceptance** are labels, not headings
+  MD040: false # unlabelled fences are ASCII diagrams, not code
+  MD060: false # compact table pipes
+globs:
+  - "**/*.md"
+  - "!external/**"
+  - "!src/docs/**" # third copy of the technical guide, deleted by TI-021

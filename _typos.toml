@@ -1,0 +1,13 @@
+# Spelling. Entries here are exceptions, not silencing: each one says why.
+
+[default.extend-identifiers]
+OPF = "OPF" # EPUB Open Packaging Format, not a misspelling of "OF"
+
+[default.extend-words]
+unparseable = "unparseable" # accepted variant, used throughout the backlog
+
+[files]
+# Added 2026-07-31 (CI-006). These two paragraphs quote the misspellings that
+# justify running this check at all, so they cannot be spelled correctly.
+# Remove the entry if the paragraphs stop quoting them.
+extend-exclude = ["docs/CI_CD.md", "docs/issues/PHASE-0A-cicd.md"]

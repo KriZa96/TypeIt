@@ -1,0 +1,16 @@
+# Static analysis. TI-014 finalises this set; what has to be true today is that
+# new code is checked from its first line and that the legacy tree is excluded
+# explicitly rather than by silence (see src/.clang-tidy).
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers
+WarningsAsErrors: "*"
+HeaderFilterRegex: "^(libs|include)/"
