@@ -11,6 +11,9 @@ inputs:
   cmake-args:
     description: Extra arguments appended to the configure command
     default: ""
+  werror:
+    description: Treat warnings as errors. On everywhere in CI; local builds decide for themselves.
+    default: "ON"
 
 runs:
   using: composite
@@ -71,6 +74,7 @@ runs:
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} \
+          -DTYPEIT_WERROR=${{ inputs.werror }} \
           ${{ inputs.cmake-args }}
 
     - name: Cache report
