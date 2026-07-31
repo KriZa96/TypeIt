@@ -4,13 +4,13 @@
 
 #include "../../include/core/FileTextSource.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <utility>
-#include <algorithm>
 
 
-FileTextSource::FileTextSource(std::string  file_path) : file_path_(std::move(file_path)) {}
+FileTextSource::FileTextSource(std::string file_path) : file_path_(std::move(file_path)) {}
 
 
 std::string FileTextSource::get_text() const {
@@ -43,12 +43,7 @@ bool FileTextSource::is_file_valid(const std::string& path) {
     // Checks if at least one line contains non-whitespace characters.
     std::string line;
     while (std::getline(file_stream, line)) {
-        if (!line.empty() &&
-            std::any_of(
-                line.begin(),
-                line.end(),
-                [](unsigned char c) { return !std::isspace(c); }
-            )) {
+        if (!line.empty() && std::any_of(line.begin(), line.end(), [](unsigned char c) { return !std::isspace(c); })) {
             return true;
         }
     }

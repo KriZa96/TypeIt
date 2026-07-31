@@ -17,4 +17,4 @@ struct FocusPosition {
 };
 
 
-#endif //FOCUSPOSITION_H
+#endif  // FOCUSPOSITION_H

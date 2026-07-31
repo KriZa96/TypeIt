@@ -3,17 +3,16 @@
 //
 
 #include <gtest/gtest.h>
-#include "../include/core/Text.h"
-#include "../include/data/GameState.h"
-#include "../include/data/FocusPosition.h"
+
 #include "../include/core/Input.h"
+#include "../include/core/Text.h"
+#include "../include/data/FocusPosition.h"
+#include "../include/data/GameState.h"
 
 
 class InputTest : public ::testing::Test {
 protected:
-    InputTest()
-        : text("line1\nline2"),
-        input(text) {}
+    InputTest() : text("line1\nline2"), input(text) {}
 
     void SetUp() override {
         GameState::game_session_in_progress = true;

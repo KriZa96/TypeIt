@@ -11,21 +11,22 @@
 
 
 class Timer {
-    public:
-        explicit Timer(int total_time);
-        void start_timer();
-        int get_elapsed_time();
-        std::string get_time_left_str();
-        int& get_elapsed_time_reference();
-        ftxui::Component get_time_component();
-    private:
-        int total_time_;
-        int elapsed_time_;
-        bool started_timer_;
-        std::chrono::steady_clock::time_point start_time_;
+public:
+    explicit Timer(int total_time);
+    void start_timer();
+    int get_elapsed_time();
+    std::string get_time_left_str();
+    int& get_elapsed_time_reference();
+    ftxui::Component get_time_component();
 
-        ftxui::Element get_time_element();
+private:
+    int total_time_;
+    int elapsed_time_;
+    bool started_timer_;
+    std::chrono::steady_clock::time_point start_time_;
+
+    ftxui::Element get_time_element();
 };
 
 
-#endif //TIMER_H
+#endif  // TIMER_H

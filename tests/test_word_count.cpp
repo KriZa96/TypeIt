@@ -9,7 +9,7 @@
 
 class InputWordCountTest : public ::testing::Test {
 protected:
-    InputWordCountTest(): input_word_count() {};
+    InputWordCountTest() : input_word_count() {};
     InputWordCountEngine input_word_count;
 };
 

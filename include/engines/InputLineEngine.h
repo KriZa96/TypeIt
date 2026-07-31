@@ -17,6 +17,7 @@ public:
     [[nodiscard]] ftxui::Elements get_total_input_lines() const;
     [[nodiscard]] std::size_t get_current_line_index() const;
     [[nodiscard]] std::size_t get_current_line_size() const;
+
 private:
     std::size_t current_line_index_;
     InputAccuracyEngine input_accuracy_;

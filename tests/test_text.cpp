@@ -65,7 +65,9 @@ TEST(TextTest, TestWithSpacesTwoLine) {
 
 
 TEST(TextTest, TestWithSpacesThreeLines) {
-    std::string text_ = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla convallis, urna id fringilla volutpat, sapien justo tincidunt urna.";
+    std::string text_ =
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla convallis, urna id fringilla volutpat, "
+            "sapien justo tincidunt urna.";
 
     Text text(text_);
 
@@ -74,7 +76,9 @@ TEST(TextTest, TestWithSpacesThreeLines) {
 
 
 TEST(TextTest, TestWithSpacesAndNewLineThreeLines) {
-    std::string text_ = "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit. Nulla convallis,\n urna id fringilla volutpat, sapien justo tincidunt urna.";
+    std::string text_ =
+            "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit. Nulla convallis,\n urna id fringilla volutpat, "
+            "sapien justo tincidunt urna.";
 
     Text text(text_);
 

@@ -9,10 +9,10 @@
 
 
 class ITextSource {
-    public:
-        virtual ~ITextSource() = default;
-        [[nodiscard]] virtual std::string get_text() const = 0;
+public:
+    virtual ~ITextSource() = default;
+    [[nodiscard]] virtual std::string get_text() const = 0;
 };
 
 
-#endif //ITEXTSOURCE_H
+#endif  // ITEXTSOURCE_H

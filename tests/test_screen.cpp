@@ -1,8 +1,8 @@
 //
 // Created by Kristijan Zalac on 3/8/25.
 //
-#include <thread>
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "../include/core/Screen.h"
 

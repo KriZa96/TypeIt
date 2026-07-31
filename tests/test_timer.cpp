@@ -2,8 +2,8 @@
 // Created by Kristijan Zalac on 3/1/25.
 //
 
-#include <thread>
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "../include/core/Timer.h"
 #include "../include/data/GameState.h"

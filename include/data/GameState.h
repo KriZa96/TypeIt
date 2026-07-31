@@ -5,8 +5,8 @@
 #ifndef GAMESTATE_H
 #define GAMESTATE_H
 
-#include "GameOptions.h"
 #include "../core/FileTextSource.h"
+#include "GameOptions.h"
 
 struct GameState {
     inline static bool game_session_in_progress = false;
@@ -15,9 +15,7 @@ struct GameState {
     inline static bool game_finished = true;
     inline static bool show_info = false;
 
-    static void toggle_info_display() {
-        show_info = !show_info;
-    }
+    static void toggle_info_display() { show_info = !show_info; }
 
     static void start_game_session() {
         const std::string& path = GameOptions::text_radiobox_values_[GameOptions::selected_radiobox_text_];
@@ -26,8 +24,7 @@ struct GameState {
             start_session = true;
         }
     }
-
 };
 
 
-#endif //GAMESTATE_H
+#endif  // GAMESTATE_H

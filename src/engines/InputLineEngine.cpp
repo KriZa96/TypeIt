@@ -2,29 +2,24 @@
 // Created by Kristijan Zalac on 01/04/2025.
 //
 
+#include "../../include/engines/InputLineEngine.h"
+
 #include <numeric>
 #include <utility>
 
-#include "../../include/engines/InputLineEngine.h"
-#include "../../include/data/Style.h"
 #include "../../include/data/GameState.h"
+#include "../../include/data/Style.h"
 
 
-InputLineEngine::InputLineEngine(const Text& text_instance):
-    current_line_index_(0),
-    text_instance_(text_instance),
-    total_input_lines_(text_instance_.get_text_lines_size()+1, ftxui::hbox(ftxui::text("")))
-{}
+InputLineEngine::InputLineEngine(const Text& text_instance) :
+    current_line_index_(0), text_instance_(text_instance),
+    total_input_lines_(text_instance_.get_text_lines_size() + 1, ftxui::hbox(ftxui::text(""))) {}
 
 
 [[nodiscard]] int InputLineEngine::get_previous_lines_size() const {
     return std::accumulate(
-        previous_input_lines_.begin(),
-        previous_input_lines_.end(),
-        0,
-        [](const int sum, const ftxui::Elements& line) {
-            return sum + std::distance(line.begin(), line.end());
-        });
+            previous_input_lines_.begin(), previous_input_lines_.end(), 0,
+            [](const int sum, const ftxui::Elements& line) { return sum + std::distance(line.begin(), line.end()); });
 }
 
 
@@ -97,8 +92,7 @@ bool InputLineEngine::should_remove_element(std::size_t input_text_size) const {
 void InputLineEngine::render_input_text(char next_character, std::size_t input_text_size) {
     if (should_add_element(input_text_size)) {
         add_element(next_character);
-    }
-    else if (should_remove_element(input_text_size)) {
+    } else if (should_remove_element(input_text_size)) {
         remove_element(input_text_size);
     }
     // Update total input line with current line
@@ -110,8 +104,7 @@ void InputLineEngine::render_input_text(char next_character, std::size_t input_t
 [[nodiscard]] ftxui::Element InputLineEngine::get_next_character(const char next_character) {
     ftxui::Element new_character = ftxui::text(std::string(1, next_character));
     if (next_character == text_instance_.get_char_at_line_and_position(
-  current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0)
-          )) {
+                                  current_line_index_, std::max(static_cast<int>(current_input_line_.size()), 0))) {
         input_accuracy_.push_character_accuracy(true);
         return new_character | Style::input_text_color_good;
     }
@@ -129,16 +122,10 @@ float InputLineEngine::get_percentage_of_correct_input() const {
 }
 
 
-ftxui::Elements InputLineEngine::get_total_input_lines() const {
-    return total_input_lines_;
-}
+ftxui::Elements InputLineEngine::get_total_input_lines() const { return total_input_lines_; }
 
 
-std::size_t InputLineEngine::get_current_line_index() const {
-    return current_line_index_;
-}
+std::size_t InputLineEngine::get_current_line_index() const { return current_line_index_; }
 
 
-[[nodiscard]] std::size_t InputLineEngine::get_current_line_size() const {
-    return current_input_line_.size();
-}
+[[nodiscard]] std::size_t InputLineEngine::get_current_line_size() const { return current_input_line_.size(); }

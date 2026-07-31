@@ -3,17 +3,16 @@
 //
 
 #include <gtest/gtest.h>
-#include "../include/core/Text.h"
-#include "../include/data/GameState.h"
-#include "../include/data/FocusPosition.h"
+
 #include "../include/core/Input.h"
+#include "../include/core/Text.h"
+#include "../include/data/FocusPosition.h"
+#include "../include/data/GameState.h"
 
 
 class InputLineTest : public ::testing::Test {
 protected:
-    InputLineTest()
-        : text("line1\nline 2\nThird line\nsecond last line\nfinally last line."),
-        input(text) {}
+    InputLineTest() : text("line1\nline 2\nThird line\nsecond last line\nfinally last line."), input(text) {}
 
     void SetUp() override {
         GameState::game_session_in_progress = true;
@@ -30,7 +29,7 @@ protected:
 
 TEST_F(InputLineTest, Initialization) {
     EXPECT_EQ(input.get_current_line_index(), 0);
-    EXPECT_EQ(input.get_total_input_lines().size(), text.get_text_lines_size()+1);
+    EXPECT_EQ(input.get_total_input_lines().size(), text.get_text_lines_size() + 1);
 }
 
 
@@ -38,7 +37,7 @@ TEST_F(InputLineTest, LineTransitionOnSpace) {
     EXPECT_EQ(text.get_text_lines_size(), 5);
 
     int i = 0;
-    for (const auto& letter : std::string("line1 ")) {
+    for (const auto& letter: std::string("line1 ")) {
         input.render_input_text(letter, ++i);
     }
 
@@ -107,7 +106,6 @@ TEST_F(InputLineTest, FinishGameOnFullInput) {
 
     EXPECT_TRUE(GameState::game_finished);
 }
-
 
 
 TEST_F(InputLineTest, ShouldGoToPreviousLine) {

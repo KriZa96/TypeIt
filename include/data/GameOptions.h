@@ -17,13 +17,10 @@ struct GameOptions {
     inline static std::filesystem::path current_file_path = __FILE__;
     inline static std::filesystem::path target_file_path =
             current_file_path.parent_path().parent_path().parent_path() / "files";
-    inline static std::vector<std::string> text_radiobox_values_{
-            (target_file_path / "simple.txt").string(),
-            (target_file_path / "medium.txt").string(),
-            (target_file_path / "hard.txt").string(),
-            ""
-    };
+    inline static std::vector<std::string> text_radiobox_values_{(target_file_path / "simple.txt").string(),
+                                                                 (target_file_path / "medium.txt").string(),
+                                                                 (target_file_path / "hard.txt").string(), ""};
     inline static int selected_radiobox_text_ = 0;
 };
 
-#endif //GAMEOPTIONS_H
+#endif  // GAMEOPTIONS_H

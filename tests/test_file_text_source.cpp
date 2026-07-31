@@ -2,8 +2,8 @@
 // Created by Kristijan Zalac on 3/4/25.
 //
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 
 #include "../include/core/FileTextSource.h"

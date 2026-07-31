@@ -9,9 +9,10 @@
 
 class InputWordCountEngine {
 public:
-    InputWordCountEngine(): word_count_(0) {};
+    InputWordCountEngine() : word_count_(0) {};
     void set_word_count(const std::string& input_text);
     [[nodiscard]] const int& get_word_count_reference() const;
+
 private:
     int word_count_;
 };

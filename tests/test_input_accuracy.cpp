@@ -8,13 +8,13 @@
 
 class InputAccuracyTest : public ::testing::Test {
 protected:
-    InputAccuracyTest(): input_accuracy() {};
+    InputAccuracyTest() : input_accuracy() {};
     InputAccuracyEngine input_accuracy;
 };
 
 
 TEST_F(InputAccuracyTest, PercentageOfCorrectInput) {
-    for (int i=0; i < 100; ++i) {
+    for (int i = 0; i < 100; ++i) {
         input_accuracy.push_character_accuracy(true);
     }
 

@@ -9,9 +9,10 @@
 
 class WordCalculatorEngine {
 public:
-    [[nodiscard]] static std::string get_words_per_minute_string(const int& elapsed_time, const int& word_count) ;
+    [[nodiscard]] static std::string get_words_per_minute_string(const int& elapsed_time, const int& word_count);
+
 private:
-    [[nodiscard]] static int calculate_words_per_minute(const int& elapsed_time, const int& word_count) ;
+    [[nodiscard]] static int calculate_words_per_minute(const int& elapsed_time, const int& word_count);
 };
 
 

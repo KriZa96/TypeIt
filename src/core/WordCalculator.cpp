@@ -3,20 +3,16 @@
 //
 
 #include "../../include/core/WordCalculator.h"
+
 #include "../../include/engines/WordCalculatorEngine.h"
 
 
-WordCalculator::WordCalculator(const int& elapsed_time, const int& word_count):
-    elapsed_time_(elapsed_time),
-    word_count_(word_count) {}
+WordCalculator::WordCalculator(const int& elapsed_time, const int& word_count) :
+    elapsed_time_(elapsed_time), word_count_(word_count) {}
 
 
 ftxui::Component WordCalculator::get_word_calculator_component() const {
-    return ftxui::Renderer(
-        [this] {
-            return get_word_per_minute_element();
-        }
-    );
+    return ftxui::Renderer([this] { return get_word_per_minute_element(); });
 }
 
 
