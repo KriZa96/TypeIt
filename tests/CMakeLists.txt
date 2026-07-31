@@ -42,3 +42,5 @@ include(GoogleTest)
 gtest_discover_tests(tests)
 
 add_test(all_tests tests)
+
+typeit_set_warnings(tests)

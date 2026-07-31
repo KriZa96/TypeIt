@@ -26,3 +26,5 @@ target_link_libraries(
         ftxui::screen
         ftxui::component
 )
+
+typeit_set_warnings(TypeIt)
