@@ -2,10 +2,10 @@
 
 **TypeIt** is a terminal-based touch typing game designed to test your typing skills. The game offers three base levels of difficulty. However, to keep things interesting, you can input custom text files for a personalized experience! While typing, you can see your accuracy and words per minute in real-time. The application is built with an interactive interface using the **FTXUI** library.
 
-> **Note**: FTXUI does not support ćčšđž. When those letters are inputed
+> **Note**: FTXUI does not support ćčšđž. When those letters are inputted
 > nothing is shown but application calculates it as input, if you see
 > that your input is shown as incorrect, just delete one character before
-> you inputed ćčšđž -> [Online Test](https://arthursonzogni.github.io/FTXUI/examples/?file=component/input).
+> you inputted ćčšđž -> [Online Test](https://arthursonzogni.github.io/FTXUI/examples/?file=component/input).
 
 ## **Technologies**
 
@@ -67,21 +67,29 @@ Verify the installation of the required tools:
 ```
 
 *Setup CMake:*
+
 ```bash
   cmake -DCMAKE_MAKE_PROGRAM=ninja -G Ninja -S . -B cmake-build
 ```
+
 *Build The Project:*
+
 ```bash
   cmake --build cmake-build 
 ```
+
 *Add The Executable To Games Folder For Easier Access:*
+
 ```bash
   sudo ln -sfv "cmake-build/src/TypeIt" "/usr/games/TypeIt"
 ```
+
 *Start The Game:*
+
 ```bash
   TypeIt
 ```
+
 ****
 
 ### *WINDOWS*
@@ -89,21 +97,24 @@ Verify the installation of the required tools:
 > **Note**: Ensure CMake is in your PATH
 
 *Setup CMake:*
+
 ```shell
    cmake -G "Visual Studio 17 2022" -S . -B cmake-build 
 ```
 
 *Build The Project:*
+
 ```shell
   cmake --build cmake-build 
 ```
 
 *Move TypeIt.exe To Appropriate Place (Example copies to Desktop)<br>Or just start it from the folder noted in example*
+
 ```shell
   Copy-Item "cmake-build\src\Debug\TypeIt.exe" -Destination "$env:USERPROFILE\Desktop\"
 ```
 
-# Speed Typing Application - Technical Guide
+## Speed Typing Application - Technical Guide
 
 ## Table of Contents
 
@@ -143,7 +154,7 @@ Verify the installation of the required tools:
 
 This application is a terminal-based speed typing trainer built with the FTXUI (Functional Terminal User Interface) library. It allows users to practice and test their typing speed by providing different text samples, timing their typing session, and calculating metrics such as words per minute (WPM) and accuracy.
 
-This guide provides an explanation of how the application works, its architecture, and some of the behaivour.
+This guide provides an explanation of how the application works, its architecture, and some of the behaviour.
 
 ## Architecture Overview
 
@@ -268,7 +279,7 @@ The application follows this high-level flow:
 └─────────────────────────────────────────┘
 ```
 
-## Core Components
+## Class Descriptions
 
 ### Text Source Management
 
@@ -522,7 +533,7 @@ The application follows this high-level flow:
 
 #### FocusPosition
 
--   **Purpose**: Tracks cursor position for input focus. Current implementation behaivour only needs vertical position.
+-   **Purpose**: Tracks cursor position for input focus. Current implementation behaviour only needs vertical position.
 -   **Key Fields**:
     -   `x`: Horizontal position of the cursor.
     -   `y`: Vertical position of the cursor.
@@ -732,4 +743,3 @@ The application processes user input with sophisticated mechanics:
 2. Tracking:
     - Each character typed is recorded as correct/incorrect
     - Stored in `character_accuracy_` vector in `InputAccuracyEngine`
-

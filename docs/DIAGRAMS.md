@@ -11,7 +11,7 @@ prose document named beneath it wins — these are a map, not the territory.
 | # | Group | Diagrams |
 |---|---|---|
 | 1 | [Architecture](#1-architecture) | Layering, target graph, phase dependencies |
-| 2 | [Domain classes](#2-domain-classes-typeitcore) | Text, session, metrics |
+| 2 | [Domain classes](#2-domain-classes--typeitcore) | Text, session, metrics |
 | 3 | [Modes and text supply](#3-modes-and-text-supply) | `IMode`, `ITextProvider`, race |
 | 4 | [Application and ports](#4-application-layer-and-ports) | Services, ports |
 | 5 | [Infrastructure](#5-infrastructure-adapters) | Adapters |

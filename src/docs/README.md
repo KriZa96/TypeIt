@@ -2,10 +2,10 @@
 
 **TypeIt** is a terminal-based touch typing game designed to test your typing skills. The game offers three base levels of difficulty. However, to keep things interesting, you can input custom text files for a personalized experience! While typing, you can see your accuracy and words per minute in real-time. The application is built with an interactive interface using the **FTXUI** library.
 
-> **Note**: FTXUI does not support ćčšđž. When those letters are inputed
+> **Note**: FTXUI does not support ćčšđž. When those letters are inputted
 > nothing is shown but application calculates it as input, if you see
 > that your input is shown as incorrect, just delete one character before
-> you inputed ćčšđž -> [Online Test](https://arthursonzogni.github.io/FTXUI/examples/?file=component/input).
+> you inputted ćčšđž -> [Online Test](https://arthursonzogni.github.io/FTXUI/examples/?file=component/input).
 
 ## **Technologies**
 

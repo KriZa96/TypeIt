@@ -38,7 +38,7 @@
 
 This application is a terminal-based speed typing trainer built with the FTXUI (Functional Terminal User Interface) library. It allows users to practice and test their typing speed by providing different text samples, timing their typing session, and calculating metrics such as words per minute (WPM) and accuracy.
 
-This guide provides an explanation of how the application works, its architecture, and some of the behaivour.
+This guide provides an explanation of how the application works, its architecture, and some of the behaviour.
 
 ## Architecture Overview
 
@@ -417,7 +417,7 @@ The application follows this high-level flow:
 
 #### FocusPosition
 
--   **Purpose**: Tracks cursor position for input focus. Current implementation behaivour only needs vertical position.
+-   **Purpose**: Tracks cursor position for input focus. Current implementation behaviour only needs vertical position.
 -   **Key Fields**:
     -   `x`: Horizontal position of the cursor.
     -   `y`: Vertical position of the cursor.
