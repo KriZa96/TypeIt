@@ -37,3 +37,5 @@ cmake-build-debug
 cmake-build
 
 .idea
+# Test artifacts: the suite writes these next to the working directory.
+temp_*.txt
