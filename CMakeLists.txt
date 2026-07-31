@@ -11,11 +11,12 @@ include(CompilerWarnings)
 option(TYPEIT_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
 include(Dependencies)
 
+# src first: it exports the source list the test target reuses.
+add_subdirectory(src)
+
 # enable_testing() belongs at the top level, or ctest run from the build
 # root -- which is what `ctest --preset` does -- finds nothing.
 if(TYPEIT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
-add_subdirectory(src)
