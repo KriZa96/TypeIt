@@ -12,7 +12,7 @@
 class InputLineTest : public ::testing::Test {
 protected:
     InputLineTest()
-        : text("line1\nline 2\nThrid line\nsecond last line\nfinally last line."),
+        : text("line1\nline 2\nThird line\nsecond last line\nfinally last line."),
         input(text) {}
 
     void SetUp() override {
@@ -91,7 +91,7 @@ TEST_F(InputLineTest, DoNothingWhenNoElements) {
 
 TEST_F(InputLineTest, ShouldNotGoToNextLineLastLine) {
     int i = 0;
-    for (const auto& letter: std::string("line1 line 2 Thrid line second last line finally last line.J ")) {
+    for (const auto& letter: std::string("line1 line 2 Third line second last line finally last line.J ")) {
         input.render_input_text(letter, ++i);
     }
 
@@ -101,7 +101,7 @@ TEST_F(InputLineTest, ShouldNotGoToNextLineLastLine) {
 
 TEST_F(InputLineTest, FinishGameOnFullInput) {
     int i = 0;
-    for (const auto& letter: std::string("line1 line 2 Thrid line second last line finally last line. ")) {
+    for (const auto& letter: std::string("line1 line 2 Third line second last line finally last line. ")) {
         input.render_input_text(letter, ++i);
     }
 

@@ -72,7 +72,7 @@ members — globals with a namespace. They are read *and written* from every lay
 
 **Consequences that are already visible:**
 - Tests must reset statics in `SetUp()`. `test_timer.cpp` does it inconsistently and
-  `TimerTest.DosentCalculateWhenStartGameFalse` depends on whatever the previous test left in
+  `TimerTest.DoesNotCalculateWhenStartGameFalse` depends on whatever the previous test left in
   `GameState::game_session_in_progress`. The suite is order-dependent today.
 - Two concurrent sessions, a replay, or a headless simulation are impossible by construction.
 - There is no single place to ask "what is the state of the run?"
@@ -124,7 +124,7 @@ Input is a `std::string` compared `char` by `char`
 (`InputLineEngine::get_next_character`). Any multi-byte grapheme desynchronises the accuracy
 vector and the line index. The README documents this as an FTXUI limitation:
 
-> FTXUI does not support ćčšđž. When those letters are inputed nothing is shown but
+> FTXUI does not support ćčšđž. When those letters are inputted nothing is shown but
 > application calculates it as input…
 
 That is only half true. FTXUI handles UTF-8; the byte-per-character model in `InputLineEngine`

@@ -66,7 +66,7 @@ TEST(TimerTest, RemainingTimeStringAfterMaxTime) {
     EXPECT_EQ(timer.get_time_left_str(), "0s");
 }
 
-TEST(TimerTest, DosentCalculateWhenStartGameFalse) {
+TEST(TimerTest, DoesNotCalculateWhenStartGameFalse) {
     Timer timer(10);
     GameState::game_finished = false;
     std::this_thread::sleep_for(std::chrono::seconds(2));

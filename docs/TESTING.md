@@ -21,7 +21,7 @@ The problems are structural, and all three disappear under the new architecture:
    `steady_clock` directly, so the only way to test it is to actually wait.
 2. **The suite is order-dependent.** Tests mutate `GameState` and `FocusPosition` statics.
    `SetUp()` resets some of them, `test_timer.cpp` does not, and
-   `TimerTest.DosentCalculateWhenStartGameFalse` depends on what ran before it.
+   `TimerTest.DoesNotCalculateWhenStartGameFalse` depends on what ran before it.
 3. **The view and control layers have no tests at all** — `Menu`, `Main`,
    `SpeedTypingSession`, `TextInputArea`, `PerformanceArea`. Not through negligence: those
    classes advance game state inside render callbacks against global flags, so there is no
