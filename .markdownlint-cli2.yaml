@@ -14,4 +14,3 @@ config:
 globs:
   - "**/*.md"
   - "!external/**"
-  - "!src/docs/**" # third copy of the technical guide, deleted by TI-021
