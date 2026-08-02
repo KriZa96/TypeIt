@@ -4,7 +4,7 @@
 # which watches each one fail on a deliberate violation.
 #
 #   version-guard.sh version                 the full version the source declares
-#   version-guard.sh check-tag v2.0.0        tag <-> source, pre-release, CHANGELOG
+#   version-guard.sh check-tag vX.Y.Z        tag <-> source, pre-release, CHANGELOG
 #   version-guard.sh check-literals          no version literal outside CMakeLists.txt
 #   version-guard.sh derive                  the version this build should report
 #   version-guard.sh notices [base]          non-blocking reminders, never fails
@@ -18,7 +18,7 @@ die() {
     exit 1
 }
 
-# The core MAJOR.MINOR.PATCH from the project() call. The `VERSION 2.0.0` line
+# The core MAJOR.MINOR.PATCH from the project() call. The `VERSION x.y.z` line
 # stands alone inside project(); cmake_minimum_required puts its VERSION on the
 # same line as the command, so it cannot match.
 core_version() {
@@ -40,7 +40,7 @@ full_version() {
 }
 
 # Tag <-> source, pre-release consistency, and the CHANGELOG entry. Three
-# guards rather than one comparison, because "2.0.0 != 2.0.0-alpha.1" does not
+# guards rather than one comparison, because a single mismatch message does not
 # tell you which mistake you made.
 check_tag() {
     local tag=${1:?usage: check-tag <tag>}
@@ -70,6 +70,8 @@ check_tag() {
 check_literals() {
     local version hits
     version=$(core_version)
+    # The guard's own fixtures assert on literal versions, so that one file
+    # is exempt. Nothing else is: prose belongs in docs/ or the CHANGELOG.
     hits=$(git grep -n --fixed-strings -- "$version" -- \
         ':!CMakeLists.txt' ':!CHANGELOG.md' ':!docs/' ':!scripts/version-tools-test.sh' || true)
     [[ -z $hits ]] || {
@@ -93,7 +95,7 @@ derive() {
             ;;
         *)
             # A pre-release suffix already opened the hyphen, so dev extends it
-            # with a dot rather than a second hyphen: 2.0.0-alpha.1.dev.7+abc.
+            # with a dot rather than a second hyphen: x.y.z-alpha.1.dev.7+abc.
             [[ $full == *-* ]] && echo "${full}.dev.${run}+${sha:0:7}" || echo "${full}-dev.${run}+${sha:0:7}"
             ;;
     esac

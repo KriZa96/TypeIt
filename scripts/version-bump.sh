@@ -7,7 +7,7 @@
 #   version-bump.sh apply <major|minor|patch|prerelease>   edit CMakeLists.txt and CHANGELOG.md
 #
 # `patch` on a pre-release cuts the release it was leading up to, so the
-# 2.0.0-beta.1 -> 2.0.0-beta.2 -> 2.0.0-rc.1 -> 2.0.0 chain needs no fourth verb.
+# beta.1 -> beta.2 -> rc.1 -> release chain needs no fourth verb.
 # Moving from beta to rc is a judgement call and stays manual.
 set -euo pipefail
 
@@ -29,7 +29,7 @@ next_version() {
         minor) echo "${major}.$((minor + 1)).0" ;;
         patch)
             # A pre-release is already numbered for the release it precedes:
-            # 2.0.0-rc.1 becomes 2.0.0, not 2.0.1.
+            # x.y.z-rc.1 becomes x.y.z, not x.y.(z+1).
             [[ -n $pre ]] && echo "$core" || echo "${major}.${minor}.$((patch + 1))"
             ;;
         prerelease)

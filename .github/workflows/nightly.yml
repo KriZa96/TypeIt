@@ -68,8 +68,7 @@ jobs:
 
       - name: Configure, build, test
         run: |
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DTYPEIT_WERROR=ON \
-            ${{ runner.os == 'Windows' && '-DCMAKE_CXX_FLAGS=-utf-8' || '' }}
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DTYPEIT_WERROR=ON
           cmake --build build --parallel
           ctest --test-dir build/tests --output-on-failure
 
@@ -118,7 +117,7 @@ jobs:
           docker run --rm --platform "${{ matrix.platform }}" -v "$PWD:/src" -w /src "${{ matrix.image }}" \
             sh -c '${{ matrix.setup }} &&
               git config --global --add safe.directory /src &&
-              cmake -B build-container -G Ninja -DCMAKE_BUILD_TYPE=Debug &&
+              cmake -B build-container -G Ninja -DCMAKE_BUILD_TYPE=Debug -DTYPEIT_WERROR=ON &&
               cmake --build build-container --parallel &&
               ctest --test-dir build-container/tests --output-on-failure'
 

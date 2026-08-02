@@ -67,25 +67,23 @@ jobs:
             build-type: Debug
             cmake-args: ""
             optional: false
-          # `-utf-8` rather than `/utf-8`: a `/`-prefixed argument is mangled
-          # into a Windows path by the MSYS layer under `shell: bash`.
           - name: windows-msvc-debug
             os: windows-latest
             compiler: msvc
             build-type: Debug
-            cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+            cmake-args: ""
             optional: false
           - name: windows-msvc-release
             os: windows-latest
             compiler: msvc
             build-type: RelWithDebInfo
-            cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+            cmake-args: ""
             optional: false
           - name: windows-clang-cl
             os: windows-latest
             compiler: clang-cl
             build-type: Debug
-            cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+            cmake-args: ""
             optional: false
           # macOS is not a supported platform. It is here because libc++ finds
           # what neither libstdc++ nor MSVC will, and it never blocks a merge.
