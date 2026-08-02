@@ -63,8 +63,8 @@ makes [defect C7](../CODEBASE_REVIEW.md#4-correctness-defects) — `size_t` comp
 - All six are trivially copyable and no larger than their payload.
 
 **Acceptance**
-- [ ] Zero runtime overhead versus the raw type (`static_assert` on `sizeof`).
-- [ ] Illegal conversions are compile errors, asserted via `static_assert`.
+- [x] Zero runtime overhead versus the raw type (`static_assert` on `sizeof`).
+- [x] Illegal conversions are compile errors, asserted via `static_assert`.
 
 ---
 

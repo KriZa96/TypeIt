@@ -34,7 +34,7 @@ add_test(NAME core.isolation.ftxui_is_unreachable
 
 set_tests_properties(core.isolation.ftxui_is_unreachable PROPERTIES WILL_FAIL TRUE)
 
-add_executable(core_tests ScaffoldTest.cpp)
+add_executable(core_tests UnitsTest.cpp)
 
 target_link_libraries(core_tests PRIVATE typeit::core GTest::gtest GTest::gtest_main)
 
