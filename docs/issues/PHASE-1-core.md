@@ -271,9 +271,16 @@ rather than rebuilding the session, fixing the limitation in
 - Property: no line exceeds `columns` in display width.
 
 **Acceptance**
-- [ ] All legacy wrapping expectations reproduce exactly at width 55.
-- [ ] Both properties hold over a randomised corpus.
-- [ ] The function is `const`-correct and allocation-bounded.
+- [x] All legacy wrapping expectations reproduce exactly at width 55 — every one the issue
+      lists. One further case in the legacy file does not, deliberately: see the note below.
+- [x] Both properties hold over a randomised corpus — twelve inputs across eleven widths.
+- [x] The function is `const`-correct and allocation-bounded — one vector of line starts, no
+      allocation per line.
+
+> `"Lorem ipsum dolor sit amet,\nconsectetur…"` gave three lines in 1.0 and gives four here.
+> 1.0 breaks at a space only once the line already holds 55 characters, so a line with no space
+> near the limit runs past it — that input's third line was 57 columns in a 55-column view, and
+> the terminal wrapped it anyway. A line that does not fit is the defect, not the fix.
 
 ---
 

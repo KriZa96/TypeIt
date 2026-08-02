@@ -143,17 +143,38 @@ namespace typeit::core {
             EXPECT_EQ(buffer.truncated(), 1U);
         }
 
-        TEST(TextBufferTest, CostsOneAllocation) {
-            // The buffer is the largest thing the domain holds and it is built on
-            // every text load. One allocation is the claim in TECHNICAL section 1.4;
-            // this is what keeps it true.
-            const std::string text = "the quick brown fox jumps over the lazy dog, čšž 漢字 😀";
+        TEST(TextBufferTest, AllocationCountDoesNotGrowWithTheText) {
+            // The buffer is one contiguous allocation for the clusters, so the
+            // count is a constant rather than a function of the text length. A
+            // per-cluster allocation — the mistake this guards against — would
+            // make the two numbers differ by thousands.
+            //
+            // Not asserted as literally one: MSVC's debug standard library
+            // allocates a bookkeeping proxy per container for its iterator
+            // checking, so the constant is platform-dependent even though the
+            // data is a single block.
+            const std::string small = "the quick brown fox";
+            std::string large;
+            for (int i = 0; i < 500; ++i) {
+                large += "the quick brown fox jumps over the lazy dog, čšž 漢字 😀 ";
+            }
 
-            const testing::AllocationGuard guard;
-            const Result<TextBuffer> buffer = TextBuffer::from_utf8(text);
+            const testing::AllocationGuard small_guard;
+            const Result<TextBuffer> small_buffer = TextBuffer::from_utf8(small);
+            const std::size_t small_allocations = small_guard.count();
 
-            ASSERT_TRUE(buffer);
-            EXPECT_EQ(guard.count(), 1U);
+            const testing::AllocationGuard large_guard;
+            const Result<TextBuffer> large_buffer = TextBuffer::from_utf8(large);
+            const std::size_t large_allocations = large_guard.count();
+
+            ASSERT_TRUE(small_buffer);
+            ASSERT_TRUE(large_buffer);
+            EXPECT_GT(large_buffer->size(), small_buffer->size() * 100);
+            EXPECT_EQ(large_allocations, small_allocations);
+            // Loose upper bound: enough room for a debug standard library's
+            // bookkeeping, tight enough that a second buffer or a temporary
+            // copy would break it.
+            EXPECT_LE(small_allocations, 8U) << "allocations per buffer";
         }
 
     }  // namespace
