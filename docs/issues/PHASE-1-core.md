@@ -176,9 +176,11 @@ cause.
 - Round trip: concatenating every cluster's bytes reproduces the input exactly.
 
 **Acceptance**
-- [ ] Every table row passes.
-- [ ] The round-trip property holds for a corpus of ~1000 mixed-script lines.
-- [ ] Out-of-scope cases are documented in the header, not silently mishandled.
+- [x] Every table row passes.
+- [x] The round-trip property holds for a corpus of ~1000 mixed-script lines.
+- [x] Out-of-scope cases are documented in the header, not silently mishandled — and the
+      skin-tone modifier, the nearest out-of-scope case, has a test pinning what it does
+      instead, so changing the boundary means changing a test.
 
 ---
 

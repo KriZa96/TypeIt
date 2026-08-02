@@ -54,7 +54,7 @@ if(TYPEIT_BUILD_PROBES)
                          PROPERTIES WILL_FAIL TRUE)
 endif()
 
-add_executable(core_tests FakeClockTest.cpp GraphemeTest.cpp ResultTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp)
+add_executable(core_tests FakeClockTest.cpp GraphemeTest.cpp ResultTest.cpp SegmenterTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp)
 
 target_link_libraries(core_tests PRIVATE typeit::core typeit::test_support GTest::gtest GTest::gtest_main)
 
