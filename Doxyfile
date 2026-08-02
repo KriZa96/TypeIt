@@ -1,0 +1,22 @@
+# API reference for the public headers. Deliberately short: the defaults are
+# fine, and a 2,000-line generated Doxyfile is 2,000 lines nobody reviews.
+PROJECT_NAME           = TypeIt
+PROJECT_BRIEF          = "Terminal typing trainer"
+OUTPUT_DIRECTORY       = build/doxygen
+HTML_OUTPUT            = .
+GENERATE_LATEX         = NO
+
+INPUT                  = include
+RECURSIVE              = YES
+EXTRACT_ALL            = NO
+JAVADOC_AUTOBRIEF      = YES
+QUIET                  = YES
+
+# An undocumented public class is a warning, and a warning fails the job
+# (docs/STYLE.md section 9). WARN_IF_UNDOCUMENTED stays off until the legacy
+# tree under include/ is deleted at the Phase 4 cutover (TI-097): it predates
+# the rule, it is being replaced rather than documented, and turning the rule
+# on now would only teach everyone to ignore the job.
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS

@@ -355,9 +355,14 @@ The slow, rarely-broken checks.
 - Out: —
 
 **Acceptance**
-- [ ] Pages deploys only from `main`.
+- [x] Pages deploys only from `main`.
 - [ ] Doxygen emits no warnings — an undocumented public class is a warning
       ([STYLE §9](../STYLE.md#9-comments-and-documentation)).
+
+> `WARN_AS_ERROR = FAIL_ON_WARNINGS` is on, but `WARN_IF_UNDOCUMENTED` stays off until the
+> legacy tree under `include/` is deleted at the cutover (TI-097). Turning it on against code
+> that predates the rule and is being deleted rather than documented would only teach everyone
+> to ignore the job. Flip it in TI-097 and tick this then.
 
 ---
 

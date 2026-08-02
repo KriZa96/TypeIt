@@ -1,0 +1,89 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+    paths: ["docs/**", "include/**", "book.toml", "Doxyfile", ".github/workflows/docs.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  MDBOOK_VERSION: "0.5.4"
+
+jobs:
+  build:
+    name: Build the site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Install mdBook
+        run: |
+          url="https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          curl -sSfL "$url" | tar -xz -C /usr/local/bin mdbook
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes doxygen graphviz
+
+      - run: mdbook build
+
+      - run: doxygen Doxyfile
+
+      # The prose and the API reference ship as one site: docs/ at the root,
+      # the generated reference under /api/.
+      - name: Assemble
+        run: |
+          mkdir -p site
+          cp -r build/book/. site/
+          mkdir -p site/api
+          cp -r build/doxygen/. site/api/
+
+      # The same offline link check as quality.yml, but over the rendered
+      # site: mdBook rewrites .md links to .html, and a link that survives the
+      # source check can still be broken after that rewrite.
+      - name: Link check the built site
+        uses: lycheeverse/lychee-action@82202e5e9c2f4ef1a55a3d02563e1cb6041e5332 # v2.4.1
+        with:
+          args: --offline --no-progress --root-dir "$GITHUB_WORKSPACE/site" './site/**/*.html'
+          fail: true
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  # Pages publishes from main only. Until the Phase 4 cutover main is still
+  # 1.0.0, so this job simply does not run yet — the build above is what
+  # guards the documentation in the meantime.
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

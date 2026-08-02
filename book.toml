@@ -1,0 +1,23 @@
+[book]
+title = "TypeIt"
+description = "Design and planning documentation for the TypeIt 2.0 rebuild"
+src = "docs"
+language = "en"
+
+[build]
+build-dir = "build/book"
+create-missing = false
+
+[output.html]
+default-theme = "ayu"
+git-repository-url = "https://github.com/KriZa96/TypeIt"
+# Every page gets an edit link, because the most common documentation fix is
+# noticed by someone reading it rather than by someone writing it.
+edit-url-template = "https://github.com/KriZa96/TypeIt/edit/main/{path}"
+
+# mdBook renders a README.md as index.html but leaves links to it pointing at
+# README.html. The files are named README.md so GitHub renders them in the
+# directory listing, so the site carries the redirect instead.
+[output.html.redirect]
+"/README.html" = "index.html"
+"/issues/README.html" = "index.html"
