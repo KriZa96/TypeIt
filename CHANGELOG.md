@@ -16,14 +16,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as narrowe
 - Quality gates: clang-format, clang-tidy, cppcheck, typos, markdownlint, link checking,
   shellcheck, workflow lint, and Conventional Commits on pull request titles (CI-001, CI-006).
 - Sanitizer job running the suite under ASan and UBSan with hardened-mode assertions (CI-007).
+- `CMakePresets.json` with the gcc, clang, ASan/UBSan, clang-tidy, coverage and vcpkg presets
+  used by both CI and local builds (TI-010).
+- `cmake/CompilerWarnings.cmake` with the GCC/Clang and MSVC warning sets and the
+  `TYPEIT_WERROR` option, now on in every CI job (TI-003, TI-020).
+- `cmake/Sanitizers.cmake` and `cmake/StaticAnalysis.cmake`, plus per-directory `.clang-tidy`
+  overrides so the legacy tree can be checked without blocking on its known findings
+  (TI-013, TI-014).
+- A generated `typeit/core/Version.h`: the version is declared once in `CMakeLists.txt` and
+  read from the header everywhere else (TI-002).
+- `.editorconfig` (TI-015) and `CONTRIBUTING.md` with GitHub issue and pull request templates
+  (TI-022).
 
 ### Changed
 
+- Dependencies are fetched with `FetchContent` from `cmake/Dependencies.cmake` instead of the
+  vcpkg submodule, so a fresh clone needs no submodule step (TI-007, TI-008).
+- Sources are listed explicitly instead of globbed, and the legacy code is built as the interim
+  `typeit_legacy` library that the tests link against (TI-011, TI-012).
+- Every warning the new flag set surfaced is fixed — the `-Wreorder`, `-Wparentheses` and
+  signed/unsigned findings — with behaviour pinned by the existing suite (TI-004).
+- Documentation lives in one place: `src/docs/` is deleted and `README.md` is a README again,
+  linking into `docs/` (TI-021).
 - `TimerTest.DoesNotCalculateWhenStartGameFalse` is renamed from its misspelled form, and the
   misspelled fixture text in the line engine tests is corrected (CI-006).
 - The whole tree is formatted to the repository's `.clang-format` for the first time (CI-006).
 - `CMakeLists.txt` no longer overrides a compiler or toolchain chosen on the command line or in
-  the environment (CI-005; TI-009 removes the assignment entirely).
+  the environment (CI-005, TI-009).
+
+### Fixed
+
+- Opening an existing but empty file no longer calls `pop_back` on an empty string, which was
+  undefined behaviour (TI-005).
+- The no-op `ExitLoopClosure` call in the menu is removed; quitting already went through the
+  screen's own exit path (TI-006).
 
 ## [1.0.0] - 2025-05-17
 
