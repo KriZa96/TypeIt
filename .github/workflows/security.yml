@@ -107,7 +107,8 @@ jobs:
       # Scans the manifests it understands. The C++ dependencies are pinned by
       # hand in cmake/Dependencies.cmake, which no scanner parses — CI-013's
       # freshness report is what watches those.
-      - uses: google/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+      # The action lives in a subdirectory; the repository root has no action.yml.
+      - uses: google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
         with:
           scan-args: |-
             --recursive
