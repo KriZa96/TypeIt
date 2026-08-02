@@ -281,7 +281,7 @@ Manually dispatched with `major|minor|patch|prerelease`. Edits `CMakeLists.txt`,
 - **It never pushes to `main`** — asserted, not assumed.
 
 **Acceptance**
-- [ ] The workflow suggests; a human confirms by merging. It does not choose the number on its
+- [x] The workflow suggests; a human confirms by merging. It does not choose the number on its
       own, for the reason in [VERSIONING §12.3](../VERSIONING.md#123-what-it-deliberately-does-not-automate).
 
 ---

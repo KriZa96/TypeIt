@@ -1,0 +1,78 @@
+name: Version bump
+
+# Manually dispatched. It computes and suggests; a human confirms by merging
+# the pull request it opens. Choosing the number is deliberately not automated
+# (docs/VERSIONING.md section 12.3).
+on:
+  workflow_dispatch:
+    inputs:
+      part:
+        description: Which part to bump
+        required: true
+        type: choice
+        options: [major, minor, patch, prerelease]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  bump:
+    name: Open a version bump pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - run: scripts/version-tools-test.sh
+
+      - id: bump
+        run: |
+          version=$(scripts/version-bump.sh apply "${{ inputs.part }}")
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+
+      - name: The result must satisfy its own guards
+        run: |
+          scripts/version-guard.sh check-literals
+          scripts/version-guard.sh check-tag "v${{ steps.bump.outputs.version }}"
+
+      - name: Open the pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          base=${GITHUB_REF#refs/heads/}
+          branch="chore/release-${VERSION}"
+
+          # The one invariant worth asserting rather than assuming: the bump is
+          # proposed on a branch of its own and merged by a person.
+          case "$branch" in
+            main | v2) echo "::error::refusing to push to $branch"; exit 1 ;;
+          esac
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -qam "chore: bump the version to ${VERSION}"
+          git push --quiet origin "$branch"
+
+          cat >/tmp/body.md <<BODY
+          Dispatched \`version-bump.yml\` with \`${{ inputs.part }}\`.
+
+          \`CMakeLists.txt\` now declares \`${VERSION}\`, and the \`## [Unreleased]\` block has
+          moved under a dated heading. Read the notes before merging: this workflow moved them,
+          it did not write them.
+
+          Tag \`v${VERSION}\` once this merges. \`version-guard.yml\` checks that tag against
+          this commit.
+          BODY
+
+          gh pr create --base "$base" --head "$branch" \
+            --title "chore: bump the version to ${VERSION}" \
+            --body-file /tmp/body.md
