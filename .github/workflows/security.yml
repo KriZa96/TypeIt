@@ -1,0 +1,144 @@
+name: Security
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+  schedule:
+    # Weekly, so a vulnerability disclosed against a pinned dependency surfaces
+    # without waiting for someone to open a pull request.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          languages: c-cpp
+          build-mode: manual
+          queries: security-and-quality
+
+      # CodeQL sees only what the compiler sees, so this is a real build of the
+      # real targets, not a scan of the source directory.
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: gcc
+
+      - run: cmake --build build --parallel
+
+      - uses: github/codeql-action/analyze@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          category: /language:c-cpp
+
+  msvc-analyze:
+    name: MSVC code analysis
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: msvc
+          cmake-args: -DCMAKE_CXX_FLAGS=-utf-8
+
+      # A genuinely different analyser from clang-tidy: /analyze understands
+      # the MSVC-specific annotations and the Windows API contracts.
+      - id: analyze
+        uses: microsoft/msvc-code-analysis-action@24c285ab36952c9e9182f4b78dfafbac38a7e5ee # v0.1.1
+        with:
+          cmakeBuildDirectory: build
+          buildConfiguration: Debug
+          ruleset: NativeRecommendedRules.ruleset
+
+      - uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          sarif_file: ${{ steps.analyze.outputs.sarif }}
+          category: msvc-analyze
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+
+  osv-scanner:
+    name: OSV scanner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # Scans the manifests it understands. The C++ dependencies are pinned by
+      # hand in cmake/Dependencies.cmake, which no scanner parses — CI-013's
+      # freshness report is what watches those.
+      - uses: google/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+
+  scorecard:
+    name: OpenSSF Scorecard
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # Grades this repository's own hygiene: pinned actions, token
+      # permissions, branch protection. The score is the baseline CI-018 is
+      # measured against.
+      - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: scorecard.sarif
+          results_format: sarif
+          publish_results: true
+
+      - uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        with:
+          sarif_file: scorecard.sarif
+          category: scorecard

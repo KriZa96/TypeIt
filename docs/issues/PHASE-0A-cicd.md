@@ -235,6 +235,10 @@ Lands with Phase 1, when there is a `core` library worth measuring.
 - [ ] Dependabot opens PRs for outdated actions, and those PRs pass CI.
 - [ ] Scorecard score recorded in the issue as a baseline.
 
+> `security.yml` and `dependabot.yml` have landed. These three boxes are deliberately left
+> open: each one is a statement about GitHub's side of the repository and can only be ticked
+> after the first push, not from a local checkout.
+
 ---
 
 ## CI-011 — Release workflow

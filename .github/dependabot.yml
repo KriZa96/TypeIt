@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  # GitHub Actions only. The C++ dependencies are pinned deliberately in
+  # cmake/Dependencies.cmake and bumped by hand with a build to prove it —
+  # automated C++ bumps are noise (docs/CI_CD.md section 8).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    labels:
+      - "type:ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The composite action has its own `uses:` list and is not covered by the
+  # entry above.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/setup-build
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    labels:
+      - "type:ci"
