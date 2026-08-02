@@ -88,23 +88,27 @@ namespace typeit::core {
             return is_regional_indicator(code_point) && regional_indicator_is_open;
         }
 
-        /// One cluster being built. Bytes are appended whole code points at a time, so
-        /// a truncated cluster is never cut mid-sequence.
+        /// One cluster being built. Bytes are appended whole code points at a
+        /// time, so a truncated cluster is never cut mid-sequence.
         class ClusterBuilder {
         public:
             void reset() {
                 grapheme_ = Grapheme{.bytes = {}, .length = 0, .width = 1};
-                code_points_.clear();
+                code_point_count_ = 0;
                 lost_bytes_ = false;
             }
 
             [[nodiscard]] bool empty() const { return grapheme_.length == 0; }
 
             void append(std::string_view bytes, char32_t code_point) {
-                // The code point counts towards the width even when its bytes
-                // did not fit: a truncated cluster still occupies the columns
-                // its base character asked for.
-                code_points_.push_back(code_point);
+                // A code point is at least one byte, so a cluster that fits in
+                // kMaxBytes has at most kMaxBytes code points and the array
+                // below cannot overflow for anything storable. Code points past
+                // that belong to a cluster already being truncated.
+                if (code_point_count_ < code_points_.size()) {
+                    code_points_.at(code_point_count_) = code_point;
+                    ++code_point_count_;
+                }
 
                 if (grapheme_.length + bytes.size() > Grapheme::kMaxBytes) {
                     lost_bytes_ = true;
@@ -116,12 +120,11 @@ namespace typeit::core {
                 }
             }
 
-            /// Finished: the width is only knowable once every code point in
-            /// the cluster has been seen, because a variation selector at the
-            /// end changes the answer.
+            /// The width is only knowable once the whole cluster has been seen:
+            /// a variation selector at the end changes the answer.
             [[nodiscard]] Grapheme grapheme() const {
                 Grapheme finished = grapheme_;
-                finished.width = width_of_cluster(code_points_);
+                finished.width = width_of_cluster(std::span{code_points_}.first(code_point_count_));
                 return finished;
             }
 
@@ -129,7 +132,10 @@ namespace typeit::core {
 
         private:
             Grapheme grapheme_{.bytes = {}, .length = 0, .width = 1};
-            std::vector<char32_t> code_points_;
+            // Inline, so segmenting a text allocates only the vector of results
+            // (TI-030 asserts one allocation per buffer).
+            std::array<char32_t, Grapheme::kMaxBytes> code_points_{};
+            std::size_t code_point_count_ = 0;
             bool lost_bytes_ = false;
         };
 
@@ -189,7 +195,9 @@ namespace typeit::core {
             flush();
         }
 
-        result.graphemes.shrink_to_fit();
+        // Deliberately not shrink_to_fit: that is a second allocation and a
+        // copy to reclaim slack from a buffer that is built once and read for
+        // the rest of the session (TI-030 asserts one allocation per buffer).
         return result;
     }
 

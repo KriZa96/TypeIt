@@ -235,8 +235,9 @@ word count, total display width. One contiguous allocation.
 - Word count with non-breaking space, tab, and CJK text (no spaces).
 
 **Acceptance**
-- [ ] All eight legacy word-count cases pass with identical expectations.
-- [ ] One allocation per buffer (counting allocator).
+- [x] All eight legacy word-count cases pass with identical expectations — all ten, in fact:
+      the legacy file has ten, not eight.
+- [x] One allocation per buffer (counting allocator).
 
 ---
 
