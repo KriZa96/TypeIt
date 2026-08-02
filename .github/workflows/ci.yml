@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2]
   pull_request:
 
 permissions:
@@ -100,8 +100,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # The vcpkg toolchain file is hardcoded in CMakeLists.txt until TI-009,
-      # and bootstraps vcpkg itself on first configure.
       - uses: ./.github/actions/setup-build
         with:
           compiler: ${{ matrix.compiler }}

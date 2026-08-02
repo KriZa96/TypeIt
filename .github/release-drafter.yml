@@ -1,0 +1,31 @@
+# Accumulates merged pull request titles into a draft release, so the CHANGELOG
+# section for the next tag is mostly written before anyone needs it
+# (docs/VERSIONING.md section 12.2). The draft is a starting point for the
+# handwritten notes, never the notes themselves.
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+categories:
+  - title: Added
+    labels: ["type:feat"]
+  - title: Fixed
+    labels: ["type:fix"]
+  - title: Changed
+    labels: ["type:refactor", "type:perf", "type:build"]
+  - title: Documentation
+    labels: ["type:docs"]
+  - title: Internal
+    labels: ["type:ci", "type:test", "type:chore"]
+
+exclude-labels:
+  - "skip-changelog"
+
+# The number is chosen by a person (VERSIONING section 12.3); this only ever
+# suggests the next patch so the draft has a name.
+version-resolver:
+  default: patch
+
+template: |
+  $CHANGES
+
+  **Full changelog:** https://github.com/KriZa96/TypeIt/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

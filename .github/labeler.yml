@@ -1,0 +1,61 @@
+# Auto-labelling by the path a pull request touches. Layers first, because
+# "which layer did this change" is the question the backlog is organised
+# around; the type labels stay manual, since a path cannot tell a fix from a
+# feature.
+"layer:build":
+  - changed-files:
+      - any-glob-to-any-file:
+          - CMakeLists.txt
+          - CMakePresets.json
+          - cmake/**
+          - vcpkg.json
+          - vcpkg-configuration.json
+
+"layer:core":
+  - changed-files:
+      - any-glob-to-any-file:
+          - libs/core/**
+          - include/core/**
+          - src/core/**
+
+"layer:app":
+  - changed-files:
+      - any-glob-to-any-file:
+          - libs/app/**
+
+"layer:infra":
+  - changed-files:
+      - any-glob-to-any-file:
+          - libs/infra/**
+
+"layer:tui":
+  - changed-files:
+      - any-glob-to-any-file:
+          - libs/tui/**
+          - include/view/**
+          - src/view/**
+
+"layer:cli":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/**
+          - src/main.cpp
+
+"type:ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - scripts/**
+
+"type:docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - "*.md"
+          - book.toml
+          - Doxyfile
+
+"type:test":
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**

@@ -406,7 +406,12 @@ terminal-mode restoration on exit.
 **Acceptance**
 - [ ] `main` cannot be pushed to directly.
 - [ ] A PR is auto-labelled by the layer it touches.
-- [ ] The PR template checklist matches the definition of done, so it cannot drift.
+- [x] The PR template checklist matches the definition of done, so it cannot drift.
+
+> The labels, the labeller, `CODEOWNERS` and Release Drafter have landed, and branch protection
+> is scripted in `scripts/repo-settings.sh`. The first two boxes need that script run once with
+> an admin-authenticated `gh`, which is a change to the GitHub repository rather than to this
+> tree — tick them after running it.
 
 ---
 
