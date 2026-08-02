@@ -17,11 +17,24 @@
 # EXCLUDE_FROM_ALL: the probe is expected not to compile, so it must never be
 # part of a normal build. Warnings are deliberately not applied — it has to
 # fail on the include, not on something -Werror noticed.
-add_library(core_isolation_probe STATIC EXCLUDE_FROM_ALL isolation/includes_ftxui.cpp)
+add_library(core_isolation_probe STATIC EXCLUDE_FROM_ALL probes/includes_ftxui.cpp)
 target_link_libraries(core_isolation_probe PRIVATE typeit::core)
 
-add_library(core_isolation_control STATIC EXCLUDE_FROM_ALL isolation/includes_stdlib.cpp)
+add_library(core_isolation_control STATIC EXCLUDE_FROM_ALL probes/includes_stdlib.cpp)
 target_link_libraries(core_isolation_control PRIVATE typeit::core)
+
+# A discarded Result is an ignored failure. std::expected is [[nodiscard]] in
+# both standard libraries this project builds against, so the probe only has to
+# make the warning fatal -- typeit_set_warnings does not, because TYPEIT_WERROR
+# is off in a local build by design.
+add_library(core_nodiscard_probe STATIC EXCLUDE_FROM_ALL probes/discards_result.cpp)
+target_link_libraries(core_nodiscard_probe PRIVATE typeit::core)
+target_compile_options(core_nodiscard_probe PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/WX;/W4,-Werror;-Wunused-result>)
+
+# Keep the probes out of compile_commands.json. Every analyser that walks the
+# compilation database -- clang-tidy, MSVC /analyze -- treats a file that
+# cannot compile as its own failure, and these two are supposed not to.
+set_target_properties(core_isolation_probe core_nodiscard_probe PROPERTIES EXPORT_COMPILE_COMMANDS OFF)
 
 # The control comes first in name so a broken harness is obvious: a negative
 # test that cannot tell "unreachable" from "the compiler never ran" proves
@@ -32,9 +45,13 @@ add_test(NAME core.isolation.control
 add_test(NAME core.isolation.ftxui_is_unreachable
          COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target core_isolation_probe)
 
-set_tests_properties(core.isolation.ftxui_is_unreachable PROPERTIES WILL_FAIL TRUE)
+add_test(NAME core.nodiscard.result_cannot_be_ignored
+         COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target core_nodiscard_probe)
 
-add_executable(core_tests UnitsTest.cpp)
+set_tests_properties(core.isolation.ftxui_is_unreachable core.nodiscard.result_cannot_be_ignored
+                     PROPERTIES WILL_FAIL TRUE)
+
+add_executable(core_tests ResultTest.cpp UnitsTest.cpp)
 
 target_link_libraries(core_tests PRIVATE typeit::core GTest::gtest GTest::gtest_main)
 

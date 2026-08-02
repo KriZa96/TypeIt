@@ -88,8 +88,8 @@ makes [defect C7](../CODEBASE_REVIEW.md#4-correctness-defects) — `size_t` comp
 - Every `ErrorCode` has a non-empty default message (table-driven over the enum).
 
 **Acceptance**
-- [ ] Compiles on gcc, clang, and MSVC at the documented floor.
-- [ ] No exception is thrown by any function returning `Result`.
+- [x] Compiles on gcc, clang, and MSVC at the documented floor.
+- [x] No exception is thrown by any function returning `Result`.
 
 ---
 

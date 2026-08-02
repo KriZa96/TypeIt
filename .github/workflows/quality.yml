@@ -72,9 +72,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes cppcheck
+          # syntaxError is suppressed because cppcheck's C++20/23 parser is
+          # incomplete -- a `concept` definition is a parse failure to it -- and a
+          # tool that cannot read the file has no opinion worth gating on. Its
+          # real findings still fail the job, and three compilers plus clang-tidy
+          # cover the parsing.
           cppcheck --enable=warning,portability --inline-suppr \
             --suppress=missingInclude --suppress=missingIncludeSystem \
-            --error-exitcode=1 --quiet -I include src tests
+            --suppress=syntaxError \
+            --error-exitcode=1 --quiet -I include -I libs/core/include src tests libs
 
       # The legacy tree is deleted wholesale at the Phase 4 cutover (TI-097),
       # so its findings are noise: this code is being replaced, not fixed. New

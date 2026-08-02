@@ -53,7 +53,7 @@ namespace typeit::core {
 
         friend constexpr Millis operator+(Millis lhs, Millis rhs) { return Millis{lhs.value + rhs.value}; }
         friend constexpr Millis operator-(Millis lhs, Millis rhs) { return Millis{lhs.value - rhs.value}; }
-        friend constexpr Millis operator-(Millis value) { return Millis{-value.value}; }
+        friend constexpr Millis operator-(Millis operand) { return Millis{-operand.value}; }
 
         friend constexpr bool operator==(const Millis&, const Millis&) = default;
         friend constexpr auto operator<=>(const Millis&, const Millis&) = default;
