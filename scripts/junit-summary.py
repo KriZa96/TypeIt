@@ -34,5 +34,12 @@ else:
     if failed:
         out += "\nFailing:\n\n" + "".join(f"- `{name}`\n" for name in failed)
 
-with open(os.environ["GITHUB_STEP_SUMMARY"], "a") if "GITHUB_STEP_SUMMARY" in os.environ else sys.stdout as f:
-    f.write(out)
+# encoding="utf-8" explicitly: Python on the Windows runners defaults to cp1252
+# and the tick in the heading is then an unhandled UnicodeEncodeError, which
+# fails a job whose tests all passed.
+if "GITHUB_STEP_SUMMARY" in os.environ:
+    with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+        f.write(out)
+else:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.write(out)

@@ -47,7 +47,7 @@ struct ComponentOptions {
     static inline ftxui::InputOption menu_time_input_option = {.transform = [](ftxui::InputState state) {
         try {
             GameOptions::time_radiobox_values_[3] = std::stoi(GameOptions::custom_radiobox_input_);
-        } catch (const std::invalid_argument& _) {
+        } catch (const std::invalid_argument&) {
         }
 
         state.element |= ftxui::border;
