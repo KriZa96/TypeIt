@@ -63,9 +63,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # /analyze enumerates the build system, so the negative probes in
+      # tests/core have to not exist for it: it finds them, compiles them, and
+      # reports the failure they are built to provoke as its own.
       - uses: ./.github/actions/setup-build
         with:
           compiler: msvc
+          cmake-args: -DTYPEIT_BUILD_PROBES=OFF
 
       # A genuinely different analyser from clang-tidy: /analyze understands
       # the MSVC-specific annotations and the Windows API contracts.

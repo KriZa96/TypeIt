@@ -140,8 +140,8 @@ replacement characters silently.
 - `sizeof(Grapheme) <= 16` and `std::is_trivially_copyable_v<Grapheme>`.
 
 **Acceptance**
-- [ ] Every rejection names the byte offset.
-- [ ] No allocation in the decode path (verified with a counting allocator).
+- [x] Every rejection names the byte offset.
+- [x] No allocation in the decode path (verified with a counting allocator).
 
 ---
 
