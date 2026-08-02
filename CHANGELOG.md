@@ -27,6 +27,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as narrowe
   read from the header everywhere else (TI-002).
 - `.editorconfig` (TI-015) and `CONTRIBUTING.md` with GitHub issue and pull request templates
   (TI-022).
+- Version guards: the tag, the source, the pre-release suffix and the CHANGELOG heading can no
+  longer disagree, and no version literal may appear outside `CMakeLists.txt`. Each guard has a
+  fixture that watches it fail (CI-008).
+- A dispatchable version bump that edits the version, moves the `Unreleased` block under a
+  dated heading, and opens a pull request rather than pushing (CI-012).
+- Security and supply chain: CodeQL, MSVC `/analyze`, dependency review, OSV, OpenSSF Scorecard,
+  and Dependabot for GitHub Actions versions (CI-010).
+- A nightly workflow building the documented compiler floor exactly, plus aarch64, Alpine/musl,
+  shared libraries, ThreadSanitizer, Valgrind and a dependency freshness report (CI-013).
+- A documentation site: mdBook over `docs/` and Doxygen over the public headers, published to
+  GitHub Pages from `main` (CI-016).
+- Repository automation: path-based labelling, `CODEOWNERS`, Release Drafter, and the labels and
+  branch protection scripted in `scripts/repo-settings.sh` (CI-018).
 
 ### Changed
 
@@ -46,6 +59,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as narrowe
 
 ### Fixed
 
+- The Windows builds no longer pass `-DCMAKE_CXX_FLAGS=-utf-8`, which replaced CMake's default
+  `/EHsc` and broke both MSVC and clang-cl on the first Windows run this project has ever had.
+  `/utf-8` was already applied by `cmake/CompilerWarnings.cmake` (CI-004).
 - Opening an existing but empty file no longer calls `pop_back` on an empty string, which was
   undefined behaviour (TI-005).
 - The no-op `ExitLoopClosure` call in the menu is removed; quitting already went through the

@@ -29,9 +29,9 @@ checkoutable.
 **Tests** — none (no code).
 
 **Acceptance**
-- [ ] `git show v1.0.0` resolves to `d7a2d1c`.
-- [ ] `CHANGELOG.md` records 1.0.0 capabilities and notes that it persists no user data.
-- [ ] Branch `v2` exists and is where all Phase 0–3 work lands.
+- [x] `git show v1.0.0` resolves to `d7a2d1c`.
+- [x] `CHANGELOG.md` records 1.0.0 capabilities and notes that it persists no user data.
+- [x] Branch `v2` exists and is where all Phase 0–3 work lands.
 
 ---
 
@@ -53,9 +53,10 @@ Declare the version once and generate a header from it. Every later consumer —
 - An empty `TYPEIT_VERSION_PRERELEASE` yields no trailing hyphen.
 
 **Acceptance**
-- [ ] No version literal exists anywhere outside `CMakeLists.txt` (`git grep` clean).
-- [ ] Generated header lands in the build tree, not the source tree.
-- [ ] Configuring in a tarball with no `.git` succeeds; `kGitDescribe` is empty.
+- [x] No version literal exists anywhere outside `CMakeLists.txt` (`git grep` clean, and
+      enforced by the CI-008 guard).
+- [x] Generated header lands in the build tree, not the source tree.
+- [x] Configuring in a tarball with no `.git` succeeds; `kGitDescribe` is empty.
 
 ---
 
@@ -74,9 +75,9 @@ apply it to the existing targets. **`-Werror` stays off** until TI-004 clears th
 TI-004 can be verified against it, and delete that file when TI-004 closes.
 
 **Acceptance**
-- [ ] Warnings appear on gcc and clang builds.
-- [ ] Build still succeeds (warnings are not yet errors).
-- [ ] Baseline captured and committed.
+- [x] Warnings appear on gcc and clang builds.
+- [x] Build still succeeds (warnings are not yet errors).
+- [x] Baseline captured and committed.
 
 ---
 
@@ -106,10 +107,15 @@ Fix every warning the new flags surface. Known in advance:
   inputs as the existing wrapping tests, pinning behaviour across the edit.
 
 **Acceptance**
-- [ ] Zero warnings on gcc and clang with the TI-003 flag set.
+- [x] Zero warnings on gcc and clang with the TI-003 flag set.
 - [ ] Zero warnings on MSVC `/W4`.
-- [ ] `docs/warning-baseline.txt` deleted.
+- [x] `docs/warning-baseline.txt` deleted.
 - [ ] Existing test suite passes with no test file modified.
+
+> Two test files were modified after all: `int` counters passed to a `std::size_t` parameter,
+> and one `EXPECT_FLOAT_EQ` against an `int`-returning function. The warning set applies to the
+> test target too, so zero warnings is unreachable otherwise. No expectation changed — see
+> commit `e0db7f3`.
 
 ---
 
@@ -132,8 +138,9 @@ An existing-but-empty file opens successfully, the read loop never runs, and
 - The new tests must fail on the unfixed code. Verify that before fixing.
 
 **Acceptance**
-- [ ] New tests fail before the fix, pass after.
-- [ ] Clean under ASan/UBSan.
+- [x] New tests fail before the fix, pass after — verified by reverting `FileTextSource.cpp`
+      alone: `ReadsEmptyFileReturnsEmptyString` aborts.
+- [x] Clean under ASan/UBSan.
 
 ---
 
@@ -174,8 +181,13 @@ system package is preferred and a download is the fallback.
 
 **Acceptance**
 - [ ] All four paths configure and build.
-- [ ] Every git dependency is tag-pinned; no floating refs.
-- [ ] CMake minimum raised to 3.24 (`FIND_PACKAGE_ARGS`).
+- [x] Every git dependency is tag-pinned; no floating refs.
+- [x] CMake minimum raised to 3.24 (`FIND_PACKAGE_ARGS`).
+
+> Paths 1, 2 and 4 are verified: an installed GoogleTest resolves through `find_package` while
+> FTXUI downloads, in the same configure, and `FETCHCONTENT_FULLY_DISCONNECTED=ON` builds
+> against a pre-populated `_deps`. Path 3 needs a vcpkg toolchain, which no longer ships in the
+> repository — it is checked by hand or through the `vcpkg` preset.
 
 ---
 
@@ -196,10 +208,10 @@ project does not configure from a fresh clone without `--recursive`.
 test succeeds. This is the acceptance test.
 
 **Acceptance**
-- [ ] `git clone <url> && cmake --preset … && cmake --build … && ctest …` works with no
+- [x] `git clone <url> && cmake --preset … && cmake --build … && ctest …` works with no
       submodule step.
 - [ ] `vcpkg.json` still present and still usable via the vcpkg toolchain.
-- [ ] No `.gitmodules`, no `external/`.
+- [x] No `.gitmodules`, no `external/`.
 
 ---
 
@@ -238,9 +250,9 @@ Configure, build, and test presets for every supported toolchain.
   land in those issues.
 
 **Acceptance**
-- [ ] `cmake --preset linux-gcc-debug && cmake --build --preset … && ctest --preset …` works.
+- [x] `cmake --preset linux-gcc-debug && cmake --build --preset … && ctest --preset …` works.
 - [ ] The equivalent Windows sequence works.
-- [ ] `compile_commands.json` is generated and clangd resolves includes.
+- [x] `compile_commands.json` is generated and clangd resolves includes.
 
 ---
 
@@ -256,9 +268,9 @@ means `test_input_line_engine.cpp` is listed twice.
 - Out: target restructuring (TI-012).
 
 **Acceptance**
-- [ ] No `file(GLOB)` remains.
-- [ ] Each test source appears exactly once.
-- [ ] Adding a new file to a list and rebuilding picks it up without a manual reconfigure.
+- [x] No `file(GLOB)` remains.
+- [x] Each test source appears exactly once.
+- [x] Adding a new file to a list and rebuilding picks it up without a manual reconfigure.
 
 ---
 
@@ -277,8 +289,8 @@ double-build cost for the duration of the migration.
 - Out: any change to the code inside it.
 
 **Acceptance**
-- [ ] Each source compiles exactly once per configuration.
-- [ ] All existing tests pass unchanged.
+- [x] Each source compiles exactly once per configuration.
+- [x] All existing tests pass unchanged.
 - [ ] Incremental build time after touching one `.cpp` measurably drops.
 
 ---
@@ -300,7 +312,7 @@ double-build cost for the duration of the migration.
 case to be caught here if TI-005 has not landed; that is a useful cross-check.
 
 **Acceptance**
-- [ ] `ctest --preset linux-clang-asan` passes with no findings.
+- [x] `ctest --preset linux-clang-asan` passes with no findings.
 
 ---
 
@@ -316,8 +328,8 @@ case to be caught here if TI-005 has not landed; that is a useful cross-check.
   excluded via a `.clang-tidy` override; **new code is clean from day one**.
 
 **Acceptance**
-- [ ] `cmake --preset linux-tidy && cmake --build …` runs tidy.
-- [ ] Legacy exclusion is explicit, commented, and dated with the issue that removes it.
+- [x] `cmake --preset linux-tidy && cmake --build …` runs tidy.
+- [x] Legacy exclusion is explicit, commented, and dated with the issue that removes it.
 
 ---
 
@@ -333,7 +345,8 @@ case to be caught here if TI-005 has not landed; that is a useful cross-check.
 
 **Acceptance**
 - [ ] CI fails on a deliberately misformatted file.
-- [ ] The tree is format-clean.
+- [x] The tree is format-clean — with clang-format 18.1.8 specifically, which is what CI
+      pins and what a newer local binary will disagree with.
 
 ---
 
@@ -360,9 +373,9 @@ existing cross-references keep resolving.
 The point of the phase. Once the baseline is zero, keep it there.
 
 **Acceptance**
-- [ ] Every CI job sets `TYPEIT_WERROR=ON`.
+- [x] Every CI job sets `TYPEIT_WERROR=ON`.
 - [ ] A deliberately introduced warning fails CI on gcc, clang, and MSVC.
-- [ ] Local builds still default to warnings-not-errors.
+- [x] Local builds still default to warnings-not-errors.
 
 ---
 
@@ -380,9 +393,9 @@ rates. `src/docs/` is also the wrong home for documentation.
 - Out: rewriting the design docs — they are current.
 
 **Acceptance**
-- [ ] Exactly one copy of every document.
-- [ ] `README.md` is under ~120 lines and links to `docs/`.
-- [ ] No broken relative links (checked by a link-check script or by hand).
+- [x] Exactly one copy of every document.
+- [x] `README.md` is under ~120 lines and links to `docs/`.
+- [x] No broken relative links (checked by a link-check script or by hand).
 
 ---
 
@@ -398,7 +411,7 @@ rates. `src/docs/` is also the wrong home for documentation.
 
 **Acceptance**
 - [ ] Templates appear when opening an issue or PR.
-- [ ] `CONTRIBUTING.md` states the definition of done from
+- [x] `CONTRIBUTING.md` states the definition of done from
       [the backlog README](README.md#definition-of-done).
 
 ---
@@ -409,9 +422,9 @@ All of the following, before tagging `v2.0.0-alpha.1`:
 
 - [ ] Fresh clone → configure → build → test on Linux **and** Windows, with no submodule step.
 - [ ] Zero warnings with `TYPEIT_WERROR=ON` on gcc, clang, and MSVC.
-- [ ] All 41 existing tests pass, plus the 3 new ones from TI-005.
-- [ ] Full suite clean under ASan + UBSan.
+- [x] All 41 existing tests pass, plus the 3 new ones from TI-005 (65 registered cases).
+- [x] Full suite clean under ASan + UBSan.
 - [ ] CI green on: linux-gcc-debug, linux-gcc-release, linux-clang-debug, sanitizers,
       windows-msvc-debug, windows-msvc-release, windows-clang-cl, format.
-- [ ] Exactly one copy of each document; README rewritten.
-- [ ] `CHANGELOG.md` `Unreleased` block reflects the phase.
+- [x] Exactly one copy of each document; README rewritten.
+- [x] `CHANGELOG.md` `Unreleased` block reflects the phase.

@@ -14,6 +14,11 @@ Workflows are code with credentials attached. Every issue here follows the harde
 third-party actions pinned to a full commit SHA, `persist-credentials: false`, and a
 `timeout-minutes` on every job.
 
+> **On the unticked boxes.** Every workflow in this phase has landed. A box left open below is
+> one that asserts something about a *run* — a green matrix, a cache timing, a check watched to
+> fail — rather than something about this tree. Those are ticked from the Actions tab, not from
+> a local checkout.
+
 ---
 
 ## CI-001 — Workflow scaffolding and hardening
@@ -36,10 +41,10 @@ themselves reviewable and safe.
 - A deliberately unpinned action (tag instead of SHA) fails a pin-check step.
 
 **Acceptance**
-- [ ] Every third-party action is pinned to a full 40-character SHA with the version in a
+- [x] Every third-party action is pinned to a full 40-character SHA with the version in a
       trailing comment.
-- [ ] No workflow grants `write` permission at the top level.
-- [ ] Pushing twice to a branch cancels the first run.
+- [x] No workflow grants `write` permission at the top level.
+- [x] Pushing twice to a branch cancels the first run.
 
 ---
 
@@ -126,8 +131,8 @@ Windows clang-cl Debug. Plus optional non-blocking macOS.
 - [ ] All six green.
 - [ ] **A docs-only PR passes the aggregator with the build matrix skipped** — the failure mode
       where a skipped required check blocks a PR forever is explicitly tested.
-- [ ] `fail-fast: false` — one platform failing does not hide the others.
-- [ ] macOS, if enabled, is `continue-on-error` and documented as unsupported.
+- [x] `fail-fast: false` — one platform failing does not hide the others.
+- [x] macOS, if enabled, is `continue-on-error` and documented as unsupported.
 
 ---
 
@@ -152,9 +157,9 @@ documentation from rotting.
 
 **Acceptance**
 - [ ] All checks green after the existing violations are fixed.
-- [ ] `lychee` finds no broken link across `docs/` — there are hundreds of cross-references and
+- [x] `lychee` finds no broken link across `docs/` — there are hundreds of cross-references and
       they are only correct until the first rename.
-- [ ] clang-tidy legacy exclusion is explicit and references TI-097, the issue that removes it.
+- [x] clang-tidy legacy exclusion is explicit and references TI-097, the issue that removes it.
 
 ---
 
@@ -168,7 +173,7 @@ documentation from rotting.
 - Out: TSan and Valgrind (nightly, CI-013).
 
 **Acceptance**
-- [ ] Full suite green under ASan + UBSan.
+- [x] Full suite green under ASan + UBSan.
 - [ ] A deliberately introduced leak and a deliberate out-of-bounds read both fail the job.
 - [ ] Hardened-mode assertions are active — verified by an intentional `operator[]` overrun in a
       scratch build.
@@ -425,6 +430,6 @@ their subjects come into existence.
 - [ ] Every guard and every quality check has been **watched to fail** on a deliberate
       violation. An untested gate is decoration.
 - [ ] Windows is built and tested on every push, for the first time in this project's history.
-- [ ] No workflow holds more permission than it needs; every third-party action is SHA-pinned.
+- [x] No workflow holds more permission than it needs; every third-party action is SHA-pinned.
 - [ ] A docs-only PR passes without running the build matrix, and without deadlocking on a
       skipped required check.
