@@ -196,8 +196,8 @@ The workflow that makes the versioning policy real instead of aspirational.
 - Derived version strings are correct for all three trigger types.
 
 **Acceptance**
-- [ ] Every guard has a negative test. A guard nobody has watched fail is not a guard.
-- [ ] `typeit --version`, the tag, and the package filename can only ever agree.
+- [x] Every guard has a negative test. A guard nobody has watched fail is not a guard.
+- [x] `typeit --version`, the tag, and the package filename can only ever agree.
 
 ---
 

@@ -1,0 +1,81 @@
+name: Version guard
+
+on:
+  push:
+    branches: [main, v2]
+    tags: ["v*"]
+  pull_request:
+  # release.yml (CI-011) calls this for the derived version rather than
+  # deriving it a second time and disagreeing.
+  workflow_call:
+    outputs:
+      version:
+        description: The version this build should report
+        value: ${{ jobs.derive.outputs.version }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The guards are shell, so they are tested like shell: every one of them is
+  # watched to fail against a throwaway fixture before it is trusted here.
+  selftest:
+    name: Guard self-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - run: scripts/version-tools-test.sh
+
+  guards:
+    name: Guards
+    needs: selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: No version literal outside CMakeLists.txt
+        run: scripts/version-guard.sh check-literals
+
+      - name: Tag agrees with the source and has release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: scripts/version-guard.sh check-tag "${{ github.ref }}"
+
+      # Reminders, not gates. Annotations rather than pull request comments: a
+      # fork's token cannot post one, and a check that fails only on forks
+      # teaches people to ignore it.
+      - name: Notices
+        if: github.event_name == 'pull_request'
+        run: scripts/version-guard.sh notices "${{ github.event.pull_request.base.sha }}"
+
+  derive:
+    name: Derive version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.derive.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - id: derive
+        run: |
+          version=$(scripts/version-guard.sh derive)
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "Derived version: \`$version\`" >>"$GITHUB_STEP_SUMMARY"
