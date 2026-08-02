@@ -22,7 +22,10 @@ add_executable(
 target_link_libraries(tests PRIVATE typeit_legacy GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(tests)
+# The default discovery timeout is five seconds, which is not enough for a
+# freshly linked executable on a Windows runner: the first run pays for
+# the antivirus scan and CMake reports it as a hang.
+gtest_discover_tests(tests DISCOVERY_TIMEOUT 60)
 
 add_test(all_tests tests)
 

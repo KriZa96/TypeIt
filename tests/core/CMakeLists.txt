@@ -59,7 +59,10 @@ add_executable(core_tests FakeClockTest.cpp GraphemeTest.cpp ResultTest.cpp Segm
 target_link_libraries(core_tests PRIVATE typeit::core typeit::test_support GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(core_tests)
+# The default discovery timeout is five seconds, which is not enough for a
+# freshly linked executable on a Windows runner: the first run pays for
+# the antivirus scan and CMake reports it as a hang.
+gtest_discover_tests(core_tests DISCOVERY_TIMEOUT 60)
 
 typeit_set_warnings(core_tests)
 typeit_enable_sanitizers(core_tests)
