@@ -77,9 +77,12 @@ jobs:
           # tool that cannot read the file has no opinion worth gating on. Its
           # real findings still fail the job, and three compilers plus clang-tidy
           # cover the parsing.
+          # tests/core/probes holds sources that are supposed not to compile;
+          # every analyser that reads them reports their intended defect as its
+          # own finding.
           cppcheck --enable=warning,portability --inline-suppr \
             --suppress=missingInclude --suppress=missingIncludeSystem \
-            --suppress=syntaxError \
+            --suppress=syntaxError -i tests/core/probes \
             --error-exitcode=1 --quiet -I include -I libs/core/include src tests libs
 
       # The legacy tree is deleted wholesale at the Phase 4 cutover (TI-097),
