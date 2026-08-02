@@ -112,8 +112,9 @@ one-second sleep, which is a race against the scheduler.
 - Two clocks are independent.
 
 **Acceptance**
-- [ ] `FakeClock` lives in test support, is usable by every later phase.
-- [ ] No `core` code calls `std::chrono::steady_clock` directly (`git grep` clean).
+- [x] `FakeClock` lives in test support, is usable by every later phase.
+- [x] No `core` code calls `std::chrono::steady_clock` directly (`git grep` clean) — and
+      `quality.yml` greps for it on every push, so it stays that way.
 
 ---
 

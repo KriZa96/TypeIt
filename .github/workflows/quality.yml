@@ -101,6 +101,15 @@ jobs:
           fi
           clang-tidy -p build "${files[@]}"
 
+      # TI-026: every duration in the domain goes through IClock, or the test
+      # suite grows sleeps again. Cheaper to grep than to notice in review.
+      - name: core takes time only through IClock
+        run: |
+          if git grep -nE 'steady_clock|system_clock|high_resolution_clock' -- libs/core; then
+            echo "::error::core must read time through IClock (TI-026)"
+            exit 1
+          fi
+
   docs:
     name: Spelling, markdown and links
     runs-on: ubuntu-latest

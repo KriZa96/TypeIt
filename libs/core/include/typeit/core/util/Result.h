@@ -52,9 +52,11 @@ namespace typeit::core {
         friend bool operator==(const Error&, const Error&) = default;
     };
 
-    /// libstdc++ and the MSVC STL both mark std::expected [[nodiscard]], so an
-    /// ignored Result is a warning — and -Werror in CI makes it an error.
-    /// tests/core/probes/discards_result.cpp is the proof.
+    /// Whether a bare `std::expected` is [[nodiscard]] is up to the standard
+    /// library — gcc 14's libstdc++ and Apple's libc++ do not mark it, newer
+    /// libstdc++ does. So the guarantee here is ours, not theirs: **every
+    /// function returning Result or Status is marked [[nodiscard]]**, which is
+    /// portable and is what tests/core/probes/discards_result.cpp checks.
     template<typename T>
     using Result = std::expected<T, Error>;
 

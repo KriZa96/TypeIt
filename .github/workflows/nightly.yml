@@ -54,7 +54,9 @@ jobs:
           sudo apt-get update
           case "${{ matrix.name }}" in
             gcc-13)   sudo apt-get install --yes ninja-build gcc-13 g++-13; echo "CC=gcc-13"   >>"$GITHUB_ENV"; echo "CXX=g++-13"     >>"$GITHUB_ENV" ;;
-            clang-17) sudo apt-get install --yes ninja-build clang-17;      echo "CC=clang-17" >>"$GITHUB_ENV"; echo "CXX=clang++-17" >>"$GITHUB_ENV" ;;
+            # libc++ for the same reason as the main matrix: clang below 19 and
+            # libstdc++ cannot see std::expected (docs/BUILD.md section 2).
+            clang-17) sudo apt-get install --yes ninja-build clang-17 libc++-17-dev libc++abi-17-dev; echo "CC=clang-17" >>"$GITHUB_ENV"; echo "CXX=clang++-17 -stdlib=libc++" >>"$GITHUB_ENV" ;;
           esac
 
       # 14.38 is the toolset that ships with VS 2022 17.8 — MSVC 19.38, the

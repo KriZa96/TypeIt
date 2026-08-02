@@ -1,3 +1,4 @@
+add_subdirectory(support)
 add_subdirectory(core)
 
 # Below: the 1.0.0 suite, which keeps passing unchanged throughout the rebuild

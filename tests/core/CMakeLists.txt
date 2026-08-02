@@ -51,9 +51,9 @@ add_test(NAME core.nodiscard.result_cannot_be_ignored
 set_tests_properties(core.isolation.ftxui_is_unreachable core.nodiscard.result_cannot_be_ignored
                      PROPERTIES WILL_FAIL TRUE)
 
-add_executable(core_tests ResultTest.cpp UnitsTest.cpp)
+add_executable(core_tests FakeClockTest.cpp ResultTest.cpp UnitsTest.cpp)
 
-target_link_libraries(core_tests PRIVATE typeit::core GTest::gtest GTest::gtest_main)
+target_link_libraries(core_tests PRIVATE typeit::core typeit::test_support GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(core_tests)

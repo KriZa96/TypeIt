@@ -28,13 +28,20 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
+        # clang gets libc++, not libstdc++. Clang below 19 reports
+        # __cpp_concepts as 201907, and libstdc++ hides std::expected behind
+        # 202002 -- so `#include <expected>` succeeds and the namespace is
+        # empty. Ubuntu 24.04 ships clang 18, so this is not hypothetical.
+        # docs/BUILD.md section 2 records the supported pairings.
         case "${{ inputs.compiler }}" in
           gcc)   packages="gcc-14 g++-14"; cc=gcc-14; cxx=g++-14 ;;
-          clang) packages="clang";         cc=clang;  cxx=clang++ ;;
+          clang) packages="clang libc++-dev libc++abi-dev"; cc=clang; cxx="clang++ -stdlib=libc++" ;;
           *) echo "::error::compiler '${{ inputs.compiler }}' is not available on Linux"; exit 1 ;;
         esac
         sudo apt-get update
         sudo apt-get install --yes ninja-build $packages
+        # The flag rides on CXX rather than CXXFLAGS: a job that passes its own
+        # -DCMAKE_CXX_FLAGS (the sanitizer job does) would otherwise drop it.
         { echo "CC=$cc"; echo "CXX=$cxx"; } >> "$GITHUB_ENV"
 
     - name: Toolchain (macOS)

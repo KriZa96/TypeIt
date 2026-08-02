@@ -29,7 +29,7 @@ replaces the build described in [review §5](CODEBASE_REVIEW.md#5-build-tooling-
 | CMake | 3.24 | `FetchContent` `FIND_PACKAGE_ARGS` requires 3.24 |
 | Ninja | any recent | Recommended generator on both platforms |
 | GCC | 13 | `<expected>` |
-| Clang | 17 | with libstdc++ 13 or libc++ 17 |
+| Clang | 17 with libc++, **19** with libstdc++ | Clang below 19 reports `__cpp_concepts` as 201907, and libstdc++ gates `std::expected` on 202002: the header includes and the namespace is empty. CI builds clang against libc++ |
 | MSVC | 19.38 (VS 2022 17.8) | |
 | Git | any | |
 
