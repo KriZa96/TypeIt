@@ -1,0 +1,237 @@
+name: Nightly
+
+# The slow checks that are rarely broken and expensive to run: the compiler
+# floor, the architectures and libcs nobody develops on, and the tools that
+# take minutes per test binary. None of them belongs on a pull request
+# (docs/CI_CD.md section 11).
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Nightly builds the integration branch, not main: main is 1.0.0 until the
+  # Phase 4 cutover, and nothing here is about 1.0.0.
+  REF: v2
+
+jobs:
+  # The documented minimums in docs/BUILD.md section 2, built exactly. A
+  # compiler floor nobody compiles at is a guess, and it is usually wrong.
+  compiler-floor:
+    name: Floor — ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc-13
+            os: ubuntu-24.04
+          - name: clang-17
+            os: ubuntu-24.04
+          - name: msvc-19.38
+            os: windows-2022
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+
+      - name: Toolchain (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          case "${{ matrix.name }}" in
+            gcc-13)   sudo apt-get install --yes ninja-build gcc-13 g++-13; echo "CC=gcc-13"   >>"$GITHUB_ENV"; echo "CXX=g++-13"     >>"$GITHUB_ENV" ;;
+            clang-17) sudo apt-get install --yes ninja-build clang-17;      echo "CC=clang-17" >>"$GITHUB_ENV"; echo "CXX=clang++-17" >>"$GITHUB_ENV" ;;
+          esac
+
+      # 14.38 is the toolset that ships with VS 2022 17.8 — MSVC 19.38, the
+      # documented floor. The runner's default is several versions newer.
+      - name: Toolchain (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        with:
+          arch: x64
+          toolset: "14.38"
+
+      - name: Configure, build, test
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DTYPEIT_WERROR=ON \
+            ${{ runner.os == 'Windows' && '-DCMAKE_CXX_FLAGS=-utf-8' || '' }}
+          cmake --build build --parallel
+          ctest --test-dir build/tests --output-on-failure
+
+      - name: Record what actually built
+        if: always()
+        run: |
+          # cl.exe prints its version and then complains about having no input
+          # files, so the banner is worth keeping and the exit code is not.
+          {
+            echo "### ${{ matrix.name }}"
+            ("${CXX:-cl}" --version 2>&1 || true) | head -2
+          } >>"$GITHUB_STEP_SUMMARY"
+
+  # aarch64 and musl: neither is a supported target yet, and that is exactly
+  # why they are here — the day one becomes one, the surprises are already
+  # known and written down.
+  portability:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: aarch64
+            image: arm64v8/ubuntu:24.04
+            platform: linux/arm64
+            setup: apt-get update && apt-get install --yes cmake ninja-build g++ git ca-certificates
+          - name: alpine-musl
+            image: alpine:3.21
+            platform: linux/amd64
+            setup: apk add --no-cache build-base cmake ninja git linux-headers
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+
+      - if: matrix.platform != 'linux/amd64'
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          platforms: arm64
+
+      - name: Build and test in ${{ matrix.image }}
+        run: |
+          docker run --rm --platform "${{ matrix.platform }}" -v "$PWD:/src" -w /src "${{ matrix.image }}" \
+            sh -c '${{ matrix.setup }} &&
+              git config --global --add safe.directory /src &&
+              cmake -B build-container -G Ninja -DCMAKE_BUILD_TYPE=Debug &&
+              cmake --build build-container --parallel &&
+              ctest --test-dir build-container/tests --output-on-failure'
+
+  shared-libs:
+    name: BUILD_SHARED_LIBS=ON
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: gcc
+          cmake-args: -DBUILD_SHARED_LIBS=ON
+
+      - run: cmake --build build --parallel
+
+      - run: ctest --test-dir build/tests --output-on-failure
+
+  tsan:
+    name: ThreadSanitizer
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+
+      # Nothing in 1.0.0 threads, so today this proves a negative. It is here
+      # from the start so that the first thread introduced in Phase 4 arrives
+      # with the check already running rather than being remembered later.
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: clang
+          cmake-args: >-
+            -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -fno-sanitize-recover=all"
+
+      - run: cmake --build build --parallel
+
+      - env:
+          TSAN_OPTIONS: halt_on_error=1:second_deadlock_stack=1
+        run: ctest --test-dir build/tests --output-on-failure
+
+  valgrind:
+    name: Valgrind
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: gcc
+
+      - run: cmake --build build --parallel
+
+      - name: memcheck
+        run: |
+          sudo apt-get install --yes valgrind
+          # The whole suite in one process: per-test valgrind startup costs more
+          # than the checking does.
+          valgrind --error-exitcode=1 --errors-for-leak-kinds=definite \
+            --leak-check=full --track-origins=yes build/tests/tests
+
+  dependencies:
+    name: Dependency freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/dependency-freshness.sh >>"$GITHUB_STEP_SUMMARY"
+
+  # A nightly that fails silently is worse than no nightly: it costs runner
+  # minutes and buys a false sense of coverage.
+  report:
+    name: Report failures
+    if: always() && github.event_name == 'schedule'
+    needs: [compiler-floor, portability, shared-libs, tsan, valgrind, dependencies]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open or update the nightly failure issue
+        if: contains(needs.*.result, 'failure')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          title="Nightly failure"
+          body="The nightly run failed: $RUN"
+          existing=$(gh issue list --repo "$REPO" --state open --search "$title in:title" --json number --jq '.[0].number')
+          if [[ -n $existing ]]; then
+            gh issue comment "$existing" --repo "$REPO" --body "$body"
+          else
+            gh issue create --repo "$REPO" --title "$title" --body "$body" --label "type:ci"
+          fi
+
+      # The rolling `nightly` pre-release from docs/CI_CD.md needs artifacts to
+      # attach, which needs CPack (TI-138) and release.yml (CI-011). It lands
+      # with those, not before: a release with nothing in it is not a release.

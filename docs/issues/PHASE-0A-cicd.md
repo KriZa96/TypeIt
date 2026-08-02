@@ -300,9 +300,12 @@ The slow, rarely-broken checks.
   exist.
 
 **Acceptance**
-- [ ] **The compiler floor is verified to be real**, not aspirational — documented minimums are
+- [x] **The compiler floor is verified to be real**, not aspirational — documented minimums are
       wrong more often than not, and this is the only thing that would ever tell us.
-- [ ] A nightly failure opens or updates an issue automatically rather than passing unnoticed.
+- [x] A nightly failure opens or updates an issue automatically rather than passing unnoticed.
+
+> The rolling `nightly` pre-release is the one piece deferred: it needs artifacts to attach,
+> so it lands with CPack (TI-138) and `release.yml` (CI-011).
 
 ---
 
