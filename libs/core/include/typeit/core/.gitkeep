@@ -1,0 +1,2 @@
+# The public header directory. Empty until TI-024 adds Units.h; tracked so the
+# include path exists in a fresh clone.

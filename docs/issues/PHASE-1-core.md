@@ -32,9 +32,10 @@ test**: a source file that includes `<ftxui/dom/elements.hpp>`, compiled via
 discipline alone.
 
 **Acceptance**
-- [ ] `typeit_core` links only the standard library.
-- [ ] The negative build test fails to compile, as expected.
-- [ ] Includes are target-qualified (`typeit/core/…`), never relative.
+- [x] `typeit_core` links only the standard library.
+- [x] The negative build test fails to compile, as expected — and was watched to pass when
+      `ftxui::dom` was linked into `typeit_core` deliberately.
+- [x] Includes are target-qualified (`typeit/core/…`), never relative.
 
 ---
 

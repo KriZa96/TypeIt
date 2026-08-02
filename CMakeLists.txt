@@ -43,6 +43,10 @@ include(StaticAnalysis)
 option(TYPEIT_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
 include(Dependencies)
 
+# The rebuild. src/ below is the 1.0.0 tree, deleted whole at the Phase 4
+# cutover (TI-097).
+add_subdirectory(libs/core)
+
 # src first: it defines the typeit_legacy target the test binary links.
 add_subdirectory(src)
 

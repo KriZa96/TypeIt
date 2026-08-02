@@ -1,3 +1,8 @@
+add_subdirectory(core)
+
+# Below: the 1.0.0 suite, which keeps passing unchanged throughout the rebuild
+# and goes at the Phase 4 cutover (TI-097).
+#
 # test_input_line_engine.cpp used to be listed twice -- once through the glob,
 # once explicitly.
 add_executable(
