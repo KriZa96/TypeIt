@@ -14,3 +14,4 @@ config:
 globs:
   - "**/*.md"
   - "!external/**"
+  - "!build/**" # fetched dependencies, not ours to lint

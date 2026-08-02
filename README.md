@@ -68,8 +68,8 @@ Correct characters turn green, incorrect ones red, and speed and accuracy update
 ## Contributing
 
 Branch, keep the build warning-free, add tests for what you change, and run
-`ctest --preset linux-gcc-debug` before opening a pull request. The full definition of done is
-in [the backlog README](docs/issues/README.md#definition-of-done).
+`ctest --preset linux-gcc-debug` before opening a pull request. [CONTRIBUTING.md](CONTRIBUTING.md)
+has the build commands, the commit format, and the full definition of done.
 
 ## License
 
