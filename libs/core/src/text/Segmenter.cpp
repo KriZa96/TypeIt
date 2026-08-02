@@ -11,6 +11,7 @@
 
 #include "typeit/core/text/Grapheme.h"
 #include "typeit/core/text/Utf8.h"
+#include "typeit/core/text/Width.h"
 #include "typeit/core/util/Result.h"
 
 namespace typeit::core {
@@ -93,12 +94,18 @@ namespace typeit::core {
         public:
             void reset() {
                 grapheme_ = Grapheme{.bytes = {}, .length = 0, .width = 1};
+                code_points_.clear();
                 lost_bytes_ = false;
             }
 
             [[nodiscard]] bool empty() const { return grapheme_.length == 0; }
 
-            void append(std::string_view bytes) {
+            void append(std::string_view bytes, char32_t code_point) {
+                // The code point counts towards the width even when its bytes
+                // did not fit: a truncated cluster still occupies the columns
+                // its base character asked for.
+                code_points_.push_back(code_point);
+
                 if (grapheme_.length + bytes.size() > Grapheme::kMaxBytes) {
                     lost_bytes_ = true;
                     return;
@@ -109,12 +116,20 @@ namespace typeit::core {
                 }
             }
 
-            [[nodiscard]] const Grapheme& grapheme() const { return grapheme_; }
+            /// Finished: the width is only knowable once every code point in
+            /// the cluster has been seen, because a variation selector at the
+            /// end changes the answer.
+            [[nodiscard]] Grapheme grapheme() const {
+                Grapheme finished = grapheme_;
+                finished.width = width_of_cluster(code_points_);
+                return finished;
+            }
+
             [[nodiscard]] bool lost_bytes() const { return lost_bytes_; }
 
         private:
-            // width stays 1 until TI-029 brings the display width tables.
             Grapheme grapheme_{.bytes = {}, .length = 0, .width = 1};
+            std::vector<char32_t> code_points_;
             bool lost_bytes_ = false;
         };
 
@@ -155,7 +170,7 @@ namespace typeit::core {
                 cluster.reset();
             }
 
-            cluster.append(bytes);
+            cluster.append(bytes, code_point);
 
             if (is_regional_indicator(code_point)) {
                 // Open on the first of a pair, closed by the second so a third

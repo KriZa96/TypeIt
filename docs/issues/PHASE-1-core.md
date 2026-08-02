@@ -205,8 +205,10 @@ them — hand-maintained ranges rot.
 - The generator is deterministic: regenerating produces a byte-identical file.
 
 **Acceptance**
-- [ ] Generated header matches a regeneration run in CI.
-- [ ] Generator documents which Unicode version it consumed.
+- [x] Generated header matches a regeneration run in CI — `quality.yml` runs the generator with
+      `--check` on every push.
+- [x] Generator documents which Unicode version it consumed — pinned in the script, written into
+      the header as `kUnicodeVersion`, and asserted by a test.
 
 ---
 

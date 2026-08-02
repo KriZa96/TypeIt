@@ -40,6 +40,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as narrowe
   GitHub Pages from `main` (CI-016).
 - Repository automation: path-based labelling, `CODEOWNERS`, Release Drafter, and the labels and
   branch protection scripted in `scripts/repo-settings.sh` (CI-018).
+- `typeit::core`, the domain library, built with nothing on its link line so a dependency on the
+  terminal is a compile error rather than a review comment (TI-023). It carries the strong
+  domain types (TI-024), the `Result` error type (TI-025), the `IClock` time port (TI-026), and
+  the text foundation: a UTF-8 decoder that reports the byte it rejected (TI-027), grapheme
+  cluster segmentation (TI-028), and display width tables generated from Unicode 17.0.0
+  (TI-029). None of it is wired into the application yet; the 1.0 tree is untouched.
 
 ### Changed
 

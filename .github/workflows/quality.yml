@@ -48,7 +48,11 @@ jobs:
       # an unpinned check a coin toss.
       - run: python3 -m pip install --quiet clang-format==18.1.8
 
-      - run: git ls-files '*.cpp' '*.h' | xargs clang-format --dry-run --Werror
+      # Generated headers are excluded by their own marker rather than by
+      # name: the generator writes what it writes, and reformatting its output
+      # would make the regeneration check fail on any machine with a different
+      # clang-format.
+      - run: git ls-files '*.cpp' '*.h' | xargs grep -L 'GENERATED FILE' | xargs clang-format --dry-run --Werror
 
   analysis:
     name: Static analysis
@@ -112,6 +116,21 @@ jobs:
             echo "::error::core must read time through IClock (TI-026)"
             exit 1
           fi
+
+  generated:
+    name: Generated files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # The width tables are generated from the Unicode Character Database, so
+      # a hand-edit or a stale regeneration is a build failure rather than a
+      # cursor that drifts one column in production.
+      - name: Width tables match the Unicode data they came from
+        run: scripts/generate-width-tables.py --check
 
   docs:
     name: Spelling, markdown and links

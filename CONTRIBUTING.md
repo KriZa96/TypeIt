@@ -29,7 +29,7 @@ presets are listed in [docs/BUILD.md](docs/BUILD.md).
 [docs/STYLE.md](docs/STYLE.md) is the full answer. The parts that come up most:
 
 - `clang-format` decides layout; run it, do not argue with it. CI pins 18.1.8:
-  `pip install clang-format==18.1.8 && git ls-files '*.cpp' '*.h' | xargs clang-format -i`
+  `pip install clang-format==18.1.8 && git ls-files '*.cpp' '*.h' | xargs grep -L 'GENERATED FILE' | xargs clang-format -i`
 - No global mutable state, and nothing in `core` may include a UI header.
 - Time is injected through `IClock`. A test that sleeps will be rejected.
 
