@@ -27,6 +27,7 @@ namespace typeit::core {
         DbMigrate,
         DbQuery,
         UnknownTheme,
+        UnknownMode,
         InvalidKeyBinding,
         UnsupportedTerminal,
     };
@@ -35,13 +36,13 @@ namespace typeit::core {
     /// cover the enum without a sentinel enumerator that every switch would then
     /// have to handle.
     inline constexpr std::array kAllErrorCodes{
-            ErrorCode::FileNotFound,        ErrorCode::FileUnreadable,
-            ErrorCode::InvalidUtf8,         ErrorCode::EmptyText,
-            ErrorCode::TextTooLarge,        ErrorCode::ConfigParse,
-            ErrorCode::ConfigInvalid,       ErrorCode::DbOpen,
-            ErrorCode::DbMigrate,           ErrorCode::DbQuery,
-            ErrorCode::UnknownTheme,        ErrorCode::InvalidKeyBinding,
-            ErrorCode::UnsupportedTerminal,
+            ErrorCode::FileNotFound,      ErrorCode::FileUnreadable,
+            ErrorCode::InvalidUtf8,       ErrorCode::EmptyText,
+            ErrorCode::TextTooLarge,      ErrorCode::ConfigParse,
+            ErrorCode::ConfigInvalid,     ErrorCode::DbOpen,
+            ErrorCode::DbMigrate,         ErrorCode::DbQuery,
+            ErrorCode::UnknownTheme,      ErrorCode::UnknownMode,
+            ErrorCode::InvalidKeyBinding, ErrorCode::UnsupportedTerminal,
     };
 
     struct Error {

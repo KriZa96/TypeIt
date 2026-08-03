@@ -32,6 +32,8 @@ namespace typeit::core {
                 return "The history database rejected a query.";
             case ErrorCode::UnknownTheme:
                 return "No theme by that name is installed.";
+            case ErrorCode::UnknownMode:
+                return "No game mode by that name is registered.";
             case ErrorCode::InvalidKeyBinding:
                 return "That key binding could not be understood.";
             case ErrorCode::UnsupportedTerminal:
