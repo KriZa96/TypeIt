@@ -304,8 +304,13 @@ The append-only event log that is the source of truth for everything measured.
   non-const accessors).
 
 **Acceptance**
-- [ ] No public mutating operation other than `append`.
-- [ ] 100k appends stay within the documented memory bound (~16 bytes/event).
+- [x] No public mutating operation other than `append` (and `reserve`, which changes no
+      observable value) — asserted by `static_assert`, not by review.
+- [x] 100k appends stay within a documented memory bound — **32 bytes/event, not the ~16 this
+      issue estimated**. ADR-002 wrote that figure before TI-027 settled on storing a cluster's
+      bytes inline; a `Grapheme` is 14 of the 32, and the alternative is an out-of-line string
+      per event. 3.2 MB for an implausibly long run, and the bound is asserted so a carelessly
+      added field cannot double it.
 
 ---
 

@@ -4,7 +4,7 @@
 # an omission: FTXUI's include directories are never visible here, so
 # `#include <ftxui/...>` inside core is a compile error rather than a review
 # comment. tests/core asserts exactly that.
-add_library(typeit_core STATIC src/text/Segmenter.cpp src/text/TextBuffer.cpp src/text/Width.cpp src/text/Wrapper.cpp src/text/Utf8.cpp src/util/Result.cpp)
+add_library(typeit_core STATIC src/session/KeystrokeLog.cpp src/text/Segmenter.cpp src/text/TextBuffer.cpp src/text/Width.cpp src/text/Wrapper.cpp src/text/Utf8.cpp src/util/Result.cpp)
 add_library(typeit::core ALIAS typeit_core)
 
 target_include_directories(typeit_core PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
