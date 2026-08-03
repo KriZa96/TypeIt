@@ -658,9 +658,11 @@ and menu latency.
 - Custom durations at the validated bounds (1 s and 3600 s).
 
 **Acceptance**
-- [ ] All seven legacy timer behaviours reproduce **with no sleep and no flakiness** — the
-      suite for this file runs in under 10 ms.
-- [ ] Time-to-first-keystroke is recorded separately and excluded from the duration.
+- [x] All seven legacy timer behaviours reproduce **with no sleep and no flakiness** — every
+      test in the file reports 0.01 s, the floor of ctest's resolution, against the eight real
+      seconds `test_timer.cpp` spends racing the scheduler. The one exception is the death test
+      at 0.27 s, which pays for forking a process rather than for waiting.
+- [x] Time-to-first-keystroke is recorded separately and excluded from the duration.
 
 ---
 
