@@ -62,6 +62,7 @@ namespace typeit::testing {
 
         [[nodiscard]] core::Millis now() const noexcept { return now_; }
         [[nodiscard]] const core::TypingModel& model() const noexcept { return model_; }
+        [[nodiscard]] const core::TextBuffer& target() const noexcept { return target_; }
 
     private:
         core::TextBuffer target_;
