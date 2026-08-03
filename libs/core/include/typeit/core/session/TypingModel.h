@@ -87,6 +87,11 @@ namespace typeit::core {
 
         [[nodiscard]] std::size_t size() const noexcept { return target_.size(); }
 
+        /// The text being typed. A mode is handed the model and needs to see
+        /// the text through it rather than being given a second copy that
+        /// could be a different one.
+        [[nodiscard]] std::span<const Grapheme> target() const noexcept { return target_; }
+
         [[nodiscard]] bool at_end() const noexcept { return cursor_ >= target_.size(); }
 
     private:
