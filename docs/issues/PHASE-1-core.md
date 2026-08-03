@@ -768,10 +768,17 @@ new home. The existing tests are the specification for the ~40% of current logic
 - Out: keeping the legacy test files alive (deleted at TI-097).
 
 **Acceptance**
-- [ ] Every legacy test is accounted for in the checklist.
-- [ ] The two deliberate divergences — WPM (TI-036) and accuracy (TI-037) — are recorded with
-      the reason, so a later reader cannot mistake them for weakened tests.
-- [ ] No legacy behaviour is silently lost.
+- [x] Every legacy test is accounted for in the checklist:
+      [LEGACY_TEST_AUDIT.md](../LEGACY_TEST_AUDIT.md), one row per test with exactly one
+      outcome. **There are 64 legacy tests, not 41** — TESTING §10 groups by file and
+      undercounts; the audit lists all 64.
+- [x] The deliberate divergences are recorded with the reason — WPM (TI-036), accuracy
+      (TI-037) and, a third TESTING §10 does not mention, the wrapping overflow (TI-031). Each
+      says so in its own test file as well as in the audit.
+- [x] No legacy behaviour is silently lost. Five tests are dropped, all of them assertions
+      about the line-index bookkeeping of a class the rebuild does not have, and each names the
+      cursor assertion that covers the same behaviour. Fifteen belong to layers that do not
+      exist yet and name the phase that will carry them.
 
 ---
 

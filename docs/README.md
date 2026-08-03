@@ -21,6 +21,7 @@ Planning and design documentation for rebuilding TypeIt into a full application.
 | 8 | [BUILD.md](BUILD.md) | CMake structure, dependency strategy, presets, packaging |
 | 9 | [CI_CD.md](CI_CD.md) | The full GitHub Actions design — **built first** |
 | 10 | [TESTING.md](TESTING.md) | Test levels, property tests, and which current tests carry over |
+| 10a | [LEGACY_TEST_AUDIT.md](LEGACY_TEST_AUDIT.md) | All 64 legacy tests, one row each: ported, superseded, dropped or deferred |
 | 11 | [VERSIONING.md](VERSIONING.md) | SemVer policy, how to version properly, pipeline automation |
 | 12 | [ROADMAP.md](ROADMAP.md) | Phases with acceptance criteria and risks |
 | 13 | [DIAGRAMS.md](DIAGRAMS.md) | 30 diagrams — class, sequence, state, ER, flow, pipeline |
