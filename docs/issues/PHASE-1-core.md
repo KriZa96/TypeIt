@@ -417,8 +417,10 @@ auto log = LogBuilder{}.type("h", 100ms).type("q", 200ms)
 - `with_errors(text, 3)` produces exactly three first-attempt errors.
 
 **Acceptance**
-- [ ] Used by every metric test in TI-036 – TI-042.
-- [ ] Lives in test support, not in `core`.
+- [ ] Used by every metric test in TI-036 – TI-042. Confirmed as each of those lands; the
+      builder itself is done.
+- [x] Lives in test support, not in `core` — `tests/support/include/typeit/testing/LogBuilder.h`,
+      built into `typeit::test_support`, which nothing shipped links.
 
 ---
 
