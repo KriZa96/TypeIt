@@ -14,7 +14,7 @@ namespace typeit::core {
         assert(duration >= kMinDuration && duration <= kMaxDuration && "duration outside the validated range");
     }
 
-    void TimedMode::on_start(Millis at) {
+    void TimedMode::on_start(Millis at, const TypingModel& /*model*/) {
         offered_at_ = at;
         now_ = at;
     }

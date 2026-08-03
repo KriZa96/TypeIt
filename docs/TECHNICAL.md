@@ -196,7 +196,7 @@ class IMode {
 public:
     virtual ~IMode() = default;
 
-    virtual void on_start(Millis at) = 0;
+    virtual void on_start(Millis at, const TypingModel&) = 0;
     virtual void on_keystroke(const Keystroke&, const TypingModel&) = 0;
     virtual void on_tick(Millis now, const TypingModel&) = 0;
 

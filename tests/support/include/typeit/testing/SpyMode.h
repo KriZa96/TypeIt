@@ -23,7 +23,7 @@ namespace typeit::testing {
         explicit SpyMode(std::string_view id = "spy", std::size_t finish_after_ticks = 0) :
             id_{id}, finish_after_ticks_{finish_after_ticks} {}
 
-        void on_start(core::Millis at) override {
+        void on_start(core::Millis at, const core::TypingModel& /*model*/) override {
             calls.emplace_back("on_start");
             started_at = at;
         }

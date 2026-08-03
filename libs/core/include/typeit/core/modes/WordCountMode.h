@@ -25,7 +25,7 @@ namespace typeit::core {
         /// it with a message.
         explicit WordCountMode(std::size_t words);
 
-        void on_start(Millis at) override;
+        void on_start(Millis at, const TypingModel& model) override;
         void on_keystroke(const Keystroke& event, const TypingModel& model) override;
         void on_tick(Millis now, const TypingModel& model) override;
 

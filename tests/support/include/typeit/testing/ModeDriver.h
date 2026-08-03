@@ -22,7 +22,7 @@ namespace typeit::testing {
     class ModeDriver {
     public:
         ModeDriver(std::string_view text, core::IMode& mode) : target_{text_of(text)}, model_{target_}, mode_{mode} {
-            mode_.on_start(now_);
+            mode_.on_start(now_, model_);
         }
 
         /// Keystrokes are 100 ms apart unless a test says otherwise. A refused

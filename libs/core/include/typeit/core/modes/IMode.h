@@ -58,8 +58,11 @@ namespace typeit::core {
         IMode(IMode&&) = delete;
         IMode& operator=(IMode&&) = delete;
 
-        /// The run begins. Called once, before any keystroke.
-        virtual void on_start(Millis at) = 0;
+        /// The run begins. Called once, before any keystroke, and the only
+        /// chance a mode gets to look at the text before anything happens to
+        /// it — which a mode over a fixed text needs in order to know it is
+        /// already finished before a key is ever pressed.
+        virtual void on_start(Millis at, const TypingModel& model) = 0;
 
         /// One keystroke has just been applied to `model`.
         virtual void on_keystroke(const Keystroke& event, const TypingModel& model) = 0;

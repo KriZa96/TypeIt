@@ -53,7 +53,7 @@ namespace typeit::core {
         assert(words > 0 && "a run of no words is over before it begins");
     }
 
-    void WordCountMode::on_start(Millis /*at*/) {}
+    void WordCountMode::on_start(Millis /*at*/, const TypingModel& model) { observe(model); }
 
     void WordCountMode::observe(const TypingModel& model) {
         if (committed_at_.empty()) {
