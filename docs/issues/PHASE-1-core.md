@@ -598,8 +598,11 @@ Phase 8.
 - Empty log → empty stats, no crash.
 
 **Acceptance**
-- [ ] Bigram formation across a backspace is explicitly tested.
-- [ ] Outlier handling is documented and tested.
+- [x] Bigram formation across a backspace is explicitly tested — a backspace breaks the chain,
+      so a retype is a retype and not a transition the typist never made.
+- [x] Outlier handling is documented and tested: `kLatencyOutlierThreshold` is 3 s, the
+      keystroke still counts as an attempt, and only the interval is discarded. The threshold
+      is a parameter, and both sides of it are tested.
 
 ---
 
