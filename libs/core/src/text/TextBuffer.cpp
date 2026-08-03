@@ -1,6 +1,5 @@
 #include "typeit/core/text/TextBuffer.h"
 
-#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <string>
@@ -10,35 +9,13 @@
 
 #include "typeit/core/text/Grapheme.h"
 #include "typeit/core/text/Segmenter.h"
+#include "typeit/core/text/Whitespace.h"
 #include "typeit/core/text/Width.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
 
 namespace typeit::core {
     namespace {
-
-        /// The separators 1.0 counted, which is what `std::istream_iterator<std::string>`
-        /// splits on: the six ASCII whitespace characters and nothing else. A
-        /// non-breaking space is deliberately absent.
-        constexpr bool is_ascii_space(char byte) {
-            switch (byte) {
-                case ' ':
-                case '\t':
-                case '\n':
-                case '\v':
-                case '\f':
-                case '\r':
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        /// The whole cluster, not its first byte: CRLF is one cluster of two bytes and
-        /// still separates two words.
-        bool is_word_separator(const Grapheme& grapheme) {
-            return grapheme.length > 0 && std::ranges::all_of(grapheme.view(), is_ascii_space);
-        }
 
         std::size_t count_words(std::span<const Grapheme> graphemes) {
             std::size_t words = 0;

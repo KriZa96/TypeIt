@@ -350,9 +350,11 @@ reported separately without ambiguity.
   first element, and the "type more than the text" case.
 
 **Acceptance**
-- [ ] Every transition in the GAMEPLAY §6 diagram has at least one test.
-- [ ] Both invariant properties hold under a randomised operation fuzz of 10k sequences.
-- [ ] The five ported legacy behaviours reproduce.
+- [x] Every transition in the GAMEPLAY §6 diagram has at least one test.
+- [x] Both invariant properties hold under a randomised operation fuzz of 10k sequences.
+- [x] The five ported legacy behaviours reproduce — as cursor positions rather than line
+      indices. The legacy engine counted lines because it stored the input as lines; the
+      rebuild has one flat cursor and computes lines separately (TI-031).
 
 ---
 
