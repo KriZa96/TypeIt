@@ -452,9 +452,11 @@ to the configured duration, producing a number comparable to no other typing tes
   legacy formula and their expected values change here. The commit message must say so.
 
 **Acceptance**
-- [ ] Three worked examples verified by hand against the GAMEPLAY §4.1 formulas.
-- [ ] Both properties hold over randomised logs.
-- [ ] No clamping of elapsed time anywhere in the computation.
+- [x] Three worked examples verified by hand against the GAMEPLAY §4.1 formulas — 60 graphemes
+      in 60 s, 300 in 60 s, 150 in 30 s, each worked in the test comment.
+- [x] Both properties hold over randomised logs (500 of them).
+- [x] No clamping of elapsed time anywhere in the computation: the only elapsed time in the
+      function is `log.duration()`, first keystroke to last.
 
 ---
 
