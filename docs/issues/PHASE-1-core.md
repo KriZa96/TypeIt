@@ -548,8 +548,16 @@ adaptive start speed.
   monotonically and total work is linear.
 
 **Acceptance**
-- [ ] Complexity asserted, not assumed — an instrumented counter proves no rescan.
-- [ ] Peak-sustained ignores bursts below the threshold.
+- [x] Complexity asserted, not assumed — `RollingWpm::events_visited()` counts events entering
+      and leaving the window, and the test drives 100k events through 100k ticks and requires
+      the total to stay under `2 × events`. A second test ticks a hundred times more often over
+      the same log and requires the counter not to move: work follows the log, not the tick
+      rate.
+- [x] Peak-sustained ignores bursts below the threshold — a 2 s flourish does not register, a
+      12 s plateau does.
+- [x] Wall-clock timing is deliberately **not** asserted. Under ASan on a shared CI runner such
+      a test measures the runner, and would either be flaky or so loose it proves nothing; the
+      work counter is the honest form of the same claim.
 
 ---
 
