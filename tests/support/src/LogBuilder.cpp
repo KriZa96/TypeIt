@@ -135,7 +135,13 @@ namespace typeit::testing {
         const TextBuffer target = text_of(text);
         const std::size_t count = target.size();
 
-        constexpr std::size_t kBurst = 5;
+        // Six bursts, whatever the length. A fixed small burst — five
+        // keystrokes, say — lands one burst in every one-second window of a
+        // 60 WPM run, which a per-second metric cannot tell from an even run at
+        // all. The unevenness has to be coarser than the bucket it is measured
+        // in to be unevenness.
+        constexpr std::size_t kBursts = 6;
+        const std::size_t kBurst = std::max<std::size_t>(2, (count + kBursts - 1) / kBursts);
         const std::size_t bursts = (count + kBurst - 1) / kBurst;
         if (bursts < 2) {
             return perfect(text, speed);

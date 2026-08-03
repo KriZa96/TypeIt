@@ -518,8 +518,13 @@ count as 0 WPM — that is what makes the metric detect pauses rather than ignor
 - Property: result ∈ [0, 100] for any log.
 
 **Acceptance**
-- [ ] The even-vs-bursty comparison passes with identical totals.
-- [ ] Matches the published Monkeytype definition on a hand-computed example.
+- [x] The even-vs-bursty comparison passes with identical totals — same keystrokes, same
+      elapsed time, same gross WPM, only the spacing differs. Writing it exposed a flaw in
+      TI-035's `bursty()`: five-keystroke bursts land one per one-second window at 60 WPM, which
+      a per-second metric cannot tell from an even run. It now bursts six times whatever the
+      length, because unevenness has to be coarser than the bucket it is measured in.
+- [x] Matches the published definition on a hand-computed example — three windows of 60, 120
+      and 0 WPM giving 18.35, worked in the test comment.
 
 ---
 

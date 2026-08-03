@@ -1,7 +1,9 @@
 #include "typeit/core/metrics/Metrics.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -62,6 +64,41 @@ namespace typeit::core {
                 }
             }
             return counts;
+        }
+
+        constexpr double kMillisPerBucket = 1'000.0;
+        /// One second of graphemes is a twelfth of a minute's worth of words:
+        /// `(graphemes / 5) / (1 / 60)`.
+        constexpr double kWpmPerGraphemePerSecond = kMillisPerMinute / kMillisPerBucket / kGraphemesPerWord;
+
+        /// Gross WPM in each one-second window of the run, from the first
+        /// keystroke to the last. A window with nothing in it is a zero, which
+        /// is what lets the metric see a pause.
+        std::vector<double> per_second_gross(const KeystrokeLog& log, const TextBuffer& target) {
+            if (log.empty()) {
+                return {};
+            }
+
+            const std::int64_t start = log.events().front().at.value;
+            const auto span = static_cast<double>(log.duration().value);
+            const auto buckets = static_cast<std::size_t>(std::max(1.0, std::ceil(span / kMillisPerBucket)));
+
+            std::vector<double> samples(buckets, 0.0);
+            for (const Keystroke& event: log.events()) {
+                if (event.kind != KeystrokeKind::Character || event.target >= target.size()) {
+                    continue;
+                }
+                if (!(event.typed == target.at(GraphemeIndex{event.target}))) {
+                    continue;
+                }
+                const auto offset = static_cast<double>(event.at.value - start);
+                // The last event of a run lands exactly on a boundary; it
+                // belongs to the window it ends, not to one past the end.
+                const auto bucket = std::min(buckets - 1, static_cast<std::size_t>(offset / kMillisPerBucket));
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- clamped above
+                samples[bucket] += kWpmPerGraphemePerSecond;
+            }
+            return samples;
         }
 
     }  // namespace
@@ -136,6 +173,31 @@ namespace typeit::core {
             metrics.final_correctness = Accuracy{static_cast<double>(correct) / static_cast<double>(resolved)};
         }
         return metrics;
+    }
+
+    double consistency(const KeystrokeLog& log, const TextBuffer& target) {
+        const std::vector<double> samples = per_second_gross(log, target);
+        if (samples.empty()) {
+            return 0.0;
+        }
+
+        double sum = 0.0;
+        for (const double sample: samples) {
+            sum += sample;
+        }
+        const double mean = sum / static_cast<double>(samples.size());
+        if (mean <= 0.0) {
+            // Nothing was typed correctly, so there is no rate to be steady at.
+            return 0.0;
+        }
+
+        double squared = 0.0;
+        for (const double sample: samples) {
+            squared += (sample - mean) * (sample - mean);
+        }
+        const double deviation = std::sqrt(squared / static_cast<double>(samples.size()));
+
+        return std::max(0.0, 100.0 * (1.0 - (deviation / mean)));
     }
 
 }  // namespace typeit::core

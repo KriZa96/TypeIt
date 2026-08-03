@@ -65,6 +65,18 @@ namespace typeit::core {
     /// and TI-041 is where skipping gets its own accounting.
     [[nodiscard]] AccuracyMetrics accuracy(const KeystrokeLog& log, const TextBuffer& target);
 
+    /// `100 × (1 − σ/μ)` over the per-second gross WPM samples, floored at 0
+    /// (GAMEPLAY section 4.3 — the widely used definition).
+    ///
+    /// A second with no keystrokes in it is a sample of 0 WPM, not a sample
+    /// that is skipped. That is the whole difference between a metric that
+    /// notices a pause and one that ignores it.
+    ///
+    /// Returned on the published 0–100 scale rather than as a ratio, because
+    /// this metric is only ever quoted that way. An empty log scores 0; a run
+    /// shorter than one bucket scores 100, having varied in nothing.
+    [[nodiscard]] double consistency(const KeystrokeLog& log, const TextBuffer& target);
+
 }  // namespace typeit::core
 
 #endif  // TYPEIT_CORE_METRICS_METRICS_H
