@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "typeit/core/session/KeystrokeLog.h"
+#include "typeit/core/session/TypingRules.h"
 #include "typeit/core/text/Grapheme.h"
 #include "typeit/core/text/TextBuffer.h"
 #include "typeit/core/util/Units.h"
@@ -43,7 +44,7 @@ namespace typeit::core {
         /// text per model would make a mode switch cost more than it earns.
         ///
         /// An empty target is legal and is immediately `at_end()`.
-        explicit TypingModel(const TextBuffer& target);
+        explicit TypingModel(const TextBuffer& target, TypingRules rules = {});
 
         /// Applies one typed grapheme at time `at`.
         ///
@@ -51,10 +52,16 @@ namespace typeit::core {
         /// movement, no logged event. Typing after the last grapheme is the
         /// user overrunning, not an attempt at a position that exists.
         ///
-        /// A space typed where the text has something else jumps to the next
-        /// word, marking everything skipped `Missed`. A space typed where the
-        /// text has any separator — newline and CRLF included — matches it, so
-        /// a line break is crossed with the space bar rather than with Enter.
+        /// Under the default rules a space typed where the text has something
+        /// else jumps to the next word, marking everything skipped `Missed`. A
+        /// space typed where the text has any separator — newline and CRLF
+        /// included — matches it, so a line break is crossed with the space bar
+        /// rather than with Enter.
+        ///
+        /// A keystroke a rule refuses — `stop_on_error` while an error stands —
+        /// does nothing and is not logged. It never reached a position, and
+        /// counting it would charge the typist speed for a key the game
+        /// ignored.
         void type(const Grapheme& grapheme, Millis at);
 
         /// Retreats one position and returns it to `Pending`.
@@ -62,7 +69,8 @@ namespace typeit::core {
         /// At the start of the text this is a no-op that logs nothing: there is
         /// no position to delete. It is the boundary the legacy engine survives
         /// only by an unrelated guard (defect C7), so it is asserted behaviour
-        /// here rather than an accident.
+        /// here rather than an accident. `allow_backspace` and
+        /// `confidence_mode` refuse it the same way, and just as silently.
         ///
         /// The position does not forget it was once wrong. Retyping it
         /// correctly gives `Corrected`, never `Correct`.
@@ -75,15 +83,21 @@ namespace typeit::core {
 
         [[nodiscard]] const KeystrokeLog& log() const noexcept { return log_; }
 
+        [[nodiscard]] const TypingRules& rules() const noexcept { return rules_; }
+
         [[nodiscard]] std::size_t size() const noexcept { return target_.size(); }
 
         [[nodiscard]] bool at_end() const noexcept { return cursor_ >= target_.size(); }
 
     private:
         [[nodiscard]] bool matches(const Grapheme& grapheme, std::size_t position) const;
+        [[nodiscard]] bool target_is_separator(std::size_t position) const;
+        [[nodiscard]] bool refuses(const Grapheme& grapheme) const;
+        [[nodiscard]] bool current_word_has_an_error() const;
         void skip_to_next_separator();
 
         std::span<const Grapheme> target_;
+        TypingRules rules_;
         std::vector<GraphemeState> states_;
         /// Positions that have been wrong at least once, so a retype can be
         /// told from a first attempt after the state has been reset to

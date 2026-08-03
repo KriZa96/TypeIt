@@ -15,84 +15,13 @@
 #include "typeit/core/text/TextBuffer.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
+#include "typeit/testing/TypingRun.h"
 
 namespace typeit::core {
     namespace {
 
-        TextBuffer build(std::string_view text) {
-            Result<TextBuffer> buffer = TextBuffer::from_utf8(text);
-            EXPECT_TRUE(buffer) << text;
-            return std::move(*buffer);
-        }
-
-        /// A model plus the text it points at, with a clock that ticks 100 ms a
-        /// keystroke. The target has to outlive the model, which a fixture that
-        /// held only the model would quietly get wrong.
-        class Typing {
-        public:
-            explicit Typing(std::string_view text) : target_{build(text)}, model_{target_} {}
-
-            /// Types `text` grapheme by grapheme — so `type("čšž")` is three
-            /// keystrokes, not seven bytes.
-            Typing& type(std::string_view text) {
-                const TextBuffer typed = build(text);
-                for (const Grapheme& grapheme: typed.graphemes()) {
-                    model_.type(grapheme, tick());
-                }
-                return *this;
-            }
-
-            Typing& backspace(std::size_t times = 1) {
-                for (std::size_t i = 0; i < times; ++i) {
-                    model_.backspace(tick());
-                }
-                return *this;
-            }
-
-            [[nodiscard]] const TypingModel& model() const { return model_; }
-            [[nodiscard]] std::size_t cursor() const { return model_.cursor().value; }
-            [[nodiscard]] std::size_t events() const { return model_.log().size(); }
-
-            /// One character per position, so an expectation reads like the
-            /// screen: `.` pending, `C` correct, `x` incorrect, `c` corrected,
-            /// `M` missed.
-            [[nodiscard]] std::string states() const {
-                std::string rendered;
-                for (const GraphemeState state: model_.states()) {
-                    switch (state) {
-                        case GraphemeState::Pending:
-                            rendered += '.';
-                            break;
-                        case GraphemeState::Correct:
-                            rendered += 'C';
-                            break;
-                        case GraphemeState::Incorrect:
-                            rendered += 'x';
-                            break;
-                        case GraphemeState::Corrected:
-                            rendered += 'c';
-                            break;
-                        case GraphemeState::Missed:
-                            rendered += 'M';
-                            break;
-                    }
-                }
-                return rendered;
-            }
-
-        private:
-            Millis tick() {
-                now_ += Millis{100};
-                return now_;
-            }
-
-            TextBuffer target_;
-            TypingModel model_;
-            Millis now_{0};
-        };
-
         TEST(TypingModelTest, ACorrectGraphemeAdvancesTheCursorAndLogsTheEvent) {
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.type("a");
 
             EXPECT_EQ(typing.states(), "C..");
@@ -105,7 +34,7 @@ namespace typeit::core {
         TEST(TypingModelTest, AWrongGraphemeIsIncorrectAndStillAdvances) {
             // Not blocking is the default rule: stop_on_error is off
             // (GAMEPLAY section 6), and the variants arrive in TI-034.
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.type("x");
 
             EXPECT_EQ(typing.states(), "x..");
@@ -113,7 +42,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, BackspaceOverAnErrorReturnsThePositionToPending) {
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.type("x").backspace();
 
             EXPECT_EQ(typing.states(), "...");
@@ -124,7 +53,7 @@ namespace typeit::core {
         TEST(TypingModelTest, ACorrectedPositionIsNotACorrectOne) {
             // The distinction the whole accuracy story rests on: this run ends
             // with the right text, and it was still typed wrong once.
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.type("x").backspace().type("a");
 
             EXPECT_EQ(typing.states(), "c..");
@@ -134,14 +63,14 @@ namespace typeit::core {
         TEST(TypingModelTest, RetypingAPositionThatWasNeverWrongIsStillCorrect) {
             // Backspacing over correct work — to fix something earlier — must
             // not invent an error that never happened.
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.type("ab").backspace().type("b");
 
             EXPECT_EQ(typing.states(), "CC.");
         }
 
         TEST(TypingModelTest, ThePositionRemembersItWasWrongAcrossManyCorrections) {
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.type("x").backspace().type("y").backspace().type("a");
 
             EXPECT_EQ(typing.states(), "c..");
@@ -151,7 +80,7 @@ namespace typeit::core {
             // Defect C7's boundary. `cursor - 1` at zero is where the legacy
             // engine would have wrapped to SIZE_MAX; here there is nothing to
             // wrap, and nothing is recorded either.
-            Typing typing("abc");
+            testing::TypingRun typing("abc");
             typing.backspace(5);
 
             EXPECT_EQ(typing.cursor(), 0U);
@@ -160,7 +89,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, TypingPastTheEndChangesNothing) {
-            Typing typing("ab");
+            testing::TypingRun typing("ab");
             typing.type("ab");
             ASSERT_TRUE(typing.model().at_end());
 
@@ -174,7 +103,7 @@ namespace typeit::core {
         TEST(TypingModelTest, AnEmptyTextIsFinishedBeforeItStarts) {
             // The legacy code survives this only because should_finish_game()
             // happens to return early. Here it is the asserted behaviour.
-            Typing typing("");
+            testing::TypingRun typing("");
 
             EXPECT_TRUE(typing.model().at_end());
             EXPECT_EQ(typing.model().size(), 0U);
@@ -187,7 +116,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, ASpaceMidWordSkipsToTheNextWordAndMarksTheRestMissed) {
-            Typing typing("alpha beta");
+            testing::TypingRun typing("alpha beta");
             typing.type("al ");
 
             EXPECT_EQ(typing.states(), "CCMMMC....");
@@ -195,7 +124,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, ASpaceInTheLastWordSkipsToTheEnd) {
-            Typing typing("alpha");
+            testing::TypingRun typing("alpha");
             typing.type("al ");
 
             EXPECT_EQ(typing.states(), "CCMMM");
@@ -206,7 +135,7 @@ namespace typeit::core {
         TEST(TypingModelTest, ASkippedPositionRetypedCorrectlyIsCorrected) {
             // A missed grapheme was still a grapheme you did not get right, so
             // going back for it does not buy a clean Correct.
-            Typing typing("alpha beta");
+            testing::TypingRun typing("alpha beta");
             typing.type("al ").backspace(4);
 
             EXPECT_EQ(typing.states(), "CC........");
@@ -218,7 +147,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, BackspaceAcrossAWordBoundaryRestoresThePreviousWord) {
-            Typing typing("one two");
+            testing::TypingRun typing("one two");
             typing.type("one two");
             ASSERT_EQ(typing.states(), "CCCCCCC");
 
@@ -231,7 +160,7 @@ namespace typeit::core {
         TEST(TypingModelTest, ASpaceCrossesALineBreak) {
             // 1.0 moved to the next line on the space bar, and a document full
             // of newlines is unusable if it demands Enter instead.
-            Typing typing("one\ntwo");
+            testing::TypingRun typing("one\ntwo");
             typing.type("one two");
 
             EXPECT_EQ(typing.states(), "CCCCCCC");
@@ -240,7 +169,7 @@ namespace typeit::core {
 
         TEST(TypingModelTest, ASpaceCrossesACarriageReturnLineFeed) {
             // CRLF is one grapheme, so it is one keystroke to cross.
-            Typing typing("one\r\ntwo");
+            testing::TypingRun typing("one\r\ntwo");
             const std::size_t size = typing.model().size();
             typing.type("one two");
 
@@ -249,7 +178,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, AMultiByteGraphemeIsOneKeystroke) {
-            Typing typing("čšž");
+            testing::TypingRun typing("čšž");
             typing.type("č");
 
             EXPECT_EQ(typing.states(), "C..");
@@ -258,7 +187,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, EveryEventCarriesThePositionItWasJudgedAgainst) {
-            Typing typing("ab cd");
+            testing::TypingRun typing("ab cd");
             typing.type("ab").backspace().type("b c");
 
             const std::span<const Keystroke> events = typing.model().log().events();
@@ -272,7 +201,7 @@ namespace typeit::core {
         }
 
         TEST(TypingModelTest, TheLogRecordsEveryAttemptInOrder) {
-            Typing typing("ab");
+            testing::TypingRun typing("ab");
             typing.type("x").backspace().type("ab");
 
             const std::span<const Keystroke> events = typing.model().log().events();
@@ -292,7 +221,7 @@ namespace typeit::core {
         protected:
             LegacyInputLineTest() : typing_{"line1\nline 2\nThird line\nsecond last line\nfinally last line."} {}
 
-            Typing typing_;
+            testing::TypingRun typing_;
         };
 
         TEST_F(LegacyInputLineTest, LineTransitionOnSpace) {
@@ -344,8 +273,8 @@ namespace typeit::core {
         // Ten thousand of them, each on a fresh model, so a sequence that only
         // misbehaves from a particular starting state gets its chance.
         TEST(TypingModelPropertyTest, TheInvariantsHoldOverTenThousandRandomSequences) {
-            const TextBuffer target = build("the quick fox\njumps over čšž 漢字 😀 dogs");
-            const TextBuffer alphabet = build("abc xyz\nčž漢😀");
+            const TextBuffer target = testing::text_of("the quick fox\njumps over čšž 漢字 😀 dogs");
+            const TextBuffer alphabet = testing::text_of("abc xyz\nčž漢😀");
 
             std::mt19937 random{20260803};
             std::uniform_int_distribution<std::size_t> pick_grapheme{0, alphabet.size() - 1};

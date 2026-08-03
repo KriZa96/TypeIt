@@ -371,7 +371,9 @@ reported separately without ambiguity.
 
 **Unit tests** (`TypingRulesTest.cpp`) — one fixture per rule
 - `stop_on_error = letter`: input blocked until the error is corrected; the blocked keystroke is
-  logged as an attempt or not, per the documented decision.
+  logged as an attempt or not, per the documented decision. **Decided: not logged.** A refused
+  key never reached a position, and counting it would charge the typist speed for a keystroke
+  the game ignored. The same goes for a refused backspace.
 - `stop_on_error = word`: blocked at the word boundary, not the letter.
 - `allow_backspace = false`: backspace is a no-op and logs nothing.
 - `strict_spaces = true` vs `false`: a missing space is an error vs absorbed.
@@ -383,8 +385,12 @@ reported separately without ambiguity.
   state (table-driven, generated).
 
 **Acceptance**
-- [ ] Every rule has isolated tests plus a place in the combination matrix.
-- [ ] Defaults match [TECHNICAL §6](../TECHNICAL.md#6-configuration-file).
+- [x] Every rule has isolated tests plus a place in the combination matrix — all 144
+      combinations, checked against what each rule promises rather than against 144
+      hand-written state strings. A table of expected states would be a copy of the
+      implementation and would prove only that it had not changed.
+- [x] Defaults match [TECHNICAL §6](../TECHNICAL.md#6-configuration-file), asserted in
+      `TypingRulesTest.TheDefaultsAreTheDocumentedOnes`.
 
 ---
 
