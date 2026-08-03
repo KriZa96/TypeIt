@@ -11,6 +11,8 @@
 #ifndef TYPEIT_CORE_METRICS_METRICS_H
 #define TYPEIT_CORE_METRICS_METRICS_H
 
+#include <cstddef>
+
 #include "typeit/core/session/KeystrokeLog.h"
 #include "typeit/core/text/TextBuffer.h"
 #include "typeit/core/util/Units.h"
@@ -34,6 +36,34 @@ namespace typeit::core {
     /// nothing in it, or with one event in it, spans no time; the result is all
     /// zeros rather than a division by zero, an infinity or a NaN.
     [[nodiscard]] SpeedMetrics speed(const KeystrokeLog& log, const TextBuffer& target);
+
+    /// How right the typing was, as opposed to how fast (GAMEPLAY section 4.2).
+    struct AccuracyMetrics {
+        /// Target positions right on the first attempt, over target positions
+        /// attempted. A position is attempted once, however many times it is
+        /// typed: this is the definition that closes defect C4.
+        Accuracy accuracy{0.0};
+        /// How much of what stands at the end is right. A run with every
+        /// mistake corrected finishes at 1.0 with an accuracy below it — the
+        /// two answer different questions, and reporting them separately is
+        /// what `Corrected` exists for.
+        Accuracy final_correctness{0.0};
+
+        /// The denominators, so a caller can say "3 of 200" rather than only
+        /// "98.5%", and so a test can assert the denominator directly.
+        std::size_t attempted = 0;
+        std::size_t first_attempt_errors = 0;
+    };
+
+    /// Pure, and therefore repeatable: the same log gives the same answer
+    /// however many times it is asked, which is the property that makes
+    /// recomputing a metric after the fact meaningful.
+    ///
+    /// An empty log gives zeros rather than a NaN. Positions the typist never
+    /// attempted — skipped by a space — are in neither the numerator nor the
+    /// denominator: not typing something is not the same as typing it wrong,
+    /// and TI-041 is where skipping gets its own accounting.
+    [[nodiscard]] AccuracyMetrics accuracy(const KeystrokeLog& log, const TextBuffer& target);
 
 }  // namespace typeit::core
 

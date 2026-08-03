@@ -80,4 +80,62 @@ namespace typeit::core {
         return SpeedMetrics{.raw = Wpm{raw}, .gross = Wpm{gross}, .net = Wpm{std::max(0.0, gross - penalty)}};
     }
 
+    AccuracyMetrics accuracy(const KeystrokeLog& log, const TextBuffer& target) {
+        // Two passes over one replay. `first` is what the position was given
+        // the first time it was tried and never changes afterwards — deleting
+        // and retyping does not open a second attempt, which is the whole of
+        // defect C4. `final_state` is what stands there at the end.
+        std::vector<std::optional<Grapheme>> first_attempt(target.size());
+        std::vector<std::optional<Grapheme>> final_state(target.size());
+        std::vector<bool> attempted(target.size(), false);
+
+        for (const Keystroke& event: log.events()) {
+            if (event.target >= target.size()) {
+                continue;
+            }
+            if (event.kind != KeystrokeKind::Character) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- bounds checked
+                final_state[event.target] = std::nullopt;
+                continue;
+            }
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- bounds checked
+            final_state[event.target] = event.typed;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- bounds checked
+            if (!attempted[event.target]) {
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- bounds checked
+                attempted[event.target] = true;
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- bounds checked
+                first_attempt[event.target] = event.typed;
+            }
+        }
+
+        AccuracyMetrics metrics;
+        std::size_t resolved = 0;
+        std::size_t correct = 0;
+        for (std::size_t position = 0; position < target.size(); ++position) {
+            const Grapheme& expected = target.at(GraphemeIndex{position});
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- position < size
+            if (const std::optional<Grapheme>& first = first_attempt[position]; first.has_value()) {
+                ++metrics.attempted;
+                if (!(*first == expected)) {
+                    ++metrics.first_attempt_errors;
+                }
+            }
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- position < size
+            if (const std::optional<Grapheme>& last = final_state[position]; last.has_value()) {
+                ++resolved;
+                correct += *last == expected ? 1U : 0U;
+            }
+        }
+
+        if (metrics.attempted > 0) {
+            const auto right = static_cast<double>(metrics.attempted - metrics.first_attempt_errors);
+            metrics.accuracy = Accuracy{right / static_cast<double>(metrics.attempted)};
+        }
+        if (resolved > 0) {
+            metrics.final_correctness = Accuracy{static_cast<double>(correct) / static_cast<double>(resolved)};
+        }
+        return metrics;
+    }
+
 }  // namespace typeit::core

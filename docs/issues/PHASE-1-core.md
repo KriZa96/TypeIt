@@ -490,9 +490,14 @@ perfectly typed character — permanently, with no way to recover.
   encode the defective behaviour.
 
 **Acceptance**
-- [ ] The three backspace properties above pass — they are the definition of done for this
+- [x] The three backspace properties above pass — they are the definition of done for this
       issue.
-- [ ] A regression test named for defect C4 exists and references it.
+- [x] A regression test named for defect C4 exists and references it:
+      `MetricsAccuracyTest.RegressionForDefectC4WrongThenBackspaceThenRightIsOneAttempt`.
+- [x] GAMEPLAY §4.2's final-correctness denominator corrected while implementing this. It read
+      `C_correct / C_all`, which counts every key pressed, so a run with every mistake corrected
+      would score below 100% *for having corrected them* — contradicting this issue's own
+      acceptance. It is now over the positions that ended up holding something.
 
 ---
 

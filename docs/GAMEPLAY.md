@@ -213,6 +213,7 @@ Let:
   elapsed time to the configured duration, which distorts every rate computed from it.
 - `C_all` = total graphemes entered (excluding backspaces)
 - `C_correct` = graphemes whose **final** state matches the target
+- `C_resolved` = target positions holding something at the end — typed and not since deleted
 - `E_uncorrected` = graphemes whose final state does not match the target
 - `E_total` = distinct target positions that were wrong at any point
 
@@ -238,7 +239,7 @@ including wrong ones, and divide by a clamped time" is replaced entirely.
 | Metric | Definition |
 |---|---|
 | **Accuracy** | `(target positions correct on first attempt) / (target positions attempted)` |
-| **Final correctness** | `C_correct / C_all` — how much of the finished text is right |
+| **Final correctness** | `C_correct / C_resolved` — how much of the finished text is right, over the positions that ended up holding something. Not over `C_all`: that counts every key pressed, so a run with every mistake corrected would score below 100% for having corrected them, which is the confusion this metric exists to avoid |
 | **Correction rate** | `(errors corrected) / E_total` |
 | **Backspace rate** | `backspaces / C_all` |
 
