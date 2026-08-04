@@ -1,5 +1,7 @@
-# The rule that is only worth stating if something enforces it: SQLite and
-# toml++ end at infra's edge (ADR-001, ADR-013).
+# The rules that are only worth stating if something enforces them: SQLite and
+# toml++ end at infra's edge (ADR-001, ADR-013), nothing outside the legacy
+# tree locates itself with __FILE__ (defect C2), and no SQL is built by
+# concatenation (TECHNICAL section 4.2).
 #
 # Not a compile probe, unlike tests/core's FTXUI one. A probe proves the header
 # is *unreachable*, which holds only while the library comes from FetchContent
@@ -13,11 +15,11 @@
 # "did anyone reach for it", which is the rule ADR-001 actually states. It
 # covers FTXUI in core and app too, where it is machine-independent in a way the
 # probe is not.
-add_test(NAME infra.isolation.layers_include_only_what_they_may
+add_test(NAME infra.lint.source_rules
          COMMAND "${CMAKE_COMMAND}" "-DTYPEIT_SOURCE_DIR=${CMAKE_SOURCE_DIR}" -P
                  "${CMAKE_SOURCE_DIR}/cmake/CheckLayerIsolation.cmake")
 
-add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp PlatformPathsTest.cpp TempEnvTest.cpp)
+add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp TempEnvTest.cpp)
 
 target_link_libraries(infra_tests PRIVATE typeit::infra typeit::test_support GTest::gtest GTest::gtest_main)
 

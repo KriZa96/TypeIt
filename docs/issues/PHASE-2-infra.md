@@ -137,9 +137,20 @@ RAII connection, prepared-statement cache, and a `Transaction` guard.
   concatenation and fails if found.
 
 **Acceptance**
-- [ ] All writes go through `Transaction`.
-- [ ] Every variable is a bound parameter; the lint test enforces it.
-- [ ] Clean under ASan.
+- [x] All writes go through `Transaction`, which rolls back unless committed — including while
+      unwinding from an exception, which is the path a half-written session would otherwise
+      take to the disk. Tested by throwing mid-transaction.
+- [x] Every variable is a bound parameter. There is no way to build SQL by concatenation
+      through this interface at all: `execute` takes no values, so there is nothing to
+      interpolate. The lint (`infra.lint.source_rules`) catches anyone who does it another way,
+      and has been watched to fail on a deliberate `"… WHERE id = " + id`.
+- [x] Clean under ASan — the whole suite, 723 tests.
+- [x] Nested transactions are **refused**, which is the documented choice: every write path
+      here is one transaction deep, and a savepoint scheme nobody needs is a way to commit half
+      a session by accident.
+- [x] The pragmas are read back rather than assumed. `foreign_keys` is off by default in
+      SQLite, so a test also inserts an orphan row and requires the constraint to reject it —
+      the pragma being set and the constraint being enforced are two different claims.
 
 ---
 
