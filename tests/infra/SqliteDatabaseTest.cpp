@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -265,6 +264,13 @@ namespace typeit::infra {
             EXPECT_FALSE(database.in_transaction());
         }
 
+        /// Thrown to leave a scope, and nothing else. Deliberately not
+        /// std::runtime_error: on Ubuntu's libc++, its message is allocated by
+        /// operator new inside libc++ and freed with free() inside libc++abi,
+        /// which ASan correctly reports as an alloc-dealloc mismatch that has
+        /// nothing to do with this test. The test is about unwinding.
+        struct MidSaveFailure {};
+
         TEST(SqliteDatabaseTest, ATransactionRollsBackWhileUnwinding) {
             // The path that matters: a write that throws halfway through must
             // leave the database exactly as it was.
@@ -275,8 +281,8 @@ namespace typeit::infra {
                 Result<Transaction> transaction = database.begin();
                 ASSERT_TRUE(transaction);
                 ASSERT_TRUE(insert_note(database, 1, "half a session"));
-                throw std::runtime_error{"something went wrong mid-save"};
-            } catch (const std::runtime_error&) {
+                throw MidSaveFailure{};
+            } catch (const MidSaveFailure&) {
                 // Swallowed on purpose; the assertion is below.
             }
 
