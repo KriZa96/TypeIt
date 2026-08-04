@@ -227,10 +227,22 @@ SQL rather than in client-side filtering).
 - Concurrent-open behaviour under WAL is documented and tested for the busy path.
 
 **Acceptance**
-- [ ] Every port method has tests for the happy path, the empty-database path, and at least one
-      error path.
-- [ ] Personal-best qualification rules from [GAMEPLAY §7.3](../GAMEPLAY.md#73-personal-bests)
-      are enforced in SQL and tested.
+- [x] Every port method has tests for the happy path, the empty-database path, and at least one
+      error path — 24 of them, against a real in-memory database rather than a mock, because
+      the SQL is the part most likely to be wrong and mocking it would test nothing.
+- [x] Personal-best qualification rules from [GAMEPLAY §7.3](../GAMEPLAY.md#73-personal-bests)
+      are enforced in SQL and tested: abandoned runs and runs below 90% accuracy never set a
+      record, a better run replaces one, a worse one does not, and an equal one leaves the
+      older record standing — the documented tie-break, expressed as `WHERE excluded.value >
+      personal_best.value` so it is the database that decides rather than a caller who might
+      forget.
+- [x] The filter is four bound parameters with neutral values rather than a WHERE clause built
+      by concatenation, so one prepared statement serves every combination of mode, date range
+      and completion — and the no-concatenated-SQL rule holds without an exception for queries.
+- [x] `key_stats` ignores its filter, deliberately and in a comment: `key_stat` and
+      `bigram_stat` are lifetime aggregates merged per session with no date of their own, so
+      there is nothing to filter by. A per-window breakdown comes from `keystroke_blob` when
+      that is enabled.
 
 ---
 

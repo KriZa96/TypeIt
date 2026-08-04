@@ -4,12 +4,12 @@
 # interface. That is the whole point: `core` must not be able to see them, and
 # neither must `app` or `tui` through their dependency on this. tests/infra
 # asserts it with a probe that must fail to compile.
-add_library(typeit_infra STATIC src/db/Migrator.cpp src/db/SqliteDatabase.cpp src/Dependencies.cpp src/fs/AssetLocator.cpp src/fs/PlatformPaths.cpp)
+add_library(typeit_infra STATIC src/db/Migrator.cpp src/db/SqliteDatabase.cpp src/db/SqliteHistoryRepository.cpp src/Dependencies.cpp src/fs/AssetLocator.cpp src/fs/PlatformPaths.cpp)
 add_library(typeit::infra ALIAS typeit_infra)
 
 target_include_directories(typeit_infra PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-target_link_libraries(typeit_infra PUBLIC typeit::core)
+target_link_libraries(typeit_infra PUBLIC typeit::core typeit::app)
 target_link_libraries(typeit_infra PRIVATE SQLite::SQLite3 tomlplusplus::tomlplusplus)
 
 target_compile_features(typeit_infra PUBLIC cxx_std_23)

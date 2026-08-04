@@ -1,0 +1,474 @@
+#include "typeit/infra/db/SqliteHistoryRepository.h"
+
+#include <array>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "typeit/app/records/History.h"
+#include "typeit/core/metrics/ErrorMap.h"
+#include "typeit/core/metrics/KeyStats.h"
+#include "typeit/core/util/Result.h"
+#include "typeit/core/util/Units.h"
+#include "typeit/infra/db/SqliteDatabase.h"
+
+namespace typeit::infra {
+    namespace {
+
+        using core::ErrorCode;
+        using core::Result;
+        using core::Status;
+
+        constexpr std::int64_t kMillisPerDay = 86'400'000;
+
+        /// Every filter is expressed as four bound parameters with neutral
+        /// values, so one prepared statement serves every combination. The
+        /// alternative is building the WHERE clause by concatenation, which is
+        /// the thing this codebase does not do.
+        struct BoundFilter {
+            std::string mode;  ///< empty means every mode
+            std::int64_t since = 0;
+            std::int64_t until = 0;  ///< zero means no upper bound
+            std::int64_t completed_only = 0;
+        };
+
+        BoundFilter bind_values(const app::HistoryFilter& filter) {
+            return BoundFilter{
+                    .mode = filter.mode.value_or(""),
+                    .since = filter.since.value_or(core::Millis{0}).value,
+                    .until = filter.until.value_or(core::Millis{0}).value,
+                    .completed_only = filter.completed_only ? 1 : 0,
+            };
+        }
+
+        void bind_filter(Statement& statement, const BoundFilter& values) {
+            statement.bind(1, values.mode).bind(2, values.since).bind(3, values.until).bind(4, values.completed_only);
+        }
+
+        /// `0` means unlimited, which SQLite spells `-1`.
+        std::int64_t limit_of(const app::HistoryFilter& filter) {
+            return filter.limit == 0 ? -1 : static_cast<std::int64_t>(filter.limit);
+        }
+
+        constexpr std::string_view kFilterClause =
+                " WHERE (?1 = '' OR mode = ?1)"
+                "   AND (?2 = 0 OR started_at >= ?2)"
+                "   AND (?3 = 0 OR started_at < ?3)"
+                "   AND (?4 = 0 OR completed = 1)";
+
+    }  // namespace
+
+    Result<core::SessionId> SqliteHistoryRepository::save(const app::SessionRecord& record) {
+        // One transaction for the session, its samples and its records. A run
+        // is one fact; half of it is worse than none of it.
+        Result<Transaction> transaction = database_->begin();
+        if (!transaction) {
+            return std::unexpected{transaction.error()};
+        }
+
+        Result<Statement> insert = database_->prepare(
+                "INSERT INTO session (started_at, ended_at, mode, mode_param, text_id, provider, provider_seed,"
+                " duration_ms, graphemes_typed, graphemes_correct, errors_total, errors_uncorrected, backspaces,"
+                " raw_wpm, gross_wpm, net_wpm, accuracy, final_correctness, consistency, peak_wpm, wall_wpm,"
+                " completed, app_version)"
+                " VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19,"
+                " ?20, ?21, ?22, ?23)");
+        if (!insert) {
+            return std::unexpected{insert.error()};
+        }
+
+        insert->bind(1, record.started_at.value)
+                .bind(2, record.ended_at.value)
+                .bind(3, record.mode)
+                .bind(4, record.mode_param)
+                .bind(6, record.provider)
+                .bind(7, static_cast<std::int64_t>(record.provider_seed))
+                .bind(8, record.duration.value)
+                .bind(9, static_cast<std::int64_t>(record.graphemes_typed))
+                .bind(10, static_cast<std::int64_t>(record.graphemes_correct))
+                .bind(11, static_cast<std::int64_t>(record.errors_total))
+                .bind(12, static_cast<std::int64_t>(record.errors_uncorrected))
+                .bind(13, static_cast<std::int64_t>(record.backspaces))
+                .bind(14, record.raw_wpm.value)
+                .bind(15, record.gross_wpm.value)
+                .bind(16, record.net_wpm.value)
+                .bind(17, record.accuracy.value)
+                .bind(18, record.final_correctness.value)
+                .bind(19, record.consistency)
+                .bind(22, record.completed ? std::int64_t{1} : std::int64_t{0})
+                .bind(23, record.app_version);
+
+        if (record.text_id.has_value()) {
+            insert->bind(5, record.text_id->value);
+        } else {
+            insert->bind_null(5);
+        }
+        if (record.peak_wpm.has_value()) {
+            insert->bind(20, record.peak_wpm->value);
+        } else {
+            insert->bind_null(20);
+        }
+        if (record.wall_wpm.has_value()) {
+            insert->bind(21, record.wall_wpm->value);
+        } else {
+            insert->bind_null(21);
+        }
+
+        if (const Status written = insert->run(); !written) {
+            return std::unexpected{written.error()};
+        }
+
+        const Result<std::int64_t> id = database_->query_int("SELECT last_insert_rowid()");
+        if (!id) {
+            return std::unexpected{id.error()};
+        }
+        const core::SessionId session{*id};
+
+        if (const Status samples = write_samples(session, record); !samples) {
+            return std::unexpected{samples.error()};
+        }
+        if (const Status bests = update_personal_bests(session, record); !bests) {
+            return std::unexpected{bests.error()};
+        }
+        if (const Status committed = transaction->commit(); !committed) {
+            return std::unexpected{committed.error()};
+        }
+        return session;
+    }
+
+    Status SqliteHistoryRepository::write_samples(core::SessionId session, const app::SessionRecord& record) {
+        if (record.timeline.empty()) {
+            return {};
+        }
+        Result<Statement> insert = database_->prepare(
+                "INSERT INTO session_sample (session_id, t_ms, wpm, errors) VALUES (?1, ?2, ?3, ?4)");
+        if (!insert) {
+            return std::unexpected{insert.error()};
+        }
+
+        for (const core::TimelineSample& sample: record.timeline) {
+            insert->reset();
+            insert->bind(1, session.value)
+                    .bind(2, sample.at.value)
+                    .bind(3, sample.wpm.value)
+                    .bind(4, static_cast<std::int64_t>(sample.errors));
+            if (const Status written = insert->run(); !written) {
+                return written;
+            }
+        }
+        return {};
+    }
+
+    Status SqliteHistoryRepository::update_personal_bests(core::SessionId session, const app::SessionRecord& record) {
+        // GAMEPLAY section 7.3: an abandoned run never sets a record, and
+        // neither does one below the accuracy floor — a personal best cannot be
+        // bought by typing nonsense quickly.
+        if (!record.completed || record.accuracy.value < kPersonalBestMinimumAccuracy) {
+            return {};
+        }
+
+        Result<Statement> upsert = database_->prepare(
+                "INSERT INTO personal_best (mode, param, metric, session_id, value, achieved_at)"
+                " VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
+                " ON CONFLICT (mode, param, metric) DO UPDATE SET"
+                "   session_id = excluded.session_id,"
+                "   value = excluded.value,"
+                "   achieved_at = excluded.achieved_at"
+                " WHERE excluded.value > personal_best.value");
+        if (!upsert) {
+            return std::unexpected{upsert.error()};
+        }
+
+        // Strictly greater, so an equal run leaves the older record standing:
+        // the first person to get there keeps it, which is the documented
+        // tie-break and the one that does not churn the achieved_at date.
+        struct Candidate {
+            std::string_view metric;
+            double value;
+            bool present;
+        };
+        // The extra braces are std::array's aggregate wrapping its C array;
+        // designated initialisers cannot cross that boundary.
+        const std::array<Candidate, 3> candidates{{
+                Candidate{.metric = "net_wpm", .value = record.net_wpm.value, .present = true},
+                Candidate{.metric = "accuracy", .value = record.accuracy.value, .present = true},
+                Candidate{.metric = "peak_wpm",
+                          .value = record.peak_wpm.value_or(core::Wpm{0.0}).value,
+                          .present = record.peak_wpm.has_value()},
+        }};
+
+        for (const Candidate& candidate: candidates) {
+            if (!candidate.present) {
+                continue;
+            }
+            upsert->reset();
+            upsert->bind(1, record.mode)
+                    .bind(2, record.mode_param)
+                    .bind(3, candidate.metric)
+                    .bind(4, session.value)
+                    .bind(5, candidate.value)
+                    .bind(6, record.ended_at.value);
+            if (const Status written = upsert->run(); !written) {
+                return written;
+            }
+        }
+        return {};
+    }
+
+    Result<std::vector<app::SessionRow>> SqliteHistoryRepository::query(const app::HistoryFilter& filter) const {
+        Result<Statement> statement = database_->prepare(
+                std::string{"SELECT id, started_at, mode, mode_param, duration_ms, net_wpm, gross_wpm, accuracy,"
+                            " consistency, completed FROM session"} +
+                std::string{kFilterClause} + " ORDER BY started_at DESC, id DESC LIMIT ?5");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+
+        bind_filter(*statement, bind_values(filter));
+        statement->bind(5, limit_of(filter));
+
+        std::vector<app::SessionRow> rows;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            rows.push_back(app::SessionRow{
+                    .id = core::SessionId{statement->column_int(0)},
+                    .started_at = core::Millis{statement->column_int(1)},
+                    .mode = statement->column_text(2),
+                    .mode_param = statement->column_text(3),
+                    .duration = core::Millis{statement->column_int(4)},
+                    .net_wpm = core::Wpm{statement->column_double(5)},
+                    .gross_wpm = core::Wpm{statement->column_double(6)},
+                    .accuracy = core::Accuracy{statement->column_double(7)},
+                    .consistency = statement->column_double(8),
+                    .completed = statement->column_int(9) != 0,
+            });
+        }
+        return rows;
+    }
+
+    Result<app::Aggregates> SqliteHistoryRepository::aggregates(const app::HistoryFilter& filter) const {
+        // COALESCE, so an empty range is zeros rather than NULLs read as
+        // garbage — a new user's history screen is a normal thing to draw.
+        Result<Statement> statement = database_->prepare(
+                std::string{"SELECT COUNT(*), COALESCE(AVG(net_wpm), 0), COALESCE(MAX(net_wpm), 0),"
+                            " COALESCE(MIN(net_wpm), 0), COALESCE(AVG(accuracy), 0),"
+                            " COALESCE(SUM(duration_ms), 0), COALESCE(SUM(graphemes_typed), 0) FROM session"} +
+                std::string{kFilterClause});
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+
+        bind_filter(*statement, bind_values(filter));
+        const Result<bool> row = statement->step();
+        if (!row) {
+            return std::unexpected{row.error()};
+        }
+        if (!*row) {
+            return app::Aggregates{};
+        }
+
+        return app::Aggregates{
+                .sessions = static_cast<std::size_t>(statement->column_int(0)),
+                .mean_net_wpm = core::Wpm{statement->column_double(1)},
+                .best_net_wpm = core::Wpm{statement->column_double(2)},
+                .worst_net_wpm = core::Wpm{statement->column_double(3)},
+                .mean_accuracy = core::Accuracy{statement->column_double(4)},
+                .total_time = core::Millis{statement->column_int(5)},
+                .total_graphemes = static_cast<std::size_t>(statement->column_int(6)),
+        };
+    }
+
+    Result<std::vector<app::PersonalBest>> SqliteHistoryRepository::personal_bests() const {
+        Result<Statement> statement = database_->prepare(
+                "SELECT mode, param, metric, session_id, value, achieved_at FROM personal_best"
+                " ORDER BY mode, param, metric");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+
+        std::vector<app::PersonalBest> bests;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            bests.push_back(app::PersonalBest{
+                    .mode = statement->column_text(0),
+                    .param = statement->column_text(1),
+                    .metric = statement->column_text(2),
+                    .session_id = core::SessionId{statement->column_int(3)},
+                    .value = statement->column_double(4),
+                    .achieved_at = core::Millis{statement->column_int(5)},
+            });
+        }
+        return bests;
+    }
+
+    Status SqliteHistoryRepository::merge_key_stats(const core::KeyStats& stats) {
+        Result<Transaction> transaction = database_->begin();
+        if (!transaction) {
+            return std::unexpected{transaction.error()};
+        }
+
+        Result<Statement> keys = database_->prepare(
+                "INSERT INTO key_stat (grapheme, attempts, errors, total_latency_ms) VALUES (?1, ?2, ?3, ?4)"
+                " ON CONFLICT (grapheme) DO UPDATE SET"
+                "   attempts = key_stat.attempts + excluded.attempts,"
+                "   errors = key_stat.errors + excluded.errors,"
+                "   total_latency_ms = key_stat.total_latency_ms + excluded.total_latency_ms");
+        if (!keys) {
+            return std::unexpected{keys.error()};
+        }
+        for (const auto& [grapheme, stat]: stats.per_grapheme) {
+            keys->reset();
+            keys->bind(1, grapheme)
+                    .bind(2, static_cast<std::int64_t>(stat.attempts))
+                    .bind(3, static_cast<std::int64_t>(stat.errors))
+                    .bind(4, stat.total_latency.value);
+            if (const Status written = keys->run(); !written) {
+                return written;
+            }
+        }
+
+        Result<Statement> bigrams = database_->prepare(
+                "INSERT INTO bigram_stat (bigram, attempts, errors, total_latency_ms) VALUES (?1, ?2, ?3, ?4)"
+                " ON CONFLICT (bigram) DO UPDATE SET"
+                "   attempts = bigram_stat.attempts + excluded.attempts,"
+                "   errors = bigram_stat.errors + excluded.errors,"
+                "   total_latency_ms = bigram_stat.total_latency_ms + excluded.total_latency_ms");
+        if (!bigrams) {
+            return std::unexpected{bigrams.error()};
+        }
+        for (const auto& [bigram, stat]: stats.per_bigram) {
+            bigrams->reset();
+            bigrams->bind(1, bigram)
+                    .bind(2, static_cast<std::int64_t>(stat.attempts))
+                    .bind(3, static_cast<std::int64_t>(stat.errors))
+                    .bind(4, stat.total_latency.value);
+            if (const Status written = bigrams->run(); !written) {
+                return written;
+            }
+        }
+
+        return transaction->commit();
+    }
+
+    Result<core::KeyStats> SqliteHistoryRepository::key_stats(const app::HistoryFilter& /*filter*/) const {
+        // Lifetime totals: key_stat and bigram_stat are merged per session and
+        // carry no date of their own, so there is nothing to filter by. A
+        // per-window breakdown is recoverable from keystroke_blob when it is
+        // enabled, and is not worth a column on every row when it is not
+        // (TECHNICAL section 5).
+        core::KeyStats stats;
+
+        Result<Statement> keys =
+                database_->prepare("SELECT grapheme, attempts, errors, total_latency_ms FROM key_stat");
+        if (!keys) {
+            return std::unexpected{keys.error()};
+        }
+        for (;;) {
+            const Result<bool> row = keys->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            stats.per_grapheme[keys->column_text(0)] = core::KeyStat{
+                    .attempts = static_cast<std::size_t>(keys->column_int(1)),
+                    .errors = static_cast<std::size_t>(keys->column_int(2)),
+                    .total_latency = core::Millis{keys->column_int(3)},
+                    .latency_samples = static_cast<std::size_t>(keys->column_int(1)),
+            };
+        }
+
+        Result<Statement> bigrams =
+                database_->prepare("SELECT bigram, attempts, errors, total_latency_ms FROM bigram_stat");
+        if (!bigrams) {
+            return std::unexpected{bigrams.error()};
+        }
+        for (;;) {
+            const Result<bool> row = bigrams->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            stats.per_bigram[bigrams->column_text(0)] = core::KeyStat{
+                    .attempts = static_cast<std::size_t>(bigrams->column_int(1)),
+                    .errors = static_cast<std::size_t>(bigrams->column_int(2)),
+                    .total_latency = core::Millis{bigrams->column_int(3)},
+                    .latency_samples = static_cast<std::size_t>(bigrams->column_int(1)),
+            };
+        }
+
+        return stats;
+    }
+
+    Status SqliteHistoryRepository::merge_error_map(const core::ErrorMap& errors) {
+        Result<Transaction> transaction = database_->begin();
+        if (!transaction) {
+            return std::unexpected{transaction.error()};
+        }
+
+        Result<Statement> upsert = database_->prepare(
+                "INSERT INTO error_pair (expected, typed, count) VALUES (?1, ?2, ?3)"
+                " ON CONFLICT (expected, typed) DO UPDATE SET count = error_pair.count + excluded.count");
+        if (!upsert) {
+            return std::unexpected{upsert.error()};
+        }
+
+        for (const auto& [pair, count]: errors.substitutions) {
+            upsert->reset();
+            upsert->bind(1, pair.first).bind(2, pair.second).bind(3, static_cast<std::int64_t>(count));
+            if (const Status written = upsert->run(); !written) {
+                return written;
+            }
+        }
+
+        return transaction->commit();
+    }
+
+    Result<core::Wpm> SqliteHistoryRepository::best_sustained_wpm(core::Days window) const {
+        // Race mode's starting speed (GAMEPLAY section 3.4). In SQL because it
+        // is a maximum over a history that may be years long, and because the
+        // window boundary is then one comparison rather than a filter applied
+        // to every row that crosses the wire.
+        Result<Statement> statement = database_->prepare(
+                "SELECT COALESCE(MAX(peak_wpm), 0) FROM session"
+                " WHERE completed = 1 AND peak_wpm IS NOT NULL"
+                "   AND (?1 = 0 OR started_at >= ?2)");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+
+        const Result<std::int64_t> now = database_->query_int("SELECT CAST(strftime('%s', 'now') AS INTEGER) * 1000");
+        if (!now) {
+            return std::unexpected{now.error()};
+        }
+        const std::int64_t cutoff = *now - (static_cast<std::int64_t>(window.value) * kMillisPerDay);
+
+        statement->bind(1, static_cast<std::int64_t>(window.value)).bind(2, cutoff);
+        const Result<bool> row = statement->step();
+        if (!row) {
+            return std::unexpected{row.error()};
+        }
+        if (!*row) {
+            return core::Wpm{0.0};
+        }
+        return core::Wpm{statement->column_double(0)};
+    }
+
+}  // namespace typeit::infra

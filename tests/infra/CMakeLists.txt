@@ -19,7 +19,7 @@ add_test(NAME infra.lint.source_rules
          COMMAND "${CMAKE_COMMAND}" "-DTYPEIT_SOURCE_DIR=${CMAKE_SOURCE_DIR}" -P
                  "${CMAKE_SOURCE_DIR}/cmake/CheckLayerIsolation.cmake")
 
-add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp TempEnvTest.cpp)
+add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp SqliteHistoryRepositoryTest.cpp TempEnvTest.cpp)
 
 target_link_libraries(infra_tests PRIVATE typeit::infra typeit::test_support GTest::gtest GTest::gtest_main)
 
