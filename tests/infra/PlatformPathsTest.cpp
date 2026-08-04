@@ -40,11 +40,11 @@ namespace typeit::infra {
         constexpr std::string_view kElsewhere = "/elsewhere";
 #endif
 
+#ifndef _WIN32
         std::filesystem::path under(std::string_view root, std::string_view child) {
             return std::filesystem::path{root} / child;
         }
 
-#ifndef _WIN32
         TEST(PlatformPathsTest, XdgConfigHomeIsUsedVerbatim) {
             const Result<Paths> paths = resolve_paths(
                     environment_of({{"HOME", std::string{kRoot}},
