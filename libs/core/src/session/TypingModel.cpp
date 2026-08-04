@@ -49,6 +49,9 @@ namespace typeit::core {
                 // to keep going and fix the error on the way back.
                 return (is_word_separator(grapheme) || target_is_separator(cursor_)) && current_word_has_an_error();
         }
+        // Unreachable: every enumerator returns above. Kept because a switch
+        // that falls off the end is undefined behaviour if the enum ever holds
+        // a value cast in from outside, and one line is cheaper than that.
         return false;
     }
 

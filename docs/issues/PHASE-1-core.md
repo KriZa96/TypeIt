@@ -792,9 +792,20 @@ new home. The existing tests are the specification for the ~40% of current logic
 - Out: coverage gates for other layers (their phases).
 
 **Acceptance**
-- [ ] Thresholds met and enforced; dropping below fails CI.
-- [ ] Any uncovered line in `core` is either covered or has a comment explaining why it cannot
-      be — there are no dependencies to blame here.
+- [x] Thresholds met and enforced; dropping below fails CI. `scripts/coverage.sh gate` is the
+      check, run last in `coverage.yml` so the report and the summary exist whatever the
+      numbers say. Measured at the close of Phase 1: **core 98.45%** (minimum 90),
+      **metrics 99.52%**, **text 98.13%**, **modes 97.73%** (minimum 95 each). `modes` is gated
+      too, which the issue does not ask for but TESTING §9 does.
+- [x] Any uncovered line in `core` is either covered or has a comment explaining why it cannot
+      be. Six lines remain: the unreachable `return` after a switch that covers every
+      enumerator, the `default:` of a length switch whose caller has already rejected every
+      other value, the empty-cluster guard the segmenter can never trigger, the unknown-error
+      message reachable only by casting an integer into the enum — each commented — plus one
+      gcov artifact where a multi-line braced initialiser is attributed to its first line
+      (lines 111 and 114 of the same statement are covered 2 106 times, line 110 zero).
+      `scripts/uncovered-diff.py` filters the other artifacts — closing braces and defaulted
+      special members, which gcov emits a line for on every function that returns by value.
 
 ---
 

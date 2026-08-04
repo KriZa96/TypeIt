@@ -14,6 +14,12 @@ namespace typeit::core {
 
         TimedProgress progress_of(const TimedMode& mode) { return std::get<TimedProgress>(mode.progress()); }
 
+        TEST(TimedModeTest, IsRegisteredAndPersistedAsTimed) {
+            const TimedMode mode{Millis{30'000}};
+
+            EXPECT_EQ(mode.id(), "timed");
+        }
+
         TEST(TimedModeTest, TheClockStartsOnTheFirstKeystrokeNotOnEnteringTheScreen) {
             // The behaviour 1.0 gets wrong: it starts counting when a session
             // flag flips, charging the typist for reading the text.

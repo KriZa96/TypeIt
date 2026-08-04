@@ -1,0 +1,107 @@
+name: Coverage
+
+# Line coverage of the rebuilt tree, gated per area (TESTING section 9) and
+# reported per pull request as *which new lines are uncovered* — a global
+# percentage barely moves when fifty untested lines land, so the diff is what
+# actually enforces the standard (CI_CD section 7).
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  coverage:
+    name: gcovr
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # The uncovered-lines comment diffs against the base branch, which
+          # needs the history to reach it.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # gcc, because the report is gcov's and the runner already has it. The
+      # preset turns -Werror off: instrumented builds warn about things the
+      # source did not write.
+      - uses: ./.github/actions/setup-build
+        with:
+          compiler: gcc
+          build-type: Debug
+          cmake-args: -DTYPEIT_COVERAGE=ON
+          werror: "OFF"
+
+      - name: Install gcovr
+        run: python3 -m pip install --quiet gcovr==8.6
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      # Report first, gate second: a number nobody can see is not a diagnostic,
+      # and the gate step below is what turns the run red.
+      - name: Report
+        run: |
+          mkdir -p build/coverage
+          gcovr \
+            --root . \
+            --filter 'libs/' \
+            --exclude '.*_deps.*' \
+            --gcov-executable "gcov-14" \
+            --gcov-ignore-parse-errors \
+            --json build/coverage/coverage.json \
+            --xml build/coverage/coverage.xml \
+            --html-details build/coverage/index.html \
+            --txt build/coverage/coverage.txt \
+            --print-summary
+
+      - name: Publish the summary
+        if: always()
+        run: |
+          {
+            echo '## Coverage'
+            echo
+            echo '```'
+            cat build/coverage/coverage.txt || echo "no report produced"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the HTML report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-html
+          path: build/coverage
+          if-no-files-found: ignore
+
+      # Which lines *this branch* left uncovered, which is the number that
+      # actually enforces the standard. Posting it as a pull-request comment
+      # rather than a job summary is CI-009's remaining half, and waits until
+      # this repository works through pull requests.
+      - name: Uncovered new lines
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 scripts/uncovered-diff.py build/coverage/coverage.json \
+            "origin/${{ github.base_ref }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Last, so the report and the comment exist whatever the numbers say.
+      - name: Gate
+        run: ./scripts/coverage.sh gate build

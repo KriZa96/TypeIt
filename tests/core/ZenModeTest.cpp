@@ -12,6 +12,12 @@ namespace typeit::core {
 
         OpenProgress progress_of(const ZenMode& mode) { return std::get<OpenProgress>(mode.progress()); }
 
+        TEST(ZenModeTest, IsRegisteredAndPersistedAsZen) {
+            const ZenMode mode;
+
+            EXPECT_EQ(mode.id(), "zen");
+        }
+
         TEST(ZenModeTest, NeverFinishesOnItsOwn) {
             ZenMode mode;
             testing::ModeDriver driver{"one two three", mode};

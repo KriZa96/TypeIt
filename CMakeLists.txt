@@ -37,6 +37,7 @@ target_include_directories(typeit_version INTERFACE "${PROJECT_BINARY_DIR}/gener
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerWarnings)
+include(Coverage)
 include(Sanitizers)
 include(StaticAnalysis)
 

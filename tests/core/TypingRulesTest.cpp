@@ -94,6 +94,19 @@ namespace typeit::core {
             EXPECT_EQ(typing.cursor(), 7U);
         }
 
+        TEST(StopOnErrorWordTest, ACleanWordAfterASeparatorIsNotBlocked) {
+            // The backwards scan stops at the separator that started the word.
+            // Without that, an error anywhere earlier in the text would block
+            // every word boundary after it for the rest of the run.
+            testing::TypingRun typing{"abc def ghi", TypingRules{.stop_on_error = StopOnError::Word}};
+            typing.type("abc dxf ghi");
+            ASSERT_EQ(typing.cursor(), 7U) << "blocked at the space after the bad word";
+
+            typing.backspace(2).type("ef ghi");
+
+            EXPECT_EQ(typing.states(), "CCCCCcCCCCC") << "and released once that word is clean";
+        }
+
         // allow_backspace
 
         TEST(AllowBackspaceTest, BackspaceIsANoOpAndLogsNothingWhenItIsOff) {

@@ -38,6 +38,8 @@ namespace typeit::core {
                     return 0x800;
                 case 4:
                     return 0x10000;
+                // Unreachable: the caller has already rejected any length
+                // outside 1..4. Defensive, and never exercised.
                 default:
                     return 0;
             }

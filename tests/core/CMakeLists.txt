@@ -65,5 +65,6 @@ include(GoogleTest)
 gtest_discover_tests(core_tests DISCOVERY_TIMEOUT 60)
 
 typeit_set_warnings(core_tests)
+typeit_enable_coverage(core_tests)
 typeit_enable_sanitizers(core_tests)
 typeit_enable_static_analysis(core_tests)

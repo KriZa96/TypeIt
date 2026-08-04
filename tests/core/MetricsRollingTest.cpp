@@ -97,6 +97,29 @@ namespace typeit::core {
             EXPECT_EQ(rolling.advance(log, Millis{21'000}).value, 0.0);
         }
 
+        TEST(MetricsRollingTest, BackspacesAndOverrunsCountForNothing) {
+            // Only correct graphemes are a speed. A backspace is not a
+            // grapheme, and a keystroke aimed past the end of the text landed
+            // on no position to be correct at.
+            const TextBuffer target = testing::text_of("ab");
+            const KeystrokeLog log = testing::LogBuilder{}
+                                             .type("a", Millis{0})
+                                             .type("b", Millis{100})
+                                             .backspace(Millis{200})
+                                             .type("c", Millis{300})
+                                             .type("d", Millis{400})
+                                             .build();
+
+            RollingWpm rolling{target};
+            const Wpm reading = rolling.advance(log, Millis{400});
+
+            // Two correct graphemes in 0.4 s. A live speed counts keystrokes
+            // as they land — it is a rate, not a verdict on the finished text —
+            // so the a and the b both count, while the backspace, the wrong
+            // retype and the overrun count for nothing.
+            EXPECT_NEAR(reading.value, 2.0 / 5.0 / (400.0 / 60'000.0), 0.001);
+        }
+
         TEST(MetricsRollingTest, AnEmptyLogIsZeroAtEveryTick) {
             const TextBuffer target = testing::text_of("abc");
             const KeystrokeLog log;

@@ -13,6 +13,12 @@ namespace typeit::core {
 
         WordProgress progress_of(const WordCountMode& mode) { return std::get<WordProgress>(mode.progress()); }
 
+        TEST(WordCountModeTest, IsRegisteredAndPersistedAsWords) {
+            const WordCountMode mode{10};
+
+            EXPECT_EQ(mode.id(), "words");
+        }
+
         TEST(WordCountModeTest, FinishesAfterExactlyTheWordsAskedFor) {
             WordCountMode mode{3};
             testing::ModeDriver driver{"one two three four five", mode};

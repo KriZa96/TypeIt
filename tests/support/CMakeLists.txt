@@ -9,4 +9,5 @@ target_include_directories(typeit_test_support PUBLIC "${CMAKE_CURRENT_SOURCE_DI
 target_link_libraries(typeit_test_support PUBLIC typeit::core)
 
 typeit_set_warnings(typeit_test_support)
+typeit_enable_coverage(typeit_test_support)
 typeit_enable_sanitizers(typeit_test_support)

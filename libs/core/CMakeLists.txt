@@ -14,5 +14,6 @@ target_include_directories(typeit_core PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT
 target_compile_features(typeit_core PUBLIC cxx_std_23)
 
 typeit_set_warnings(typeit_core)
+typeit_enable_coverage(typeit_core)
 typeit_enable_sanitizers(typeit_core)
 typeit_enable_static_analysis(typeit_core)

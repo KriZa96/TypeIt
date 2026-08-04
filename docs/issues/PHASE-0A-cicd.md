@@ -219,9 +219,13 @@ Lands with Phase 1, when there is a `core` library worth measuring.
 - Out: —
 
 **Acceptance**
-- [ ] Gates enforced per layer; dropping below fails.
-- [ ] The PR comment highlights uncovered *new* lines — a global percentage barely moves when
-      you add fifty untested lines, so the diff view is what actually enforces the standard.
+- [x] Gates enforced per layer; dropping below fails. `coverage.yml` landed with TI-052, at the
+      close of Phase 1, when there was a `core` worth measuring. `core` is the only layer that
+      exists so far; the others are gated as they arrive.
+- [ ] The PR comment highlights uncovered *new* lines. Half done: `scripts/uncovered-diff.py`
+      computes exactly that and the workflow publishes it to the job summary on every pull
+      request. Posting it as a sticky PR comment needs a third-party action, and this
+      repository does not yet work through pull requests — the comment lands when it does.
 
 ---
 

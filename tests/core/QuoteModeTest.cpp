@@ -12,6 +12,14 @@ namespace typeit::core {
 
         TextProgress progress_of(const QuoteMode& mode) { return std::get<TextProgress>(mode.progress()); }
 
+        TEST(QuoteModeTest, IsRegisteredAndPersistedAsQuote) {
+            // The id goes into the database and into the config file, so a typo
+            // in it is a silent break in every saved run of this mode.
+            const QuoteMode mode;
+
+            EXPECT_EQ(mode.id(), "quote");
+        }
+
         TEST(QuoteModeTest, FinishesAtTheLastGraphemeOfTheText) {
             QuoteMode mode;
             testing::ModeDriver driver{"one two", mode};

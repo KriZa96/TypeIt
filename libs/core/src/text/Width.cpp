@@ -37,6 +37,8 @@ namespace typeit::core {
     }
 
     std::uint8_t width_of_cluster(std::span<const char32_t> code_points) noexcept {
+        // The segmenter never produces an empty cluster, so this is a guard
+        // against a caller that does not exist rather than a case with a test.
         if (code_points.empty()) {
             return 0;
         }
