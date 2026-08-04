@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 #include "typeit/core/util/Result.h"
@@ -38,6 +39,14 @@ namespace typeit::core {
     /// the lead byte for a bad length or an overlong form, and the offending byte
     /// itself for a bad continuation.
     [[nodiscard]] Result<DecodedCodePoint> decode_one(std::string_view text, std::size_t offset);
+
+    /// Appends `code_point` to `out` as UTF-8.
+    ///
+    /// Precondition: the code point is one `decode_one` could have produced —
+    /// at most U+10FFFF and not a surrogate. Anything that came out of the
+    /// decoder or the normalization tables qualifies; there is no error return
+    /// because there is no caller that could have an invalid one.
+    void encode_one(char32_t code_point, std::string& out);
 
 }  // namespace typeit::core
 

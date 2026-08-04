@@ -132,6 +132,11 @@ jobs:
       - name: Width tables match the Unicode data they came from
         run: scripts/generate-width-tables.py --check
 
+      # Same argument for NFC: a stale table here means the same text imports
+      # twice under two different hashes.
+      - name: Normalization tables match the Unicode data they came from
+        run: scripts/generate-normalization-tables.py --check
+
   docs:
     name: Spelling, markdown and links
     runs-on: ubuntu-latest

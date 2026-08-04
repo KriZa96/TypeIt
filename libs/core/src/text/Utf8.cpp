@@ -103,4 +103,29 @@ namespace typeit::core {
         return DecodedCodePoint{.code_point = value, .length = length};
     }
 
+    void encode_one(char32_t code_point, std::string& out) {
+        assert(code_point <= kMaxCodePoint && "encode_one called with a code point above U+10FFFF");
+        assert((code_point < 0xD800 || code_point > 0xDFFF) && "encode_one called with a surrogate");
+
+        const auto byte = [&out](char32_t value) {
+            out.push_back(static_cast<char>(static_cast<std::uint8_t>(value)));
+        };
+
+        if (code_point < 0x80) {
+            byte(code_point);
+        } else if (code_point < 0x800) {
+            byte(0xC0U | (code_point >> 6U));
+            byte(0x80U | (code_point & 0x3FU));
+        } else if (code_point < 0x10000) {
+            byte(0xE0U | (code_point >> 12U));
+            byte(0x80U | ((code_point >> 6U) & 0x3FU));
+            byte(0x80U | (code_point & 0x3FU));
+        } else {
+            byte(0xF0U | (code_point >> 18U));
+            byte(0x80U | ((code_point >> 12U) & 0x3FU));
+            byte(0x80U | ((code_point >> 6U) & 0x3FU));
+            byte(0x80U | (code_point & 0x3FU));
+        }
+    }
+
 }  // namespace typeit::core

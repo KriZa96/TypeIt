@@ -137,8 +137,8 @@ order with each step individually toggleable.
 - Every step individually disableable, verified by a toggle matrix.
 
 **Acceptance**
-- [ ] Idempotence holds for all toggle combinations.
-- [ ] Pure: no I/O, no allocation beyond the result, same input → same output.
+- [x] Idempotence holds for all toggle combinations.
+- [x] Pure: no I/O, no allocation beyond the result, same input → same output.
 
 ---
 
