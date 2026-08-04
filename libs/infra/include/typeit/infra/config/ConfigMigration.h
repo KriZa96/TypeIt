@@ -39,7 +39,7 @@ namespace typeit::infra {
 
     /// Every rename this binary knows, in ascending order.
     ///
-    /// **Empty at 2.0.0**, and that is the honest state: nothing has been
+    /// **Empty in this release**, and that is the honest state: nothing has been
     /// renamed yet. The mechanism ships anyway, because the first rename must
     /// not also be the release where the mechanism is written — that is the
     /// release where somebody's settings quietly disappear.

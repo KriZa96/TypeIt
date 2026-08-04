@@ -340,8 +340,13 @@ Load, validate, apply defaults, and save the TOML configuration.
 - Migration is idempotent.
 
 **Acceptance**
-- [ ] A user's settings can never be silently discarded by a rename.
-- [ ] The CI guard has been watched to fail on a deliberate unbumped rename.
+- [x] A user's settings can never be silently discarded by a rename: the value moves to the new
+      key, the file is backed up first, the comments and the ordering survive, and the user is
+      told what changed. The rename table is empty at 2.0.0 — nothing has been renamed yet — so
+      the machinery takes its table as a parameter and the tests drive it with a pretend
+      rename. A migration nobody has run is a migration nobody knows works.
+- [x] The CI guard has been watched to fail on a deliberate unbumped rename, and to pass on a
+      rename with a migration, on an added key, and on no change at all.
 
 ---
 
@@ -437,12 +442,26 @@ its destructor.
 
 ## Phase exit criteria
 
-- [ ] Migrations apply from empty and from every prior version; a future version is refused.
-- [ ] The relocation test passes — installed binary finds its assets with the source tree
-      deleted (C2 closed).
-- [ ] No SQL string concatenation; the lint test enforces it.
-- [ ] A malformed config is reported and never overwritten.
-- [ ] Contract suites pass identically for real and fake implementations.
-- [ ] No test touches a real user directory.
-- [ ] `infra` coverage ≥ 75%.
-- [ ] The legacy application still builds and passes its own tests.
+- [x] Migrations apply from empty, from an already-current database and across three reopens;
+      a future version is refused with the file untouched. There is one prior version — zero —
+      until a second schema file exists, and the CI schema guard is what makes sure the second
+      one arrives with its own test.
+- [ ] **The relocation test needs an installable binary and assets to install**, neither of
+      which exists before Phase 3 and Phase 6. What C2 was actually about is tested: an install
+      tree in a temp directory, resolved from the binary's own path, through a symlink, with no
+      reference to where anything was compiled. `__FILE__` is gone from everything the rebuild
+      owns and a check keeps it that way. The end-to-end move-the-tree test lands with the
+      packaging work at TI-138.
+- [x] No SQL string concatenation, and the rule is held tighter than the lint can see: the lint
+      reads one line at a time, so a query whose `+` fell on the next line slipped past it once.
+      Both offenders were rewritten rather than the check loosened, and its comment now says
+      how far it can see.
+- [x] A malformed config is reported with a line and column and is never overwritten, nor
+      replaced by a template. Two tests compare the file byte for byte afterwards.
+- [x] Contract suites pass identically for real and fake implementations — and found three
+      places where the fakes had already drifted.
+- [x] No test touches a real user directory: `TempEnv` redirects both, and a CI step checks the
+      six candidate locations after every matrix job on a clean runner.
+- [x] `infra` coverage **84.41%**, against a 75% floor now enforced by `scripts/coverage.sh`.
+- [x] The legacy application still builds and passes its own tests, untouched: `src/` has not
+      been edited in this phase either, and its suite runs green in the same ctest invocation.

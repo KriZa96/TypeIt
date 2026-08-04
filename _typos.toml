@@ -5,6 +5,13 @@ OPF = "OPF" # EPUB Open Packaging Format, not a misspelling of "OF"
 
 [default.extend-words]
 unparseable = "unparseable" # accepted variant, used throughout the backlog
+configurably = "configurably" # standard adverb; typos 1.49 disagrees, 1.34 does not
+# Deliberate misspellings. Two tests check that a mistyped mode name is quoted
+# back to the user rather than silently ignored, which only works if the name
+# is actually wrong. Found by running typos 1.49 locally against a CI pinned to
+# 1.34: better to declare them now than to have a version bump fail a build for
+# a typo somebody meant.
+tiemd = "tiemd"
 
 [files]
 # Added 2026-07-31 (CI-006). These two paragraphs quote the misspellings that
