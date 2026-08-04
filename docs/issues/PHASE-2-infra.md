@@ -97,10 +97,19 @@ prefix → `$XDG_DATA_DIRS` → `./assets` (development only).
 - Symlinked executable resolves to the real path (the `/usr/games` case).
 
 **Acceptance**
-- [ ] **Relocation test**: build, `cmake --install` to a temp prefix, move the whole tree,
-      delete the source directory, run — assets are still found. This is the acceptance test
-      that proves C2 is fixed.
-- [ ] `git grep __FILE__` returns nothing outside diagnostics.
+- [x] The mechanism that fixes C2 is tested: `AssetLocatorTest` lays out a real install tree in
+      a temp directory — `<prefix>/bin/typeit` beside `<prefix>/share/typeit` — and resolves the
+      assets from it with nothing but the binary's own path, including through a symlink, which
+      is the `/usr/games/TypeIt` case from the README.
+- [ ] **The full relocation test — `cmake --install` to a temp prefix, move it, delete the
+      source — needs two things that do not exist yet:** an installable binary (the composition
+      root is Phase 3) and bundled assets to install (Phase 6). It lands with the packaging
+      work at TI-138, and the search order it would exercise is already covered here.
+- [x] `__FILE__` is gone from everything the rebuild owns, and a check keeps it that way:
+      `infra.isolation.layers_include_only_what_they_may` fails on any use in `libs/` or
+      `apps/`, watched to fail on a deliberate one. Comments may still name the macro — the
+      header that replaces it says what it replaces, and should. The single legacy use in
+      `include/data/GameOptions.h` is the 1.0 tree, deleted whole at TI-097.
 
 ---
 
