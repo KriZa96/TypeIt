@@ -21,7 +21,10 @@ add_test(NAME infra.lint.source_rules
 
 add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp SqliteHistoryRepositoryTest.cpp TempEnvTest.cpp)
 
-target_link_libraries(infra_tests PRIVATE typeit::infra typeit::test_support GTest::gtest GTest::gtest_main)
+# typeit_version carries the generated header: a test that needs the
+# application version reads it rather than spelling one (VERSIONING section 6).
+target_link_libraries(infra_tests PRIVATE typeit::infra typeit::test_support typeit_version
+                                         GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(infra_tests DISCOVERY_TIMEOUT 60)

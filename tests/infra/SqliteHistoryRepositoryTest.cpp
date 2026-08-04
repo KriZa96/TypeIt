@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "typeit/app/records/History.h"
+#include "typeit/core/Version.h"
 #include "typeit/core/metrics/ErrorMap.h"
 #include "typeit/core/metrics/KeyStats.h"
 #include "typeit/core/metrics/Timeline.h"
@@ -53,7 +54,9 @@ namespace typeit::infra {
             record.final_correctness = core::Accuracy{0.983};
             record.consistency = 92.5;
             record.completed = true;
-            record.app_version = "2.0.0-alpha.3";
+            // Read, never spelled: the version lives in exactly one place
+            // (VERSIONING section 6), and the guard enforces it.
+            record.app_version = kVersionString;
             return record;
         }
 
