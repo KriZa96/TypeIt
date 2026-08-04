@@ -89,12 +89,16 @@ namespace typeit::app {
 
         // Deduplication is by content, not by path: the same file imported
         // twice is one text, and the same file changed is a new one.
-        const core::Result<std::optional<TextItem>> existing = library_->find_by_hash(hash);
-        if (!existing) {
-            return std::unexpected{existing.error()};
+        const core::Result<std::optional<TextItem>> found = library_->find_by_hash(hash);
+        if (!found) {
+            return std::unexpected{found.error()};
         }
-        if (existing->has_value()) {
-            return ImportOutcome{.id = (*existing)->id, .already_present = true};
+        // Named rather than reached through two dereferences: `(*found)->id` is
+        // the same access and clang-tidy cannot see the check through the
+        // Result wrapping the optional.
+        const std::optional<TextItem>& existing = found.value();
+        if (existing.has_value()) {
+            return ImportOutcome{.id = existing->id, .already_present = true};
         }
 
         core::Result<core::TextBuffer> buffer = core::TextBuffer::from_utf8(*normalized);

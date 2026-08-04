@@ -83,12 +83,15 @@ namespace typeit::core {
         // ---- table lookups ---------------------------------------------------
 
         const Decomposition* find_decomposition(char32_t code_point) {
-            const auto* const found =
+            // libstdc++ makes a std::array iterator a pointer and MSVC makes it a
+            // class; spelling it as a pointer compiles on exactly one of the two.
+            // NOLINTNEXTLINE(readability-qualified-auto)
+            const auto found =
                     std::ranges::lower_bound(tables::kCanonicalDecompositions, code_point, {}, &Decomposition::code);
             if (found == tables::kCanonicalDecompositions.end() || found->code != code_point) {
                 return nullptr;
             }
-            return found;
+            return &*found;
         }
 
         char32_t compose_pair(char32_t first, char32_t second) {
@@ -96,7 +99,10 @@ namespace typeit::core {
                 return syllable;
             }
             const auto key = std::pair{first, second};
-            const auto* const found = std::ranges::lower_bound(
+            // libstdc++ makes a std::array iterator a pointer and MSVC makes it a
+            // class; spelling it as a pointer compiles on exactly one of the two.
+            // NOLINTNEXTLINE(readability-qualified-auto)
+            const auto found = std::ranges::lower_bound(
                     tables::kCanonicalCompositions, key, {},
                     [](const Composition& entry) { return std::pair{entry.first, entry.second}; });
             if (found == tables::kCanonicalCompositions.end() || found->first != first || found->second != second) {
@@ -304,7 +310,10 @@ namespace typeit::core {
 
     std::uint8_t combining_class(char32_t code_point) noexcept {
         using tables::CombiningClassRange;
-        const auto* const found =
+        // libstdc++ makes a std::array iterator a pointer and MSVC makes it a
+        // class; spelling it as a pointer compiles on exactly one of the two.
+        // NOLINTNEXTLINE(readability-qualified-auto)
+        const auto found =
                 std::ranges::upper_bound(tables::kCombiningClasses, code_point, {}, &CombiningClassRange::first);
         if (found == tables::kCombiningClasses.begin()) {
             return 0;
@@ -316,8 +325,10 @@ namespace typeit::core {
     bool is_punctuation(char32_t code_point) noexcept { return in_ranges(tables::kPunctuation, code_point); }
 
     char32_t to_lowercase(char32_t code_point) noexcept {
-        const auto* const found =
-                std::ranges::lower_bound(tables::kSimpleLowercase, code_point, {}, &CaseMapping::from);
+        // libstdc++ makes a std::array iterator a pointer and MSVC makes it a
+        // class; spelling it as a pointer compiles on exactly one of the two.
+        // NOLINTNEXTLINE(readability-qualified-auto)
+        const auto found = std::ranges::lower_bound(tables::kSimpleLowercase, code_point, {}, &CaseMapping::from);
         if (found == tables::kSimpleLowercase.end() || found->from != code_point) {
             return code_point;
         }
