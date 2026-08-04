@@ -22,6 +22,12 @@ CORE_MINIMUM=90
 AREA_MINIMUM=95
 AREAS=(libs/core/src/metrics libs/core/src/text libs/core/src/modes)
 
+# `infra` is lower on purpose (TESTING section 9): some of its error paths need
+# a full disk, a permission failure or a corrupt database to reach, and a test
+# that arranges those is a test that only passes on the machine it was written
+# on. The number is a floor, not a target — it measures 84% today.
+INFRA_MINIMUM=75
+
 require() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo "coverage.sh needs $1" >&2
@@ -89,6 +95,14 @@ gate() {
     read -r percent covered total < <(percent_for libs/core/src)
     printf '%-28s %6s%%  (%s/%s lines, minimum %s%%)\n' "core" "${percent}" "${covered}" "${total}" "${CORE_MINIMUM}"
     if awk -v value="${percent}" -v minimum="${CORE_MINIMUM}" 'BEGIN { exit !(value < minimum) }'; then
+        echo "  below the gate" >&2
+        failed=1
+    fi
+
+    read -r percent covered total < <(percent_for libs/infra/src)
+    printf '%-28s %6s%%  (%s/%s lines, minimum %s%%)\n' "infra" "${percent}" "${covered}" "${total}" \
+        "${INFRA_MINIMUM}"
+    if awk -v value="${percent}" -v minimum="${INFRA_MINIMUM}" 'BEGIN { exit !(value < minimum) }'; then
         echo "  below the gate" >&2
         failed=1
     fi

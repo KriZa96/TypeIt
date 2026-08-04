@@ -375,9 +375,18 @@ adapter cannot silently diverge — which is the failure mode that makes fakes d
 - Out: the fakes themselves (TI-064).
 
 **Acceptance**
-- [ ] Each contract suite runs against both the SQLite and the fake implementation and passes
-      identically.
-- [ ] Adding a new implementation requires only a factory, not new tests.
+- [x] Each contract suite runs against both implementations and passes identically — 74 tests,
+      which is 37 expectations times two. Writing them found three places where the fake had
+      drifted: it sorted rows differently, it folded case differently in a title search, and it
+      did not enforce the personal-best accuracy floor. All three would have made a Phase 3
+      service test pass against a world that does not exist.
+- [x] Adding a new implementation requires only a factory: the factory owns whatever its
+      implementation needs — an in-memory database, a temp directory — and hands back the
+      interface. The suite never names a concrete type.
+- [x] Four ports have suites: `IHistoryRepository`, `ITextLibraryRepository`, `IConfigStore`,
+      `IFileSystem`. `IAssetLocator` has one implementation and one fake with nothing to
+      compare — its contract is a single method returning a path — so it is covered by
+      `FakesTest` rather than by a two-row typed suite that would assert nothing.
 
 ---
 
@@ -398,8 +407,11 @@ In-memory implementations of every port, used by Phase 3 service tests.
 - Call recording (for asserting orchestration) is accurate.
 
 **Acceptance**
-- [ ] Every fake passes its port's contract suite.
-- [ ] Every fake can be made to fail on demand.
+- [x] Every fake passes its port's contract suite, beside the real adapter.
+- [x] Every fake can be made to fail on demand, and the failure is armed **once**: "the next
+      save fails" is a scenario, "everything fails from now on" is a different object.
+- [x] Call counts and recorded arguments are asserted in `FakesTest` — an orchestration nobody
+      can observe is one nobody can write a test about, which is what Phase 3 needs these for.
 
 ---
 
