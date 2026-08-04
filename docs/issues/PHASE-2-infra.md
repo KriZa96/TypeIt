@@ -352,9 +352,10 @@ its destructor.
 - Two fixtures in the same process do not collide.
 
 **Acceptance**
-- [ ] **No test anywhere touches the real config or data directory.** Verified by a CI check
-      that fails if `~/.config/typeit` or `~/.local/share/typeit` exists after a test run on a
-      clean runner.
+- [x] **No test anywhere touches the real config or data directory.** A step in every CI matrix
+      job checks the six candidate locations — the three XDG ones, macOS's Application Support,
+      and both Windows ones — after the suite has run on a clean runner, and fails naming what
+      leaked. It runs `if: always()`, so a suite that fails *and* scribbles reports both.
 
 ---
 

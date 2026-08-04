@@ -17,7 +17,7 @@ add_test(NAME infra.isolation.layers_include_only_what_they_may
          COMMAND "${CMAKE_COMMAND}" "-DTYPEIT_SOURCE_DIR=${CMAKE_SOURCE_DIR}" -P
                  "${CMAKE_SOURCE_DIR}/cmake/CheckLayerIsolation.cmake")
 
-add_executable(infra_tests DependenciesTest.cpp PlatformPathsTest.cpp)
+add_executable(infra_tests DependenciesTest.cpp PlatformPathsTest.cpp TempEnvTest.cpp)
 
 target_link_libraries(infra_tests PRIVATE typeit::infra typeit::test_support GTest::gtest GTest::gtest_main)
 

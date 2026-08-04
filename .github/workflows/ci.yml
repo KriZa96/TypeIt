@@ -112,6 +112,25 @@ jobs:
       - name: Test
         run: ctest --test-dir build/tests --output-on-failure --output-junit "$GITHUB_WORKSPACE/junit.xml"
 
+      # TI-065's acceptance: no test may touch a real user directory. The
+      # runner is clean, so the only way any of these can exist is a test that
+      # ignored its TempEnv — which would mean the suite scribbles in a
+      # developer's history on their machine too.
+      - name: No test touched a real user directory
+        if: always()
+        shell: bash
+        run: |
+          leaked=()
+          for candidate in "$HOME/.config/typeit" "$HOME/.local/share/typeit" "$HOME/.cache/typeit" \
+                           "$HOME/Library/Application Support/TypeIt" "$APPDATA/TypeIt" "$LOCALAPPDATA/TypeIt"; do
+            [ -e "$candidate" ] && leaked+=("$candidate")
+          done
+          if [ ${#leaked[@]} -ne 0 ]; then
+            printf '::error::a test wrote to a real user directory: %s\n' "${leaked[@]}"
+            exit 1
+          fi
+          echo "no real user directory was touched"
+
       - name: Summarise test results
         if: always()
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/junit-summary.py junit.xml "${{ matrix.name }}"
