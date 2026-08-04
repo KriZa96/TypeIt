@@ -1,5 +1,6 @@
 #include "typeit/infra/fs/PlatformPaths.h"
 
+#include <cstddef>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
@@ -48,12 +49,26 @@ namespace typeit::infra {
 
     Environment system_environment() {
         return [](std::string_view name) -> std::optional<std::string> {
+#ifdef _WIN32
+            // getenv is deprecated by the Windows CRT and /W4 -Werror means it.
+            // _dupenv_s allocates, so the buffer is owned and freed here.
+            char* value = nullptr;
+            std::size_t size = 0;
+            if (_dupenv_s(&value, &size, std::string{name}.c_str()) != 0 || value == nullptr) {
+                std::free(value);
+                return std::nullopt;
+            }
+            std::string copied{value};
+            std::free(value);
+            return copied;
+#else
             // NOLINTNEXTLINE(concurrency-mt-unsafe) -- read once at startup, before any thread exists
             const char* value = std::getenv(std::string{name}.c_str());
             if (value == nullptr) {
                 return std::nullopt;
             }
             return std::string{value};
+#endif
         };
     }
 

@@ -215,7 +215,12 @@ namespace typeit::infra {
                     .install_prefix = {},
             });
             ASSERT_TRUE(beside_the_real_file) << (beside_the_real_file ? "" : beside_the_real_file.error().context);
-            EXPECT_EQ(*beside_the_real_file, root() / "opt" / "share" / "typeit");
+            // Compared canonical to canonical: on macOS /var is itself a
+            // symlink to /private/var, so the two spellings of the same
+            // directory differ. The assertion is about which directory, not
+            // about how it is spelled.
+            EXPECT_EQ(std::filesystem::canonical(*beside_the_real_file),
+                      std::filesystem::canonical(root() / "opt" / "share" / "typeit"));
         }
 #endif
 

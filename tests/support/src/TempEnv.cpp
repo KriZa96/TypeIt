@@ -1,6 +1,7 @@
 #include "typeit/testing/TempEnv.h"
 
 #include <atomic>
+#include <cstddef>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
@@ -49,12 +50,26 @@ namespace typeit::testing {
     }  // namespace
 
     std::optional<std::string> read_environment(const char* name) {
+#ifdef _WIN32
+        // getenv is deprecated by the Windows CRT. _dupenv_s allocates, so the
+        // buffer is owned and freed here.
+        char* value = nullptr;
+        std::size_t size = 0;
+        if (_dupenv_s(&value, &size, name) != 0 || value == nullptr) {
+            std::free(value);
+            return std::nullopt;
+        }
+        std::string copied{value};
+        std::free(value);
+        return copied;
+#else
         // NOLINTNEXTLINE(concurrency-mt-unsafe) -- single-threaded by contract; see the header
         const char* value = std::getenv(name);
         if (value == nullptr) {
             return std::nullopt;
         }
         return std::string{value};
+#endif
     }
 
     TempEnv::TempEnv() :
