@@ -304,8 +304,19 @@ Load, validate, apply defaults, and save the TOML configuration.
 - Non-ASCII values (theme names, paths) round-trip.
 
 **Acceptance**
-- [ ] A malformed config never destroys user data.
-- [ ] Every field in TECHNICAL §6 is covered by a load test.
+- [x] A malformed config never destroys user data. Two tests: a syntax error is reported with
+      the line and column and the file is byte-for-byte as the user left it, and it is not
+      quietly replaced by a template either.
+- [x] Every field in TECHNICAL §6 is covered by a load test, and the strongest one is that the
+      template the store writes on a first run loads back with **no warnings** — a generated
+      file this program would accept from a user.
+- [x] Ranges are not restated here. A field is applied and then `core::validate` decides; if it
+      refuses, the value goes back to its default and the warning quotes core's own message,
+      including what would have worked. A range that lived in two places would eventually
+      disagree with itself.
+- [x] Saving writes a temporary beside the target and renames it over — atomic within a
+      directory on every filesystem this runs on — so a crash mid-write leaves the old file
+      whole rather than a truncated new one.
 
 ---
 

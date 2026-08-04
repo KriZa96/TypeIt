@@ -8,6 +8,8 @@
 #define TYPEIT_CORE_SESSION_TYPINGRULES_H
 
 #include <cstdint>
+#include <optional>
+#include <string_view>
 #include <type_traits>
 
 namespace typeit::core {
@@ -30,6 +32,15 @@ namespace typeit::core {
         /// No going back at all.
         Max,
     };
+
+    /// The spellings the configuration file uses (TECHNICAL section 6). Kept
+    /// with the enums rather than in the config layer, so a value and its name
+    /// cannot drift apart.
+    [[nodiscard]] std::string_view to_string(StopOnError value);
+    [[nodiscard]] std::optional<StopOnError> stop_on_error_from(std::string_view name);
+
+    [[nodiscard]] std::string_view to_string(ConfidenceMode value);
+    [[nodiscard]] std::optional<ConfidenceMode> confidence_mode_from(std::string_view name);
 
     struct TypingRules {
         StopOnError stop_on_error = StopOnError::Off;
