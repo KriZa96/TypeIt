@@ -9,6 +9,7 @@
 #   version-guard.sh derive                  the version this build should report
 #   version-guard.sh notices [base]          non-blocking reminders, never fails
 #   version-guard.sh check-schema [base]     a released schema file was not edited
+#   version-guard.sh check-config [base]     a config key was not renamed without a migration
 #
 # Runs against the current working directory, so the tests can point it at a
 # fixture instead of the repository it lives in.
@@ -143,6 +144,46 @@ check_schema() {
     fi
 }
 
+# A renamed configuration key is somebody's setting quietly reverting to its
+# default. VERSIONING section 5 says a rename bumps `config_version` and ships a
+# migration; this makes that a rule rather than a habit.
+#
+# The keys are read from the writer — TomlConfigStore::render is the one place
+# that spells every key — so a key that disappears from the written template has
+# either been renamed or removed, and both need the same treatment. Deferred
+# here from CI-008, which had no config to guard.
+check_config() {
+    local base=${1:-}
+    local writer=libs/infra/src/config/TomlConfigStore.cpp
+    local migration=libs/infra/src/config/ConfigMigration.cpp
+
+    [[ -f $writer ]] || { echo "no config writer yet"; return 0; }
+
+    if [[ -z $base ]] || ! git rev-parse --verify --quiet "$base" >/dev/null; then
+        echo "no usable base commit; skipping the config guard"
+        return 0
+    fi
+
+    # `out << "some_key       = "` in the rendered template, one per setting.
+    local before after gone
+    before=$(git show "$base:$writer" 2>/dev/null | sed -n 's/.*out << "\([a-z_]\{1,\}\)[ ]*=.*/\1/p' | sort -u || true)
+    after=$(sed -n 's/.*out << "\([a-z_]\{1,\}\)[ ]*=.*/\1/p' "$writer" | sort -u)
+    gone=$(comm -23 <(echo "$before") <(echo "$after") || true)
+
+    [[ -n $gone ]] || return 0
+
+    echo "config keys removed or renamed: $(echo "$gone" | tr '\n' ' ')"
+
+    # A rename is fine when the version went up and a migration came with it.
+    local version_before version_after
+    version_before=$(git show "$base:$migration" 2>/dev/null | grep -c 'ConfigRename{' || true)
+    version_after=$(grep -c 'ConfigRename{' "$migration" 2>/dev/null || true)
+    if ((version_after <= version_before)); then
+        die "a configuration key was renamed or removed without a migration. VERSIONING section 5: bump config_version and add a ConfigRename, so the value the user set is not silently lost."
+    fi
+    echo "and a migration came with them"
+}
+
 notices() {
     local base=${1:-} changed
     if [[ -z $base ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
@@ -167,6 +208,7 @@ case ${1:-} in
     derive) derive ;;
     notices) notices "${2:-}" ;;
     check-schema) check_schema "${2:-}" ;;
+    check-config) check_config "${2:-}" ;;
     *)
         sed -n '2,12p' "$0"
         exit 2

@@ -234,6 +234,42 @@ git -C "$d" -c user.email=t@t -c user.name=t commit -qm "delete a shipped schema
 assert_fails "deleting a released schema file is blocked" in_fixture "$d" "$guard" check-schema "$base"
 rm -rf "$d"
 
+echo "version-guard: config guard"
+d=$(fixture 2.0.0 alpha.1)
+mkdir -p "$d/libs/infra/src/config"
+cat >"$d/libs/infra/src/config/TomlConfigStore.cpp" <<'EOF'
+out << "default_mode       = " << quoted(config.general.default_mode);
+out << "stop_on_error      = " << quoted(config.typing.stop_on_error);
+EOF
+cat >"$d/libs/infra/src/config/ConfigMigration.cpp" <<'EOF'
+// no renames yet
+EOF
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "config writer"
+base=$(git -C "$d" rev-parse HEAD)
+
+assert_ok "an unchanged config passes" in_fixture "$d" "$guard" check-config "$base"
+
+# Adding a key is always fine.
+echo 'out << "brand_new_key      = " << config.general.brand_new;' >>"$d/libs/infra/src/config/TomlConfigStore.cpp"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "a new setting"
+assert_ok "adding a config key passes" in_fixture "$d" "$guard" check-config "$base"
+
+# Renaming one without a migration is not.
+sed -i 's/stop_on_error/stop_at_error/' "$d/libs/infra/src/config/TomlConfigStore.cpp"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "rename a setting"
+assert_fails "renaming a config key without a migration is blocked" in_fixture "$d" "$guard" check-config "$base"
+
+# With one, it is.
+echo 'ConfigRename{.to = 2, .section = "typing", .was = "stop_on_error", .now = "stop_at_error"},' \
+    >>"$d/libs/infra/src/config/ConfigMigration.cpp"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "and its migration"
+assert_ok "renaming a config key with a migration passes" in_fixture "$d" "$guard" check-config "$base"
+rm -rf "$d"
+
 echo
 echo "$passed passed, $failed failed"
 [[ $failed -eq 0 ]]

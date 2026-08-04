@@ -62,6 +62,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: scripts/version-guard.sh check-schema "${{ github.event.pull_request.base.sha }}"
 
+      # A renamed config key is somebody's setting reverting to its default.
+      # Deferred here from CI-008, which had no config to guard.
+      - name: A config key was not renamed without a migration
+        if: github.event_name == 'pull_request'
+        run: scripts/version-guard.sh check-config "${{ github.event.pull_request.base.sha }}"
+
       # Reminders, not gates. Annotations rather than pull request comments: a
       # fork's token cannot post one, and a check that fails only on forks
       # teaches people to ignore it.
