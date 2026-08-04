@@ -1,5 +1,6 @@
 add_subdirectory(support)
 add_subdirectory(core)
+add_subdirectory(app)
 add_subdirectory(infra)
 
 # Below: the 1.0.0 suite, which keeps passing unchanged throughout the rebuild

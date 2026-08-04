@@ -94,6 +94,17 @@ namespace typeit::core {
         friend constexpr auto operator<=>(const GraphemeIndex&, const GraphemeIndex&) = default;
     };
 
+    /// A whole number of days. The unit a history window is asked for in —
+    /// "my best over the last thirty days" — kept apart from Millis so that
+    /// thirty days and thirty milliseconds cannot be handed to the same
+    /// parameter.
+    struct Days {
+        std::int32_t value;
+
+        friend constexpr bool operator==(const Days&, const Days&) = default;
+        friend constexpr auto operator<=>(const Days&, const Days&) = default;
+    };
+
     /// Database identity for a finished session.
     struct SessionId {
         std::int64_t value;
@@ -117,6 +128,7 @@ namespace typeit::core {
     static_assert(sizeof(Accuracy) == sizeof(double));
     static_assert(sizeof(Millis) == sizeof(std::int64_t));
     static_assert(sizeof(GraphemeIndex) == sizeof(std::size_t));
+    static_assert(sizeof(Days) == sizeof(std::int32_t));
     static_assert(sizeof(SessionId) == sizeof(std::int64_t));
     static_assert(sizeof(TextId) == sizeof(std::int64_t));
 
@@ -124,6 +136,7 @@ namespace typeit::core {
     static_assert(std::is_trivially_copyable_v<Accuracy>);
     static_assert(std::is_trivially_copyable_v<Millis>);
     static_assert(std::is_trivially_copyable_v<GraphemeIndex>);
+    static_assert(std::is_trivially_copyable_v<Days>);
     static_assert(std::is_trivially_copyable_v<SessionId>);
     static_assert(std::is_trivially_copyable_v<TextId>);
 

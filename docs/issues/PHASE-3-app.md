@@ -24,8 +24,16 @@ rather than aspirational, and it means every bug found after this point is prova
 - Every port has a virtual destructor (`static_assert`).
 
 **Acceptance**
-- [ ] `app` links core only; `infra` is invisible to it.
-- [ ] Ports are pure interfaces with no data members.
+- [x] `app` links core only; `infra` is invisible to it. Enforced by
+      `infra.lint.source_rules`, extended here to forbid `typeit/infra/` in `app` and both
+      `typeit/infra/` and `typeit/app/` in `core` — watched to fail on a deliberate include in
+      each direction.
+- [x] Ports are pure interfaces with no data members: `is_a_port<T>()` static-asserts abstract,
+      virtual destructor, and no state, for all six. Copying and moving are deleted — copying a
+      port would copy an adapter's identity, a database connection or a file handle, into
+      something that owns neither.
+- [x] Taken out of order, ahead of the rest of Phase 3: TI-058 and TI-059 implement these
+      interfaces and cannot be written until they exist.
 
 ---
 

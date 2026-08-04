@@ -15,8 +15,8 @@
 # found, it asks whether anyone reached for it. That is the rule ADR-001
 # actually states.
 
-set(TYPEIT_FORBIDDEN_IN_CORE "sqlite3\\.h" "toml\\+\\+/" "ftxui/")
-set(TYPEIT_FORBIDDEN_IN_APP "sqlite3\\.h" "toml\\+\\+/" "ftxui/")
+set(TYPEIT_FORBIDDEN_IN_CORE "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/" "typeit/app/")
+set(TYPEIT_FORBIDDEN_IN_APP "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/")
 set(TYPEIT_FORBIDDEN_IN_TUI "sqlite3\\.h" "toml\\+\\+/")
 set(TYPEIT_FORBIDDEN_IN_INFRA "ftxui/")
 
