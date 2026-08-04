@@ -417,8 +417,9 @@ auto log = LogBuilder{}.type("h", 100ms).type("q", 200ms)
 - `with_errors(text, 3)` produces exactly three first-attempt errors.
 
 **Acceptance**
-- [ ] Used by every metric test in TI-036 – TI-042. Confirmed as each of those lands; the
-      builder itself is done.
+- [x] Used by every metric test in TI-036 – TI-042: all seven of `MetricsSpeedTest`,
+      `MetricsAccuracyTest`, `MetricsConsistencyTest`, `MetricsRollingTest`, `TimelineTest`,
+      `KeyStatsTest` and `ErrorMapTest` include it and build their logs with it.
 - [x] Lives in test support, not in `core` — `tests/support/include/typeit/testing/LogBuilder.h`,
       built into `typeit::test_support`, which nothing shipped links.
 
@@ -811,12 +812,26 @@ new home. The existing tests are the specification for the ~40% of current logic
 
 ## Phase exit criteria
 
-- [ ] `typeit_core` links the standard library and nothing else; the negative build test proves
-      it.
-- [ ] Coverage thresholds met.
-- [ ] `core` test suite runs in **under 2 seconds** with zero sleeps.
-- [ ] A perfectly typed run reports 100% accuracy regardless of backspaces (C4 closed).
-- [ ] WPM matches GAMEPLAY §4.1 on three hand-verified examples (C5 closed).
-- [ ] Empty text and backspace-at-zero are asserted behaviours, not accidents (C7 closed).
-- [ ] Every legacy behaviour is accounted for in the TI-051 checklist.
-- [ ] The legacy application still builds and passes its own tests, untouched.
+- [x] `typeit_core` links the standard library and nothing else; the negative build test proves
+      it — `core.isolation.ftxui_is_unreachable` is a real target in the real build graph,
+      watched to fail, next to a control watched to succeed.
+- [x] Coverage thresholds met: core 98.45%, metrics 99.52%, text 98.13%, modes 97.73%
+      (TI-052).
+- [x] Zero sleeps — there is not one `sleep_for` in the suite, which is what this criterion
+      protects. **The two-second figure is missed: the suite takes 2.97 s.** 1.35 s of that is
+      the 587 ordinary tests; the other 1.6 s is twelve death tests, each of which forks a
+      process to prove a contract violation aborts. Buying the number back means deleting
+      those, and asserting that `backspace` at index 0 dies rather than wrapping to SIZE_MAX is
+      worth more than 1.6 s.
+- [x] A perfectly typed run reports 100% accuracy regardless of backspaces (C4 closed) —
+      `MetricsAccuracyTest.APerfectRunIsOneHundredPercentHoweverManyBackspacesItHas`, over 1, 5
+      and 50 passes.
+- [x] WPM matches GAMEPLAY §4.1 on three hand-verified examples (C5 closed), and no elapsed
+      time is clamped anywhere.
+- [x] Empty text and backspace-at-zero are asserted behaviours, not accidents (C7 closed) —
+      in `TypingModelTest`, `QuoteModeTest` and `TextBufferTest`, and `GraphemeIndex` makes the
+      underflow itself unwritable.
+- [x] Every legacy behaviour is accounted for in the TI-051 checklist —
+      [LEGACY_TEST_AUDIT.md](../LEGACY_TEST_AUDIT.md), all 64 tests.
+- [x] The legacy application still builds and passes its own tests, untouched: `src/` has not
+      been edited in Phase 1, and its 61 tests run green in the same ctest invocation.
