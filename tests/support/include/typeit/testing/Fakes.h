@@ -277,6 +277,7 @@ namespace typeit::testing {
             app::TextItem stored = text;
             stored.id = core::TextId{next_id_++};
             texts.push_back(stored);
+            ++adds;
             return stored.id;
         }
 
@@ -381,6 +382,9 @@ namespace typeit::testing {
         std::vector<app::TextItem> texts;
         std::map<std::int64_t, std::vector<std::string>> tags;
         std::map<std::int64_t, app::Bookmark> bookmarks;
+        /// How many rows were written. Distinct from `texts.size()`: a service
+        /// that recognises a duplicate must not have called `add` at all.
+        std::size_t adds = 0;
 
     private:
         [[nodiscard]] std::vector<std::string> tags_of(core::TextId id) const {

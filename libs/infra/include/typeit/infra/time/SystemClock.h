@@ -16,9 +16,13 @@ namespace typeit::infra {
     ///
     /// The epoch is therefore arbitrary and only differences mean anything —
     /// which is exactly what IClock promises.
-    class SystemClock final : public core::IClock {
+    class SystemClock final : public core::IClock, public core::IWallClock {
     public:
         [[nodiscard]] core::Millis now() const override;
+
+        /// The wall clock, through the port. Same answer as the free function
+        /// below, which is what the tests and the version banner call.
+        [[nodiscard]] core::Millis unix_now() const override;
     };
 
     /// Milliseconds since the Unix epoch, for the things that genuinely are

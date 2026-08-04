@@ -48,11 +48,16 @@ report() {
     ctest --test-dir "${BUILD_DIR}" --output-on-failure || true
 
     mkdir -p "${REPORT_DIR}"
+    # --merge-mode-functions: gcc 16 reports some inlined member functions at
+    # two different lines and gcovr refuses to merge them, which stops the whole
+    # report. CI's gcc 14 does not, so without this the script works in CI and
+    # fails on a current toolchain — the worse of the two places to be broken.
     gcovr \
         --root . \
         --filter 'libs/' \
         --exclude '.*_deps.*' \
         --gcov-ignore-parse-errors \
+        --merge-mode-functions=separate \
         --json "${REPORT_DIR}/coverage.json" \
         --xml "${REPORT_DIR}/coverage.xml" \
         --html-details "${REPORT_DIR}/index.html" \

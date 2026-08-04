@@ -25,6 +25,27 @@ namespace typeit::core {
         [[nodiscard]] virtual Millis now() const = 0;
     };
 
+    /// The other kind of time: the one that answers "when did this happen"
+    /// rather than "how long did it take".
+    ///
+    /// A separate interface, and deliberately so. Measuring a duration against
+    /// a wall clock gives a typist 40 WPM at 02:00 on the last Sunday of
+    /// October; recording a session date against a monotonic one gives a
+    /// database full of timestamps from an arbitrary epoch. Two interfaces
+    /// means a service asks for the one it needs and cannot reach the other.
+    class IWallClock {
+    public:
+        IWallClock() = default;
+        IWallClock(const IWallClock&) = delete;
+        IWallClock(IWallClock&&) = delete;
+        IWallClock& operator=(const IWallClock&) = delete;
+        IWallClock& operator=(IWallClock&&) = delete;
+        virtual ~IWallClock() = default;
+
+        /// Milliseconds since the Unix epoch.
+        [[nodiscard]] virtual Millis unix_now() const = 0;
+    };
+
 }  // namespace typeit::core
 
 #endif  // TYPEIT_CORE_UTIL_ICLOCK_H

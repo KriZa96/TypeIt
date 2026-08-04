@@ -12,11 +12,16 @@
 
 namespace typeit::testing {
 
-    class FakeClock final : public core::IClock {
+    class FakeClock final : public core::IClock, public core::IWallClock {
     public:
         explicit FakeClock(core::Millis start = core::Millis{0}) : now_{start} {}
 
         [[nodiscard]] core::Millis now() const override { return now_; }
+
+        /// The same reading. A fake clock has one hand: a test that needed the
+        /// monotonic and the wall clock to disagree would say so by setting
+        /// them apart, and no test has needed that yet.
+        [[nodiscard]] core::Millis unix_now() const override { return now_; }
 
         /// Jump to an absolute reading.
         void set(core::Millis value) { now_ = value; }
