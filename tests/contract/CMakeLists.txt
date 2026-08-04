@@ -4,7 +4,7 @@
 # does — that is the point of it. A fake is only useful while it behaves like
 # the thing it stands in for, and the only way to know is to put both through
 # the same expectations.
-add_executable(contract_tests FakesTest.cpp FileSystemAndConfigContract.cpp HistoryRepositoryContract.cpp
+add_executable(contract_tests FakesTest.cpp HistoryExportTest.cpp FileSystemAndConfigContract.cpp HistoryRepositoryContract.cpp
                               TextLibraryRepositoryContract.cpp)
 
 target_link_libraries(contract_tests PRIVATE typeit::infra typeit::app typeit::test_support
