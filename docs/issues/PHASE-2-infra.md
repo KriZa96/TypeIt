@@ -65,8 +65,14 @@ process where avoidable
 - Directory creation is idempotent and reports permission failures.
 
 **Acceptance**
-- [ ] Correct on Linux and Windows, verified in CI on both.
-- [ ] Overrides work, and are used by every test fixture from here on.
+- [x] Correct on Linux and Windows, verified in CI on both — the platform-specific cases are
+      compiled in per platform, so the Windows job runs the Windows expectations rather than
+      skipping them.
+- [x] Overrides work and win outright, including over the XDG variables. Used by every test
+      fixture from TI-065 on.
+- [x] The environment is a parameter, not a global read: one test exercises the real process
+      environment and only reads from it. A test that had to *set* a real variable would race
+      every other test in the process.
 
 ---
 
