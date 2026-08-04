@@ -1,7 +1,9 @@
 #include "typeit/infra/db/SqliteDatabase.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <sqlite3.h>
 #include <string>
@@ -252,6 +254,50 @@ namespace typeit::infra {
         const Result<bool> row = statement->step();
         if (!row) {
             return std::unexpected{row.error()};
+        }
+        return {};
+    }
+
+    Status SqliteDatabase::execute_script(std::string_view sql) {
+        // sqlite3_exec would do this in one call, but it takes a C string and
+        // reports errors through an out-parameter that has to be freed with
+        // sqlite3_free. Stepping the statements by hand keeps the error path
+        // the same shape as every other one here.
+        // Where SQLite stopped is tracked as an offset rather than as a pointer
+        // walking the buffer: it comes back as a pointer, and converting it
+        // once is clearer than carrying two of them around the loop.
+        const std::string script{sql};
+        std::size_t offset = 0;
+
+        while (offset < script.size()) {
+            sqlite3_stmt* statement = nullptr;
+            const char* tail = nullptr;
+            // From the std::string, not a string_view of it: SQLite reads up
+            // to the length given *or* a NUL, and only the string guarantees
+            // the second one is there.
+            const char* remaining = script.c_str() + offset;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            const int status = sqlite3_prepare_v2(connection_.get(), remaining,
+                                                  static_cast<int>(script.size() - offset), &statement, &tail);
+            if (status != SQLITE_OK) {
+                return database_error(connection_.get(), "prepare");
+            }
+
+            const std::size_t consumed =
+                    tail == nullptr ? script.size() : offset + static_cast<std::size_t>(std::distance(remaining, tail));
+            if (statement == nullptr) {
+                // Trailing whitespace or a comment: nothing left to run.
+                if (consumed <= offset) {
+                    break;
+                }
+                offset = consumed;
+                continue;
+            }
+
+            const std::unique_ptr<sqlite3_stmt, StatementDeleter> owned{statement};
+            if (sqlite3_step(statement) == SQLITE_ERROR) {
+                return database_error(connection_.get(), "step");
+            }
+            offset = consumed;
         }
         return {};
     }

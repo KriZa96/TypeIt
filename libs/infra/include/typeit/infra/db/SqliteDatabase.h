@@ -141,6 +141,12 @@ namespace typeit::infra {
         /// so there is nothing to interpolate.
         [[nodiscard]] core::Status execute(std::string_view sql);
 
+        /// Runs a script of several statements, one after another, without
+        /// caching any of them. For migrations only: a schema file is many
+        /// statements and is run once in the life of a database, so caching it
+        /// would hold prepared DDL for the rest of the process.
+        [[nodiscard]] core::Status execute_script(std::string_view sql);
+
         [[nodiscard]] core::Result<Transaction> begin();
 
         /// One integer from a one-column, one-row query. `PRAGMA user_version`

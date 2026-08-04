@@ -56,6 +56,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: scripts/version-guard.sh check-tag "${{ github.ref }}"
 
+      # A shipped schema file is history: every database in the wild was built
+      # by it. Deferred here from CI-008, which had no schema to guard.
+      - name: A released schema file was not edited
+        if: github.event_name == 'pull_request'
+        run: scripts/version-guard.sh check-schema "${{ github.event.pull_request.base.sha }}"
+
       # Reminders, not gates. Annotations rather than pull request comments: a
       # fork's token cannot post one, and a check that fails only on forks
       # teaches people to ignore it.

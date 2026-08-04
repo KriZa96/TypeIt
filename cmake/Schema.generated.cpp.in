@@ -1,0 +1,22 @@
+// GENERATED FILE — do not edit.
+//
+// Written by cmake/EmbedSchema.cmake from libs/infra/schema/*.sql. Edit the
+// SQL there; this is only the wrapper that carries it into the binary.
+
+#include "typeit/infra/db/Schema.h"
+
+#include <array>
+#include <span>
+
+namespace typeit::infra {
+    namespace {
+
+        constexpr std::array kMigrations{
+@TYPEIT_SCHEMA_ENTRIES@
+        };
+
+    }  // namespace
+
+    std::span<const Migration> migrations() { return kMigrations; }
+
+}  // namespace typeit::infra

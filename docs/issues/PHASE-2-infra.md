@@ -183,12 +183,21 @@ embedded into the binary at build time.
 - `CHECK` constraints reject invalid `mode`, `source`, and `completed` values.
 
 **Acceptance**
-- [ ] Migration from empty and from every prior snapshot is tested.
-- [ ] A future-version database is refused, with the test to prove it.
-- [ ] Version numbering follows VERSIONING §5 — monotonic, never reused.
-- [ ] **The CI schema guard has been watched to fail**: a scratch branch changing schema SQL
-      without bumping `user_version` is blocked. First real exercise of it is
-      [TX-006](PHASE-6A-text-sources.md#tx-006--schema-v2-and-section-persistence).
+- [x] Migration from empty is tested, and from an already-current database, and across three
+      reopens of the same file. There is only one prior version — zero — until a second schema
+      file exists; the guard below is what makes sure the second one arrives with its own test.
+- [x] A future-version database is refused, with the test to prove it: the version is left
+      alone and a table the binary has never heard of is still there afterwards. Not upgraded,
+      not wiped — somebody's entire typing history is in that file.
+- [x] Version numbering follows VERSIONING §5. The number lives in the filename, so the
+      migration and its version cannot drift apart, and a test asserts the sequence is strictly
+      ascending.
+- [x] **The CI schema guard has been watched to fail** — four ways, in
+      `scripts/version-tools-test.sh`: editing a released file, deleting one, adding one
+      numbered below the released high-water mark, and the passing cases beside them. Writing
+      it found a hole in the first version: the guard skipped itself when the schema directory
+      did not exist, so deleting the whole directory disabled the check that exists to notice
+      exactly that.
 
 ---
 

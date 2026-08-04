@@ -8,6 +8,7 @@
 #   version-guard.sh check-literals          no version literal outside CMakeLists.txt
 #   version-guard.sh derive                  the version this build should report
 #   version-guard.sh notices [base]          non-blocking reminders, never fails
+#   version-guard.sh check-schema [base]     a released schema file was not edited
 #
 # Runs against the current working directory, so the tests can point it at a
 # fixture instead of the repository it lives in.
@@ -104,6 +105,44 @@ derive() {
 # Reminders, not gates. They are annotations rather than pull request comments
 # on purpose: a fork's token cannot post a comment, and a guard that fails on
 # fork pull requests teaches people to ignore it.
+# A shipped schema file is history: every database in the wild was built by it,
+# and editing it changes what those databases were *supposed* to be without
+# changing what they are (VERSIONING section 5). A schema change is a new file
+# with the next number.
+#
+# New files are welcome; edits to existing ones are not. Deferred here from
+# CI-008, because there was no schema to guard until TI-057.
+check_schema() {
+    local base=${1:-}
+    local schema_dir=libs/infra/schema
+
+    # Deliberately no "does the directory exist" shortcut: deleting the whole
+    # schema directory would then disable the guard that exists to notice
+    # exactly that. An empty diff passes on its own.
+    if [[ -z $base ]] || ! git rev-parse --verify --quiet "$base" >/dev/null; then
+        echo "no usable base commit; skipping the schema guard"
+        return 0
+    fi
+
+    local changed
+    changed=$(git diff --name-only --diff-filter=MD "$base"...HEAD -- "$schema_dir" || true)
+    [[ -z $changed ]] || die "$(printf 'a released schema file was modified or deleted: %s\n' "$changed")A schema change is a new file with the next number, plus a migration test from the previous one (VERSIONING section 5)."
+
+    local added
+    added=$(git diff --name-only --diff-filter=A "$base"...HEAD -- "$schema_dir" || true)
+    if [[ -n $added ]]; then
+        echo "new schema files: $added"
+        # A new schema file has to be numbered above every released one, or the
+        # migrator will skip it on databases that are already past it.
+        local highest_released highest_added
+        highest_released=$(git ls-tree -r --name-only "$base" -- "$schema_dir" | sed -n 's|.*/\([0-9]\{1,\}\)_.*|\1|p' | sort -n | tail -1)
+        highest_added=$(printf '%s\n' "$added" | sed -n 's|.*/\([0-9]\{1,\}\)_.*|\1|p' | sort -n | tail -1)
+        if [[ -n $highest_released && -n $highest_added ]] && ((10#$highest_added <= 10#$highest_released)); then
+            die "new schema file $highest_added is not above the released $highest_released"
+        fi
+    fi
+}
+
 notices() {
     local base=${1:-} changed
     if [[ -z $base ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
@@ -127,6 +166,7 @@ case ${1:-} in
     check-literals) check_literals ;;
     derive) derive ;;
     notices) notices "${2:-}" ;;
+    check-schema) check_schema "${2:-}" ;;
     *)
         sed -n '2,12p' "$0"
         exit 2

@@ -184,6 +184,56 @@ sed -i '/^- Something worth releasing\.$/d;/^### Added$/d' "$d/CHANGELOG.md"
 assert_fails "releasing an empty Unreleased block is refused" in_fixture "$d" "$bump" apply prerelease
 rm -rf "$d"
 
+echo "version-guard: schema guard"
+d=$(fixture 2.0.0 alpha.1)
+mkdir -p "$d/libs/infra/schema"
+cat >"$d/libs/infra/schema/001_initial.sql" <<'EOF'
+CREATE TABLE session (id INTEGER PRIMARY KEY);
+EOF
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "schema v1"
+base=$(git -C "$d" rev-parse HEAD)
+
+assert_ok "an unchanged schema passes" in_fixture "$d" "$guard" check-schema "$base"
+
+# A new file with the next number is how a schema change is made.
+cat >"$d/libs/infra/schema/002_add_column.sql" <<'EOF'
+ALTER TABLE session ADD COLUMN note TEXT;
+EOF
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "schema v2"
+assert_ok "a new schema file with the next number passes" in_fixture "$d" "$guard" check-schema "$base"
+
+# Editing a released one is not.
+echo "ALTER TABLE session ADD COLUMN sneaky TEXT;" >>"$d/libs/infra/schema/001_initial.sql"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "edit a shipped schema"
+assert_fails "editing a released schema file is blocked" in_fixture "$d" "$guard" check-schema "$base"
+rm -rf "$d"
+
+d=$(fixture 2.0.0 alpha.1)
+mkdir -p "$d/libs/infra/schema"
+echo "CREATE TABLE a (id INTEGER PRIMARY KEY);" >"$d/libs/infra/schema/002_second.sql"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "schema v2"
+base=$(git -C "$d" rev-parse HEAD)
+echo "CREATE TABLE b (id INTEGER PRIMARY KEY);" >"$d/libs/infra/schema/001_first.sql"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "a lower-numbered schema"
+assert_fails "a new schema file below the released one is blocked" in_fixture "$d" "$guard" check-schema "$base"
+rm -rf "$d"
+
+d=$(fixture 2.0.0 alpha.1)
+mkdir -p "$d/libs/infra/schema"
+echo "CREATE TABLE a (id INTEGER PRIMARY KEY);" >"$d/libs/infra/schema/001_first.sql"
+git -C "$d" add -A
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "schema v1"
+base=$(git -C "$d" rev-parse HEAD)
+git -C "$d" rm -q "libs/infra/schema/001_first.sql"
+git -C "$d" -c user.email=t@t -c user.name=t commit -qm "delete a shipped schema"
+assert_fails "deleting a released schema file is blocked" in_fixture "$d" "$guard" check-schema "$base"
+rm -rf "$d"
+
 echo
 echo "$passed passed, $failed failed"
 [[ $failed -eq 0 ]]
