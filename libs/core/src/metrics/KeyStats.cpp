@@ -14,11 +14,18 @@
 namespace typeit::core {
     namespace {
 
-        void record(KeyStat& stat, bool correct, std::optional<Millis> latency, Millis outlier_threshold) {
+        /// The interval before the very first keystroke of a run, which is not
+        /// a measurement of anything. A negative sentinel rather than an
+        /// optional: it fails the range test below on its own, and an optional
+        /// here made gcc 14 at -O2 believe the payload could be read
+        /// uninitialised after inlining.
+        constexpr Millis kNoLatency{-1};
+
+        void record(KeyStat& stat, bool correct, Millis latency, Millis outlier_threshold) {
             ++stat.attempts;
             stat.errors += correct ? 0U : 1U;
-            if (latency.has_value() && latency->value >= 0 && *latency <= outlier_threshold) {
-                stat.total_latency += *latency;
+            if (latency.value >= 0 && latency <= outlier_threshold) {
+                stat.total_latency += latency;
                 ++stat.latency_samples;
             }
         }
@@ -29,16 +36,17 @@ namespace typeit::core {
         assert(outlier_threshold.value > 0 && "with no threshold every pause is typing speed");
 
         KeyStats stats;
-        std::optional<Millis> previous_event;
+        Millis previous_event{0};
+        bool have_previous = false;
         // The last position a grapheme was actually typed at, which is what
         // makes a bigram a transition between neighbouring positions rather
         // than between neighbouring keystrokes.
         std::optional<std::size_t> previous_position;
 
         for (const Keystroke& event: log.events()) {
-            const std::optional<Millis> latency =
-                    previous_event.has_value() ? std::optional{event.at - *previous_event} : std::nullopt;
+            const Millis latency = have_previous ? event.at - previous_event : kNoLatency;
             previous_event = event.at;
+            have_previous = true;
 
             if (event.kind != KeystrokeKind::Character || event.target >= target.size()) {
                 // A backspace is not an attempt at a key, and it breaks the

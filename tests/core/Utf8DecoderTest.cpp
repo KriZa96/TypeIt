@@ -153,12 +153,25 @@ namespace typeit::core {
         TEST(Utf8DecoderTest, TheAllocationCounterActuallyCounts) {
             // Without this, a counter that never increments would make the test above
             // pass for the wrong reason.
+            //
+            // Deliberately a raw new, written through a volatile pointer. A
+            // std::vector here is allowed to have its allocation elided
+            // entirely (N3664), and gcc at -O2 does exactly that — the control
+            // then fails in Release and passes in Debug, which is the worst
+            // possible way for a test to behave.
             const testing::AllocationGuard guard;
 
-            const std::vector<int> forces_an_allocation(64);
+            // NOLINTNEXTLINE(cppcoreguidelines-owning-memory,cppcoreguidelines-no-malloc) -- the point is the
+            // allocation
+            int* forced = new int[64];
+            volatile int* sink = forced;
+            sink[0] = 7;
 
             EXPECT_GE(guard.count(), 1U);
-            EXPECT_EQ(forces_an_allocation.size(), 64U);
+            EXPECT_EQ(sink[0], 7);
+
+            // NOLINTNEXTLINE(cppcoreguidelines-owning-memory) -- paired with the new above
+            delete[] forced;
         }
 
     }  // namespace
