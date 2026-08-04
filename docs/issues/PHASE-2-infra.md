@@ -27,8 +27,22 @@ The legacy application remains untouched.
 - Dependency resolution verified on all four paths from TI-007.
 
 **Acceptance**
-- [ ] `infra` links core + SQLite + toml++; nothing else.
-- [ ] SQLite and toml++ headers are unreachable from `core`, `app`, and `tui`.
+- [x] `infra` links core + SQLite + toml++; nothing else, and both are `PRIVATE` so neither
+      reaches a consumer's include path.
+- [x] SQLite and toml++ are not reached from `core`, `app` or `tui` —
+      `infra.isolation.layers_include_only_what_they_may`, watched to fail on a deliberate
+      `#include <sqlite3.h>` in core and to pass when it is removed.
+- [x] **Not a compile probe, unlike tests/core's FTXUI one, and the difference matters.** A
+      probe proves a header is *unreachable*, which holds only while the library comes from
+      FetchContent with private include directories. A distro SQLite lives in `/usr/include`,
+      where the compiler finds it from anywhere on the machine whatever any `CMakeLists` says —
+      the probe was written first, and it compiled, because the header is simply there. The
+      check now reads the sources: not "could this be found" but "did anyone reach for it",
+      which is the rule ADR-001 actually states. It covers FTXUI in `core` and `app` as well,
+      where it is machine-independent in a way the existing probe is not.
+- [x] Both dependency paths verified by building each: system packages (SQLite 3.53.3 here) and
+      the hash-pinned download (3.53.4), the latter forced with
+      `-DCMAKE_DISABLE_FIND_PACKAGE_SQLite3=ON -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=ON`.
 
 ---
 

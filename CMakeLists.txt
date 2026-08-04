@@ -47,6 +47,7 @@ include(Dependencies)
 # The rebuild. src/ below is the 1.0.0 tree, deleted whole at the Phase 4
 # cutover (TI-097).
 add_subdirectory(libs/core)
+add_subdirectory(libs/infra)
 
 # src first: it defines the typeit_legacy target the test binary links.
 add_subdirectory(src)

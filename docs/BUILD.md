@@ -108,11 +108,14 @@ FetchContent_Declare(tomlplusplus
     GIT_TAG        v3.4.0
     FIND_PACKAGE_ARGS CONFIG NAMES tomlplusplus)
 
-FetchContent_Declare(SQLite3
-    URL https://www.sqlite.org/2025/sqlite-amalgamation-XXXXXXX.zip
-    FIND_PACKAGE_ARGS)                # find_package(SQLite3) is a CMake builtin module
+# find_package(SQLite3) is a CMake builtin module, so the declaration below is
+# only reached when no SQLite is installed. The amalgamation ships no CMake
+# project, so the target is declared by hand (see cmake/Dependencies.cmake).
+FetchContent_Declare(sqlite_amalgamation
+    URL      https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip
+    URL_HASH SHA3_256=628a44cfe82c66aed1ccbbe85a562d2e33ebe64b3288981ed76285612227934e)
 
-FetchContent_MakeAvailable(ftxui tomlplusplus SQLite3)
+FetchContent_MakeAvailable(ftxui tomlplusplus)
 
 if(TYPEIT_BUILD_TESTS)
     FetchContent_Declare(googletest

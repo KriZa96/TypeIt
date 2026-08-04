@@ -9,6 +9,8 @@ include(FetchContent)
 
 set(TYPEIT_FTXUI_TAG v5.0.0 CACHE STRING "FTXUI version to build against")
 set(TYPEIT_GOOGLETEST_TAG v1.16.0 CACHE STRING "GoogleTest version to build against")
+set(TYPEIT_TOMLPLUSPLUS_TAG v3.4.0 CACHE STRING "toml++ version to build against")
+set(TYPEIT_SQLITE_VERSION 3530400 CACHE STRING "SQLite amalgamation version to build against")
 
 # Only relevant when FTXUI is built from source rather than found.
 set(FTXUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -39,3 +41,53 @@ if(TYPEIT_BUILD_TESTS)
 
     FetchContent_MakeAvailable(googletest)
 endif()
+
+# SQLite ships an amalgamation rather than a CMake project, so the archive is
+# hash-pinned and the target is declared here. A downloaded archive is verified
+# by hash for the same reason a git dependency is pinned to a tag: a build that
+# trusts whatever the server sends today is not reproducible tomorrow.
+#
+# find_package(SQLite3) is a CMake builtin module, so a distro or vcpkg SQLite
+# wins and nothing is downloaded at all.
+find_package(SQLite3 QUIET)
+if(NOT TARGET SQLite::SQLite3)
+    # The amalgamation is C, and this project declares only C++. Enabled here
+    # rather than in project() so the common path — a distro or vcpkg SQLite —
+    # does not pay for a compiler detection it never uses.
+    enable_language(C)
+
+    FetchContent_Declare(
+        sqlite_amalgamation
+        URL https://www.sqlite.org/2026/sqlite-amalgamation-${TYPEIT_SQLITE_VERSION}.zip
+        URL_HASH SHA3_256=628a44cfe82c66aed1ccbbe85a562d2e33ebe64b3288981ed76285612227934e
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    FetchContent_MakeAvailable(sqlite_amalgamation)
+
+    add_library(sqlite3_amalgamation STATIC "${sqlite_amalgamation_SOURCE_DIR}/sqlite3.c")
+    target_include_directories(sqlite3_amalgamation SYSTEM PUBLIC "${sqlite_amalgamation_SOURCE_DIR}")
+    # The features this project actually uses, and nothing else. Every option
+    # off is code not compiled, not linked and not exposed.
+    target_compile_definitions(
+        sqlite3_amalgamation
+        PRIVATE SQLITE_DQS=0
+                SQLITE_THREADSAFE=1
+                SQLITE_DEFAULT_MEMSTATUS=0
+                SQLITE_OMIT_DEPRECATED
+                SQLITE_OMIT_LOAD_EXTENSION
+                SQLITE_OMIT_SHARED_CACHE
+                SQLITE_ENABLE_FTS5)
+    if(UNIX)
+        find_package(Threads REQUIRED)
+        target_link_libraries(sqlite3_amalgamation PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+    endif()
+    add_library(SQLite::SQLite3 ALIAS sqlite3_amalgamation)
+endif()
+
+FetchContent_Declare(
+    tomlplusplus
+    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+    GIT_TAG ${TYPEIT_TOMLPLUSPLUS_TAG}
+    GIT_SHALLOW TRUE
+    FIND_PACKAGE_ARGS 3.4 CONFIG NAMES tomlplusplus)
+
+FetchContent_MakeAvailable(tomlplusplus)
