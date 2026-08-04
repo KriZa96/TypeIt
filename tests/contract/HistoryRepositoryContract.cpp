@@ -102,13 +102,8 @@ namespace typeit {
         class ImplementationNames {
         public:
             template<typename Factory>
-            static std::string GetName(int index) {
-                if constexpr (std::is_same_v<Factory, SqliteHistoryFactory>) {
-                    return "Sqlite";
-                } else {
-                    return "Fake";
-                }
-                return std::to_string(index);
+            static std::string GetName(int /*index*/) {
+                return std::is_same_v<Factory, SqliteHistoryFactory> ? "Sqlite" : "Fake";
             }
         };
 

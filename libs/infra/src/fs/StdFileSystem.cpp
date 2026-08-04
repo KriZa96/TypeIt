@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <iterator>
+#include <sstream>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -34,14 +34,22 @@ namespace typeit::infra {
             return core::fail(ErrorCode::FileUnreadable, path.string() + ": cannot be opened for reading");
         }
 
-        // Read whole, through iterators: a zero-byte file yields an empty
-        // string rather than an underflow, and a file whose size changes
-        // between the stat and the read is not truncated to a stale length.
-        std::string contents{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+        // Read whole through the stream buffer rather than through a pair of
+        // istreambuf_iterators: the iterator form makes gcc 14 at -O2 report a
+        // potential null dereference inside <streambuf> itself, and a warning
+        // nobody can fix in their own code is a warning that gets suppressed
+        // wholesale sooner or later.
+        //
+        // The empty-file check is not an optimisation: extracting from an empty
+        // buffer sets failbit, and an empty file is a valid file (defect C1).
+        std::ostringstream contents;
+        if (file.peek() != std::char_traits<char>::eof()) {
+            contents << file.rdbuf();
+        }
         if (file.bad()) {
             return core::fail(ErrorCode::FileUnreadable, path.string() + ": read failed");
         }
-        return contents;
+        return contents.str();
     }
 
     bool StdFileSystem::exists(const std::filesystem::path& path) const {
