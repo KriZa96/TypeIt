@@ -19,7 +19,7 @@ add_test(NAME infra.lint.source_rules
          COMMAND "${CMAKE_COMMAND}" "-DTYPEIT_SOURCE_DIR=${CMAKE_SOURCE_DIR}" -P
                  "${CMAKE_SOURCE_DIR}/cmake/CheckLayerIsolation.cmake")
 
-add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp SqliteHistoryRepositoryTest.cpp TempEnvTest.cpp)
+add_executable(infra_tests AssetLocatorTest.cpp DependenciesTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp SqliteHistoryRepositoryTest.cpp SqliteTextLibraryRepositoryTest.cpp TempEnvTest.cpp)
 
 # typeit_version carries the generated header: a test that needs the
 # application version reads it rather than spelling one (VERSIONING section 6).

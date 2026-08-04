@@ -263,6 +263,18 @@ content hash.
 - Removing a text referenced by sessions sets `session.text_id` to NULL and leaves the sessions
   intact.
 
+**Done.** 22 tests, all of the above. Two decisions worth recording:
+
+- The tag filter is passed as a **JSON array in one bound parameter**, expanded by SQLite's
+  `json_each`, so any number of tags is one prepared statement and there is still no SQL built
+  by concatenation. A text must carry *every* tag asked for, which is `COUNT(DISTINCT ...) = n`
+  rather than a membership test.
+- `list` does not carry content, deliberately: a listing of a hundred texts should not move a
+  hundred megabytes nobody is reading yet. Tags are read per row afterwards, because a listing
+  is a handful of rows and one obvious query per row beats one clever one nobody can read.
+- Search is `LIKE`, which in SQLite folds case for ASCII only. Documented in the code: a search
+  for `Č` will not match `č`, and fixing that needs ICU.
+
 ---
 
 ## TI-060 — `TomlConfigStore`

@@ -70,9 +70,12 @@ typeit_check_no_source_paths("${TYPEIT_SOURCE_DIR}/apps")
 # SQL is a value formatted by whatever locale and rounding the formatter felt
 # like.
 #
-# The check is deliberately blunt: a string literal containing a SQL keyword,
-# on a line that also concatenates. Anything clever enough to slip past this is
-# clever enough to be noticed in review.
+# The check is deliberately blunt, and reads one line at a time: a string
+# literal containing a SQL keyword, on a line that also concatenates. A query
+# whose `+` lands on the *next* line slips past it — which happened once, in
+# this repository, and was fixed by writing the query out rather than by making
+# the check cleverer. The rule is absolute; the check is a reminder, not the
+# authority.
 function(typeit_check_no_concatenated_sql directory)
     if(NOT IS_DIRECTORY "${directory}")
         return()

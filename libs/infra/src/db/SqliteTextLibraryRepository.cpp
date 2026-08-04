@@ -1,0 +1,321 @@
+#include "typeit/infra/db/SqliteTextLibraryRepository.h"
+
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "typeit/app/records/TextLibrary.h"
+#include "typeit/core/util/Result.h"
+#include "typeit/core/util/Units.h"
+#include "typeit/infra/db/SqliteDatabase.h"
+
+namespace typeit::infra {
+    namespace {
+
+        using core::ErrorCode;
+        using core::Result;
+        using core::Status;
+
+        /// The tag filter as a JSON array, which SQLite's json_each turns back
+        /// into rows. One bound parameter for any number of tags — the
+        /// alternative is an IN list built by concatenation, and this codebase
+        /// does not build SQL by concatenation.
+        std::string tags_as_json(const std::vector<std::string>& tags) {
+            std::string json = "[";
+            for (const std::string& tag: tags) {
+                if (json.size() > 1) {
+                    json += ',';
+                }
+                json += '"';
+                for (const char character: tag) {
+                    // A tag is user text and may contain a quote or a backslash.
+                    if (character == '"' || character == '\\') {
+                        json += '\\';
+                    }
+                    json += character;
+                }
+                json += '"';
+            }
+            json += ']';
+            return json;
+        }
+
+        Result<std::optional<app::TextItem>> read_one(Statement& statement) {
+            const Result<bool> row = statement.step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                return std::nullopt;
+            }
+
+            app::TextItem text;
+            text.id = core::TextId{statement.column_int(0)};
+            text.title = statement.column_text(1);
+            // A source the enum does not know cannot reach here: the column has a
+            // CHECK constraint naming exactly the four, so anything else was
+            // refused on the way in.
+            text.source = app::text_source_from(statement.column_text(2)).value_or(app::TextSource::Paste);
+            if (!statement.column_is_null(3)) {
+                text.origin = statement.column_text(3);
+            }
+            text.content = statement.column_text(4);
+            if (!statement.column_is_null(5)) {
+                text.content_raw = statement.column_text(5);
+            }
+            text.content_sha256 = statement.column_text(6);
+            if (!statement.column_is_null(7)) {
+                text.language = statement.column_text(7);
+            }
+            text.grapheme_count = static_cast<std::size_t>(statement.column_int(8));
+            text.word_count = static_cast<std::size_t>(statement.column_int(9));
+            if (!statement.column_is_null(10)) {
+                text.difficulty = statement.column_double(10);
+            }
+            text.created_at = core::Millis{statement.column_int(11)};
+            return text;
+        }
+
+    }  // namespace
+
+    Result<core::TextId> SqliteTextLibraryRepository::add(const app::TextItem& text) {
+        Result<Statement> insert = database_->prepare(
+                "INSERT INTO text_item (title, source, origin, content, content_raw, content_sha256, language,"
+                " grapheme_count, word_count, difficulty, created_at)"
+                " VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)");
+        if (!insert) {
+            return std::unexpected{insert.error()};
+        }
+
+        insert->bind(1, text.title)
+                .bind(2, app::to_string(text.source))
+                .bind(4, text.content)
+                .bind(6, text.content_sha256)
+                .bind(8, static_cast<std::int64_t>(text.grapheme_count))
+                .bind(9, static_cast<std::int64_t>(text.word_count))
+                .bind(11, text.created_at.value);
+
+        if (text.origin.has_value()) {
+            insert->bind(3, *text.origin);
+        } else {
+            insert->bind_null(3);
+        }
+        if (text.content_raw.has_value()) {
+            insert->bind(5, *text.content_raw);
+        } else {
+            insert->bind_null(5);
+        }
+        if (text.language.has_value()) {
+            insert->bind(7, *text.language);
+        } else {
+            insert->bind_null(7);
+        }
+        if (text.difficulty.has_value()) {
+            insert->bind(10, *text.difficulty);
+        } else {
+            insert->bind_null(10);
+        }
+
+        if (const Status written = insert->run(); !written) {
+            return std::unexpected{written.error()};
+        }
+
+        const Result<std::int64_t> id = database_->query_int("SELECT last_insert_rowid()");
+        if (!id) {
+            return std::unexpected{id.error()};
+        }
+        return core::TextId{*id};
+    }
+
+    Result<std::optional<app::TextItem>> SqliteTextLibraryRepository::get(core::TextId id) const {
+        // The column list is written out rather than shared between the two
+        // queries that use it: assembling SQL from pieces is the habit the lint
+        // exists to stop, and it does not distinguish a column list from a
+        // value. Two literals is a small price for a rule with no exceptions.
+        Result<Statement> statement = database_->prepare(
+                "SELECT id, title, source, origin, content, content_raw, content_sha256, language, grapheme_count,"
+                " word_count, difficulty, created_at FROM text_item WHERE id = ?1");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+        return read_one(*statement);
+    }
+
+    Result<std::optional<app::TextItem>> SqliteTextLibraryRepository::find_by_hash(std::string_view sha256) const {
+        Result<Statement> statement = database_->prepare(
+                "SELECT id, title, source, origin, content, content_raw, content_sha256, language, grapheme_count,"
+                " word_count, difficulty, created_at FROM text_item WHERE content_sha256 = ?1");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, sha256);
+        return read_one(*statement);
+    }
+
+    Result<std::vector<std::string>> SqliteTextLibraryRepository::tags_of(core::TextId id) const {
+        Result<Statement> statement = database_->prepare("SELECT tag FROM text_tag WHERE text_id = ?1 ORDER BY tag");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+
+        std::vector<std::string> tags;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            tags.push_back(statement->column_text(0));
+        }
+        return tags;
+    }
+
+    Result<std::vector<app::TextSummary>> SqliteTextLibraryRepository::list(const app::TextFilter& filter) const {
+        // The content is deliberately absent: a listing of a hundred texts
+        // should not carry a hundred megabytes nobody is reading yet.
+        //
+        // The tag test counts distinct matches rather than testing membership,
+        // so a text must carry *every* tag asked for. LIKE is SQLite's, which
+        // means ASCII-only case folding — a search for "Č" will not match "č",
+        // and fixing that needs ICU.
+        Result<Statement> statement = database_->prepare(
+                "SELECT t.id, t.title, t.source, t.origin, t.grapheme_count, t.word_count, t.difficulty,"
+                " t.created_at FROM text_item t"
+                " WHERE (?1 = '' OR t.title LIKE '%' || ?1 || '%')"
+                "   AND (?2 = 0 OR (SELECT COUNT(DISTINCT g.tag) FROM text_tag g"
+                "                   WHERE g.text_id = t.id AND g.tag IN (SELECT value FROM json_each(?3))) = ?2)"
+                " ORDER BY t.created_at DESC, t.id DESC LIMIT ?4");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+
+        statement->bind(1, filter.search.value_or(""))
+                .bind(2, static_cast<std::int64_t>(filter.tags.size()))
+                .bind(3, tags_as_json(filter.tags))
+                .bind(4, filter.limit == 0 ? std::int64_t{-1} : static_cast<std::int64_t>(filter.limit));
+
+        std::vector<app::TextSummary> summaries;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+
+            app::TextSummary summary;
+            summary.id = core::TextId{statement->column_int(0)};
+            summary.title = statement->column_text(1);
+            summary.source = app::text_source_from(statement->column_text(2)).value_or(app::TextSource::Paste);
+            if (!statement->column_is_null(3)) {
+                summary.origin = statement->column_text(3);
+            }
+            summary.grapheme_count = static_cast<std::size_t>(statement->column_int(4));
+            summary.word_count = static_cast<std::size_t>(statement->column_int(5));
+            if (!statement->column_is_null(6)) {
+                summary.difficulty = statement->column_double(6);
+            }
+            summary.created_at = core::Millis{statement->column_int(7)};
+            summaries.push_back(std::move(summary));
+        }
+
+        // Tags are read per text afterwards rather than joined and de-duplicated
+        // in one query: a listing is a handful of rows, and one obvious query
+        // per row beats one clever one nobody can read.
+        for (app::TextSummary& summary: summaries) {
+            Result<std::vector<std::string>> tags = tags_of(summary.id);
+            if (!tags) {
+                return std::unexpected{tags.error()};
+            }
+            summary.tags = std::move(*tags);
+        }
+        return summaries;
+    }
+
+    Status SqliteTextLibraryRepository::remove(core::TextId id) {
+        // The tags and the bookmark go with it (ON DELETE CASCADE); the
+        // sessions typed against it stay, with a null text (ON DELETE SET
+        // NULL). Removing a text from the library is not disowning the runs.
+        Result<Transaction> transaction = database_->begin();
+        if (!transaction) {
+            return std::unexpected{transaction.error()};
+        }
+
+        Result<Statement> statement = database_->prepare("DELETE FROM text_item WHERE id = ?1");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+        if (const Status deleted = statement->run(); !deleted) {
+            return deleted;
+        }
+        return transaction->commit();
+    }
+
+    Status SqliteTextLibraryRepository::tag(core::TextId id, std::string_view tag) {
+        // Tagging twice is not an error; it is somebody clicking twice.
+        Result<Statement> statement = database_->prepare(
+                "INSERT INTO text_tag (text_id, tag) VALUES (?1, ?2)"
+                " ON CONFLICT (text_id, tag) DO NOTHING");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value).bind(2, tag);
+        return statement->run();
+    }
+
+    Status SqliteTextLibraryRepository::untag(core::TextId id, std::string_view tag) {
+        Result<Statement> statement = database_->prepare("DELETE FROM text_tag WHERE text_id = ?1 AND tag = ?2");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value).bind(2, tag);
+        return statement->run();
+    }
+
+    Status SqliteTextLibraryRepository::set_bookmark(const app::Bookmark& bookmark) {
+        // One bookmark per text, updated in place: two bookmarks in one book is
+        // a question with no good answer.
+        Result<Statement> statement = database_->prepare(
+                "INSERT INTO text_bookmark (text_id, offset, updated_at) VALUES (?1, ?2, ?3)"
+                " ON CONFLICT (text_id) DO UPDATE SET"
+                "   offset = excluded.offset, updated_at = excluded.updated_at");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, bookmark.text_id.value)
+                .bind(2, static_cast<std::int64_t>(bookmark.offset.value))
+                .bind(3, bookmark.updated_at.value);
+        return statement->run();
+    }
+
+    Result<std::optional<app::Bookmark>> SqliteTextLibraryRepository::bookmark(core::TextId id) const {
+        Result<Statement> statement =
+                database_->prepare("SELECT text_id, offset, updated_at FROM text_bookmark WHERE text_id = ?1");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+
+        const Result<bool> row = statement->step();
+        if (!row) {
+            return std::unexpected{row.error()};
+        }
+        if (!*row) {
+            return std::nullopt;
+        }
+        return app::Bookmark{
+                .text_id = core::TextId{statement->column_int(0)},
+                .offset = core::GraphemeIndex{static_cast<std::size_t>(statement->column_int(1))},
+                .updated_at = core::Millis{statement->column_int(2)},
+        };
+    }
+
+}  // namespace typeit::infra

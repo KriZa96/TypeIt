@@ -52,12 +52,6 @@ namespace typeit::infra {
             return filter.limit == 0 ? -1 : static_cast<std::int64_t>(filter.limit);
         }
 
-        constexpr std::string_view kFilterClause =
-                " WHERE (?1 = '' OR mode = ?1)"
-                "   AND (?2 = 0 OR started_at >= ?2)"
-                "   AND (?3 = 0 OR started_at < ?3)"
-                "   AND (?4 = 0 OR completed = 1)";
-
     }  // namespace
 
     Result<core::SessionId> SqliteHistoryRepository::save(const app::SessionRecord& record) {
@@ -218,10 +212,19 @@ namespace typeit::infra {
     }
 
     Result<std::vector<app::SessionRow>> SqliteHistoryRepository::query(const app::HistoryFilter& filter) const {
+        // The WHERE clause is written out in both queries rather than shared
+        // as a fragment. Assembling SQL from pieces is the habit the lint
+        // exists to stop, and a lint that reads one line at a time would not
+        // have caught this one — better to keep the rule absolute than to rely
+        // on how far the check happens to see.
         Result<Statement> statement = database_->prepare(
-                std::string{"SELECT id, started_at, mode, mode_param, duration_ms, net_wpm, gross_wpm, accuracy,"
-                            " consistency, completed FROM session"} +
-                std::string{kFilterClause} + " ORDER BY started_at DESC, id DESC LIMIT ?5");
+                "SELECT id, started_at, mode, mode_param, duration_ms, net_wpm, gross_wpm, accuracy, consistency,"
+                " completed FROM session"
+                " WHERE (?1 = '' OR mode = ?1)"
+                "   AND (?2 = 0 OR started_at >= ?2)"
+                "   AND (?3 = 0 OR started_at < ?3)"
+                "   AND (?4 = 0 OR completed = 1)"
+                " ORDER BY started_at DESC, id DESC LIMIT ?5");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
@@ -258,10 +261,13 @@ namespace typeit::infra {
         // COALESCE, so an empty range is zeros rather than NULLs read as
         // garbage — a new user's history screen is a normal thing to draw.
         Result<Statement> statement = database_->prepare(
-                std::string{"SELECT COUNT(*), COALESCE(AVG(net_wpm), 0), COALESCE(MAX(net_wpm), 0),"
-                            " COALESCE(MIN(net_wpm), 0), COALESCE(AVG(accuracy), 0),"
-                            " COALESCE(SUM(duration_ms), 0), COALESCE(SUM(graphemes_typed), 0) FROM session"} +
-                std::string{kFilterClause});
+                "SELECT COUNT(*), COALESCE(AVG(net_wpm), 0), COALESCE(MAX(net_wpm), 0), COALESCE(MIN(net_wpm), 0),"
+                " COALESCE(AVG(accuracy), 0), COALESCE(SUM(duration_ms), 0), COALESCE(SUM(graphemes_typed), 0)"
+                " FROM session"
+                " WHERE (?1 = '' OR mode = ?1)"
+                "   AND (?2 = 0 OR started_at >= ?2)"
+                "   AND (?3 = 0 OR started_at < ?3)"
+                "   AND (?4 = 0 OR completed = 1)");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
