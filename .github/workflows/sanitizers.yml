@@ -26,13 +26,22 @@ jobs:
         with:
           persist-credentials: false
 
+      # gcc rather than clang, and the reason is worth keeping: Ubuntu's libc++
+      # allocates a std::runtime_error's message with operator new inside
+      # libc++ and frees it with free() inside libc++abi. ASan reports that —
+      # correctly — as an alloc-dealloc mismatch, on any test whose code path
+      # throws one, which here means every use of toml++'s parse_error. The
+      # alternative was ASAN_OPTIONS=alloc_dealloc_mismatch=0, and that check
+      # has already caught one real bug in this repository (CI-007), so
+      # switching toolchain beats switching it off.
+      #
       # `-fno-sanitize-recover=all` so a finding aborts rather than printing and
       # carrying on with a green exit code. `_GLIBCXX_ASSERTIONS` turns an
       # out-of-range operator[] into a clean abort, which is the class of bug
       # the current line engine avoids only by accident.
       - uses: ./.github/actions/setup-build
         with:
-          compiler: clang
+          compiler: gcc
           build-type: Debug
           cmake-args: >-
             -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer

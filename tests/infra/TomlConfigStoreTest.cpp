@@ -289,14 +289,14 @@ help = "f1"
 
         TEST_F(ConfigStoreTest, NonAsciiValuesRoundTrip) {
             Config config;
-            config.appearance.theme = "tema-čšž-漢字";
+            config.appearance.theme = "typeit-čšž-漢字";
 
             TomlConfigStore config_store = store();
             ASSERT_TRUE(config_store.save(config));
 
             const Result<app::LoadedConfig> loaded = config_store.load();
             ASSERT_TRUE(loaded) << (loaded ? "" : loaded.error().context);
-            EXPECT_EQ(loaded->config.appearance.theme, "tema-čšž-漢字");
+            EXPECT_EQ(loaded->config.appearance.theme, "typeit-čšž-漢字");
         }
 
         TEST_F(ConfigStoreTest, AValueContainingAQuoteRoundTrips) {
