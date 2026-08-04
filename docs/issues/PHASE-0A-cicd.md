@@ -315,6 +315,14 @@ The slow, rarely-broken checks.
 
 > The rolling `nightly` pre-release is the one piece deferred: it needs artifacts to attach,
 > so it lands with CPack (TI-138) and `release.yml` (CI-011).
+>
+> **Not yet exercised, and cannot be until the cutover.** GitHub registers `schedule` and
+> `workflow_dispatch` triggers from the **default branch only**, and `main` is still the
+> pre-rebuild commit `d7a2d1c`. `nightly.yml`, `version-bump.yml` and `automation.yml` exist on
+> `v2`, have never run, and cannot be dispatched — `gh workflow run nightly.yml` answers
+> `404: not found on the default branch`. The seven push-triggered workflows all run and are
+> green. The three activate the moment `v2` becomes `main` (TI-097), and verifying them is part
+> of that cutover rather than something a `v2` push can do.
 
 ---
 
