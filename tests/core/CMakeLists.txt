@@ -54,7 +54,12 @@ if(TYPEIT_BUILD_PROBES)
                          PROPERTIES WILL_FAIL TRUE)
 endif()
 
-add_executable(core_tests ChunkedProviderTest.cpp ConfigValidationTest.cpp ErrorMapTest.cpp FakeClockTest.cpp GraphemeTest.cpp KeyStatsTest.cpp KeystrokeLogTest.cpp LogBuilderTest.cpp ModeInterfaceTest.cpp MetricsAccuracyTest.cpp MetricsConsistencyTest.cpp MetricsRollingTest.cpp MetricsSpeedTest.cpp QuoteModeTest.cpp ResultTest.cpp SegmenterTest.cpp TextBufferTest.cpp TextNormalizerTest.cpp TimedModeTest.cpp TimelineTest.cpp TypingModelTest.cpp TypingRulesTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp WholeTextProviderTest.cpp WidthTest.cpp WordCountModeTest.cpp WrapperTest.cpp ZenModeTest.cpp)
+add_executable(core_tests ChunkedProviderTest.cpp ConfigValidationTest.cpp DifficultyScoreTest.cpp ErrorMapTest.cpp FakeClockTest.cpp GraphemeTest.cpp KeyStatsTest.cpp KeystrokeLogTest.cpp LogBuilderTest.cpp ModeInterfaceTest.cpp MetricsAccuracyTest.cpp MetricsConsistencyTest.cpp MetricsRollingTest.cpp MetricsSpeedTest.cpp QuoteModeTest.cpp ResultTest.cpp SegmenterTest.cpp TextBufferTest.cpp TextNormalizerTest.cpp TimedModeTest.cpp TimelineTest.cpp TypingModelTest.cpp TypingRulesTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp WholeTextProviderTest.cpp WidthTest.cpp WordCountModeTest.cpp WrapperTest.cpp ZenModeTest.cpp)
+
+# The corpora are found through the path CMake compiled in, never through
+# __FILE__ (defect C2): a test that only passes on the machine that built it is
+# a test that stops telling anyone anything the moment CI runs it.
+target_compile_definitions(core_tests PRIVATE TYPEIT_TEST_CORPUS_DIR="${CMAKE_SOURCE_DIR}/files")
 
 target_link_libraries(core_tests PRIVATE typeit::core typeit::test_support typeit::allocation_counter
                                      GTest::gtest GTest::gtest_main)
