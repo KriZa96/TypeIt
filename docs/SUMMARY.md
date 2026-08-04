@@ -13,6 +13,7 @@
 - [Build](BUILD.md)
 - [CI/CD](CI_CD.md)
 - [Testing](TESTING.md)
+- [Legacy test audit](LEGACY_TEST_AUDIT.md)
 - [Style](STYLE.md)
 - [Versioning](VERSIONING.md)
 - [Issue backlog](issues/README.md)
