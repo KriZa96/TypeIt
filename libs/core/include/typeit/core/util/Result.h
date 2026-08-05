@@ -30,6 +30,10 @@ namespace typeit::core {
         UnknownMode,
         InvalidKeyBinding,
         UnsupportedTerminal,
+        /// A command line that cannot be obeyed: an unknown flag, a missing
+        /// value, a number outside its range, two options that contradict each
+        /// other.
+        InvalidArgument,
     };
 
     /// Every code, in declaration order. Exists so that a table-driven test can
@@ -43,6 +47,7 @@ namespace typeit::core {
             ErrorCode::DbMigrate,         ErrorCode::DbQuery,
             ErrorCode::UnknownTheme,      ErrorCode::UnknownMode,
             ErrorCode::InvalidKeyBinding, ErrorCode::UnsupportedTerminal,
+            ErrorCode::InvalidArgument,
     };
 
     struct Error {

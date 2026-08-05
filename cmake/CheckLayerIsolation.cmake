@@ -17,6 +17,7 @@
 
 set(TYPEIT_FORBIDDEN_IN_CORE "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/" "typeit/app/")
 set(TYPEIT_FORBIDDEN_IN_APP "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/")
+set(TYPEIT_FORBIDDEN_IN_CLI "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/")
 set(TYPEIT_FORBIDDEN_IN_TUI "sqlite3\\.h" "toml\\+\\+/")
 set(TYPEIT_FORBIDDEN_IN_INFRA "ftxui/")
 
@@ -103,6 +104,7 @@ typeit_check_no_concatenated_sql("${TYPEIT_SOURCE_DIR}/apps")
 
 typeit_check_layer(CORE "${TYPEIT_SOURCE_DIR}/libs/core")
 typeit_check_layer(APP "${TYPEIT_SOURCE_DIR}/libs/app")
+typeit_check_layer(CLI "${TYPEIT_SOURCE_DIR}/libs/cli")
 typeit_check_layer(TUI "${TYPEIT_SOURCE_DIR}/libs/tui")
 typeit_check_layer(INFRA "${TYPEIT_SOURCE_DIR}/libs/infra")
 

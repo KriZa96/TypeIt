@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -11,7 +12,7 @@
 namespace typeit::core {
     namespace {
 
-        std::string joined(std::initializer_list<std::string_view> allowed) {
+        std::string joined(std::span<const std::string_view> allowed) {
             std::string list;
             for (const std::string_view value: allowed) {
                 if (!list.empty()) {
@@ -51,8 +52,7 @@ namespace typeit::core {
             return {};
         }
 
-        Status one_of(std::string_view field, const std::string& value,
-                      std::initializer_list<std::string_view> allowed) {
+        Status one_of(std::string_view field, const std::string& value, std::span<const std::string_view> allowed) {
             for (const std::string_view candidate: allowed) {
                 if (value == candidate) {
                     return {};
@@ -60,6 +60,13 @@ namespace typeit::core {
             }
             return fail(ErrorCode::ConfigInvalid,
                         std::string{field} + " = \"" + value + "\" (expected one of: " + joined(allowed) + ")");
+        }
+
+        /// The same, written the way the checks below read. An initializer list
+        /// is contiguous, so this is a view over it rather than a copy of it.
+        Status one_of(std::string_view field, const std::string& value,
+                      std::initializer_list<std::string_view> allowed) {
+            return one_of(field, value, std::span{allowed.begin(), allowed.size()});
         }
 
         /// The first failure of a list of checks, or success. Written as a
@@ -75,10 +82,10 @@ namespace typeit::core {
 
         Status validate_general(const GeneralConfig& general) {
             return first_failure({
-                    one_of("general.default_mode", general.default_mode,
-                           {"timed", "words", "quote", "zen", "endless", "race"}),
-                    in_range("general.default_duration_s", general.default_duration_s, 1, 3'600),
-                    in_range("general.default_word_count", general.default_word_count, 1, 10'000),
+                    one_of("general.default_mode", general.default_mode, kModeNames),
+                    in_range("general.default_duration_s", general.default_duration_s, kDurationSeconds.low,
+                             kDurationSeconds.high),
+                    in_range("general.default_word_count", general.default_word_count, kWordCount.low, kWordCount.high),
                     in_range("general.countdown_s", general.countdown_s, 0, 5),
                     one_of("general.log_level", general.log_level, {"off", "error", "warn", "info", "debug"}),
             });

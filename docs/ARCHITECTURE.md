@@ -609,7 +609,7 @@ TypeIt/
 │  ├─ infra/   include/typeit/infra/…   src/
 │  ├─ tui/     include/typeit/tui/…     src/
 │  └─ cli/     include/typeit/cli/…     src/
-├─ tests/      core/  app/  infra/  tui/  e2e/
+├─ tests/      core/  app/  cli/  infra/  tui/  e2e/
 ├─ assets/
 │  ├─ texts/       bundled corpora, installed to the data dir
 │  └─ themes/      builtin theme .toml files

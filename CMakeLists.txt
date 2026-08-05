@@ -49,6 +49,7 @@ include(Dependencies)
 # cutover (TI-097).
 add_subdirectory(libs/core)
 add_subdirectory(libs/app)
+add_subdirectory(libs/cli)
 add_subdirectory(libs/infra)
 
 # src first: it defines the typeit_legacy target the test binary links.

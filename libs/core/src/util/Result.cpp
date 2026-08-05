@@ -38,6 +38,8 @@ namespace typeit::core {
                 return "That key binding could not be understood.";
             case ErrorCode::UnsupportedTerminal:
                 return "This terminal cannot run TypeIt.";
+            case ErrorCode::InvalidArgument:
+                return "That command line could not be understood.";
         }
         // Only reachable through a cast from an out-of-range integer.
         return "An unknown error occurred.";
