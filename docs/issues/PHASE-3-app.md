@@ -268,6 +268,24 @@ user to run when they report a rendering problem in an unfamiliar terminal.
 - Output is stable and parseable.
 - A corrupt database is reported as such, not crashed on.
 
+**Acceptance**
+- [x] Nothing in the report is an error. A missing database, an unwritable directory and a
+      corrupt file are *findings*: a diagnostic that refuses to run because something is wrong
+      is a diagnostic that is never there when it is needed.
+- [x] Capability detection landed here rather than in Phase 4's TI-082, because "with the
+      reason" is in this issue's scope and cannot wait for the TUI. It is
+      `infra::detect_capabilities` — reading `COLORTERM` is I/O, and `cli` may not see `tui`.
+- [x] Writability is established by writing a file and removing it, not by reading the
+      permission bits: a directory can be mode 755 and still refuse a write over NFS, in a
+      container, or on a full disk. The probe cleans up after itself, which is its own test.
+- [x] `--doctor` on a missing database does not create one — checked, because a typo in
+      `--data-dir` must not leave an empty database behind to confuse the next run.
+- [x] Lives in `infra`: every fact in the report *is* an infra fact. Routing them through
+      ports so a higher layer could format them would mean three new interfaces with one
+      implementation each, for a diagnostic nobody tests through a fake. **Wiring the
+      `--doctor` flag to it is the composition root's**, and there is no `main` yet — see the
+      phase exit note.
+
 ---
 
 ## TI-077 — `--stats` and `--export`

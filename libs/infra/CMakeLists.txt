@@ -4,13 +4,15 @@
 # interface. That is the whole point: `core` must not be able to see them, and
 # neither must `app` or `tui` through their dependency on this. tests/infra
 # asserts it with a probe that must fail to compile.
-add_library(typeit_infra STATIC src/config/ConfigMigration.cpp src/config/TomlConfigStore.cpp src/db/Migrator.cpp src/db/SqliteDatabase.cpp src/db/SqliteHistoryRepository.cpp src/db/SqliteTextLibraryRepository.cpp src/Dependencies.cpp src/fs/AssetLocator.cpp src/fs/StdFileSystem.cpp src/fs/PlatformPaths.cpp src/time/SystemClock.cpp)
+add_library(typeit_infra STATIC src/config/ConfigMigration.cpp src/config/TomlConfigStore.cpp src/db/Migrator.cpp src/db/SqliteDatabase.cpp src/db/SqliteHistoryRepository.cpp src/db/SqliteTextLibraryRepository.cpp src/Dependencies.cpp src/Doctor.cpp src/fs/AssetLocator.cpp src/fs/StdFileSystem.cpp src/fs/PlatformPaths.cpp src/term/Capabilities.cpp src/time/SystemClock.cpp)
 add_library(typeit::infra ALIAS typeit_infra)
 
 target_include_directories(typeit_infra PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
 target_link_libraries(typeit_infra PUBLIC typeit::core typeit::app)
-target_link_libraries(typeit_infra PRIVATE SQLite::SQLite3 tomlplusplus::tomlplusplus)
+# typeit_version carries the generated header, privately: `--doctor` reports
+# the version and never spells one out (VERSIONING section 6).
+target_link_libraries(typeit_infra PRIVATE SQLite::SQLite3 tomlplusplus::tomlplusplus typeit_version)
 
 target_compile_features(typeit_infra PUBLIC cxx_std_23)
 

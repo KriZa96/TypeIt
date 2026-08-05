@@ -95,8 +95,16 @@ precedence order
 - Detection records **why** it concluded what it did, for `--doctor`.
 
 **Acceptance**
-- [ ] Precedence order matches UX §6.2 exactly, row by row.
-- [ ] No compile-time terminal branching remains.
+- [x] Precedence order matches UX §6.2 exactly, row by row. **Landed early, in TI-076**:
+      `--doctor` reports the detected colour depth and glyph set *with the reason*, so the
+      detection had to exist in Phase 3. It lives in `infra::detect_capabilities`
+      (`typeit/infra/term/Capabilities.h`) rather than in `tui`, because reading `COLORTERM`
+      is I/O and `cli` may not see `tui`; `tui` may see `infra`, so Phase 4 consumes it.
+- [ ] No compile-time terminal branching remains. Still Phase 4's: nothing renders yet.
+- [ ] **Decide**: this issue says `NO_COLOR` takes effect "even empty", but the `Environment`
+      port treats empty as unset throughout, and no-color.org itself says `NO_COLOR` applies
+      "when present and not an empty string". TI-076 implemented the latter and pinned it with
+      a test. Confirm or change it here, deliberately.
 
 ---
 
