@@ -221,12 +221,52 @@ temp dir), real modes — driven by a scripted keystroke log with a `FakeClock`,
 metrics as JSON. No terminal is involved.
 
 ```
-# script.tks
+# typeit-script 1
 100  type h
 250  type e
 400  backspace
 520  type e
+700  type space
 ```
+
+The header is required and is versioned per
+[VERSIONING §5](VERSIONING.md#5-independent-version-numbers): a script written for a later
+format is refused rather than half-understood. Timestamps are milliseconds from the start of
+the run and must not go backwards. `type` takes **exactly one grapheme**, so `type é` is one
+keystroke and `type hello` is a mistake rather than five; a space is spelled `space`, because
+trailing whitespace in a fixture is invisible and the first editor to touch the file would
+strip it. Blank lines and any later `#` line are comments.
+
+### Output schema (version 1)
+
+```json
+{
+  "schema": 1,
+  "mode": "timed",
+  "mode_param": "{\"seconds\":30}",
+  "provider": "whole",
+  "provider_seed": 4242,
+  "completed": true,
+  "duration_ms": 24000,
+  "graphemes_typed": 25,
+  "graphemes_correct": 25,
+  "errors_total": 0,
+  "errors_uncorrected": 0,
+  "backspaces": 0,
+  "raw_wpm": 12.5,
+  "gross_wpm": 12.5,
+  "net_wpm": 12.5,
+  "accuracy": 1,
+  "final_correctness": 1,
+  "consistency": 80.816674,
+  "timeline": [{ "at_ms": 0, "wpm": 12, "keystrokes": 1, "errors": 0 }]
+}
+```
+
+Every number in it is derived from the script's own relative times, and `at_ms` counts from
+the first sample. There is deliberately **no `started_at` or `ended_at`**: those come from the
+wall clock, and a harness whose output changed every time it ran would be no use as a fixture.
+The run's date is still recorded in the database, where it belongs.
 
 Asserted end to end:
 

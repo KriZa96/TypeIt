@@ -34,6 +34,9 @@ namespace typeit::core {
         /// value, a number outside its range, two options that contradict each
         /// other.
         InvalidArgument,
+        /// A keystroke script `--simulate` cannot run: a missing or unsupported
+        /// header, an unknown verb, a timestamp that goes backwards.
+        InvalidScript,
     };
 
     /// Every code, in declaration order. Exists so that a table-driven test can
@@ -47,7 +50,7 @@ namespace typeit::core {
             ErrorCode::DbMigrate,         ErrorCode::DbQuery,
             ErrorCode::UnknownTheme,      ErrorCode::UnknownMode,
             ErrorCode::InvalidKeyBinding, ErrorCode::UnsupportedTerminal,
-            ErrorCode::InvalidArgument,
+            ErrorCode::InvalidArgument,   ErrorCode::InvalidScript,
     };
 
     struct Error {

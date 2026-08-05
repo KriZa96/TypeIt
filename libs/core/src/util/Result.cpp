@@ -40,6 +40,8 @@ namespace typeit::core {
                 return "This terminal cannot run TypeIt.";
             case ErrorCode::InvalidArgument:
                 return "That command line could not be understood.";
+            case ErrorCode::InvalidScript:
+                return "That keystroke script could not be understood.";
         }
         // Only reachable through a cast from an out-of-range integer.
         return "An unknown error occurred.";

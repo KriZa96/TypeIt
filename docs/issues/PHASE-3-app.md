@@ -234,8 +234,18 @@ Script format (versioned per [VERSIONING §5](../VERSIONING.md#5-independent-ver
 - Output JSON validates against a documented schema.
 
 **Acceptance**
-- [ ] A complete session runs end to end with zero FTXUI symbols linked into the binary.
-- [ ] Determinism holds across runs and across platforms.
+- [x] A complete session runs end to end with zero FTXUI symbols linked into the binary.
+      `typeit::cli` links `typeit::app` and nothing else, and the layer check refuses FTXUI,
+      SQLite, toml++ and `typeit/infra/` inside it. Only the repository and the clock are
+      fakes in `SimulateTest`, and both are ports the real application injects too.
+- [x] Determinism holds across runs and across platforms. The output carries **no wall-clock
+      timestamp**: `started_at` and `ended_at` are omitted, and the timeline is rebased to
+      zero — `core::timeline` stamps samples on the log's own clock, whose epoch is whenever
+      the process started, so absolute values would have differed on every run. Asserted by
+      running the same script twice with the clock moved a day in between and comparing the
+      bytes.
+- [x] The script format and the version-1 output schema are documented in
+      [TESTING §7](../TESTING.md#7-end-to-end-tests).
 
 ---
 
