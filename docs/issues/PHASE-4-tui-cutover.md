@@ -400,6 +400,15 @@ Headline numbers and the four actions. Charts arrive in Phase 5.
 - Each action navigates correctly (restart, new text, menu).
 - Snapshot at 80×24.
 
+**Acceptance**
+- [x] It renders the `SessionRecord` that was written to the database rather than recomputing
+      from the session. A results screen that recomputed would be a second implementation of
+      the metrics, and the two would disagree eventually.
+- [x] Numbers go through the same `app::json::number` the exports use, so a figure on screen
+      and the same figure in a CSV cannot disagree.
+- [x] The screen navigates nothing itself — it reports what was asked for and whoever drives
+      the stack acts on it. A screen that pushed would have to know about every other screen.
+
 ---
 
 ## TI-094 — `HelpScreen`
@@ -455,8 +464,18 @@ console state on exit** — including on abnormal exit.
 - Non-ASCII output renders correctly (verified via the snapshot harness).
 
 **Acceptance**
-- [ ] Verified by the Windows CI job, not assumed. FTXUI does most of this; the point is that
-      it is now checked.
+- [x] Verified by the Windows CI job, not assumed — the three Windows configurations build and
+      run the suite, which is what "checked" means here.
+- [x] The original mode and both code pages are captured **before** anything is changed, so the
+      destructor puts back what was really there rather than what the code assumes. RAII, so it
+      happens on a normal return and on an exception unwinding through `main`.
+- [x] A console too old for VT processing gets the ASCII glyph set and a note for `--doctor`,
+      not an aborted start.
+- [x] The type exists on every platform and is empty off Windows, so the composition root has
+      no `#ifdef` in it — a platform test at the call site is how a platform bug hides.
+- [ ] **Ctrl+C is not covered.** It does not run destructors, so restoring on it needs a
+      console control handler, and there is no Windows machine here to check one on. Left for
+      the Windows CI job to prove or disprove rather than written blind.
 
 ---
 

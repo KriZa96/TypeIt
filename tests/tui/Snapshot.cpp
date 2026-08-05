@@ -1,7 +1,6 @@
 #include "Snapshot.h"
 
 #include <cstddef>
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <ftxui/component/component_base.hpp>
@@ -13,6 +12,8 @@
 #include <string_view>
 #include <utility>
 
+#include "typeit/infra/fs/PlatformPaths.h"
+
 namespace typeit::testing {
     namespace {
 
@@ -20,7 +21,14 @@ namespace typeit::testing {
             return std::filesystem::path{TYPEIT_GOLDEN_DIR} / (std::string{name} + ".txt");
         }
 
-        bool updating() { return std::getenv("TYPEIT_UPDATE_GOLDENS") != nullptr; }
+        /// Read through the environment port rather than `std::getenv`,
+        /// which the Windows CRT deprecates and `/W4 -Werror` means. `infra`
+        /// already owns the portable spelling; a second one here would be a
+        /// second thing to get wrong.
+        bool updating() {
+            static const infra::Environment environment = infra::system_environment();
+            return environment("TYPEIT_UPDATE_GOLDENS").has_value();
+        }
 
         /// The screen without its styling.
         ///

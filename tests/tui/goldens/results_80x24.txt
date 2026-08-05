@@ -1,0 +1,24 @@
+Run complete                                                                    
+                                                                                
+  net wpm               72.5                                                    
+  gross wpm               80                                                    
+  raw wpm                 82                                                    
+  accuracy               97%                                                    
+  correctness           100%                                                    
+  consistency             88                                                    
+  characters             300                                                    
+  errors                   9                                                    
+  seconds                 30                                                    
+                                                                                
+ctrl-r again  ctrl-n new text  escape menu                                      
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                

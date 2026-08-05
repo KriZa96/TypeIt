@@ -86,8 +86,7 @@ namespace typeit::tui {
         for (std::size_t at = from; at < to; ++at) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- the wrapper's bounds
             const core::Grapheme& grapheme = target[at];
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- states().size() ==
-            // size()
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access) -- one state per position
             const core::GraphemeState state = states[at];
 
             // A space typed wrongly is drawn as an underscore. Nothing else

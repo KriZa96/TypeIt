@@ -1,0 +1,24 @@
+TypeIt                                                                          
+                                                                                
+  (*) mode      timed                                                           
+  ( ) seconds   30                                                              
+  ( ) words     50                                                              
+  ( ) start                                                                     
+                                                                                
+f1 keys  ctrl-q quit                                                            
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
