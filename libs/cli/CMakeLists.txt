@@ -8,7 +8,9 @@ add_library(typeit::cli ALIAS typeit_cli)
 
 target_include_directories(typeit_cli PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-target_link_libraries(typeit_cli PUBLIC typeit::app)
+# typeit_version carries the generated header, privately: `--version` reads
+# the version and never spells one out (VERSIONING section 6).
+target_link_libraries(typeit_cli PUBLIC typeit::app PRIVATE typeit_version)
 
 target_compile_features(typeit_cli PUBLIC cxx_std_23)
 

@@ -96,6 +96,24 @@ namespace typeit::cli {
     /// names the flag and, where there is one, the range or the list.
     [[nodiscard]] core::Result<CliOptions> parse(std::span<const std::string_view> arguments);
 
+    /// The `--help` text, generated from the same option table the parser
+    /// reads.
+    ///
+    /// Generated rather than written out, so a flag cannot be added without
+    /// appearing here. A help text maintained by hand is a help text that is
+    /// wrong within two releases, and the flag it forgot is the one nobody
+    /// discovers.
+    [[nodiscard]] std::string usage();
+
+    /// What `--version` prints: the version, what git called this commit, and
+    /// whether this is an optimised build.
+    ///
+    /// Every part is read rather than spelled — `kVersionString` from the
+    /// generated header, `kGitDescribe` beside it, and the build type from
+    /// `NDEBUG`, which is the only spelling that is right under a multi-config
+    /// generator where the build type is not known until compile time.
+    [[nodiscard]] std::string version_text();
+
 }  // namespace typeit::cli
 
 #endif  // TYPEIT_CLI_CLI_H

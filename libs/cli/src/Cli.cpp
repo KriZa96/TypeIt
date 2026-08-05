@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "typeit/core/Version.h"
 #include "typeit/core/config/Validation.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
@@ -58,6 +59,13 @@ namespace typeit::cli {
             /// The short form, or `\0` where there is none.
             char letter;
             bool takes_value;
+            /// The heading this flag appears under in `--help`, in the order
+            /// TECHNICAL section 7 documents.
+            std::string_view group;
+            /// What the value is called there. Empty for a flag that takes
+            /// none.
+            std::string_view placeholder;
+            std::string_view description;
         };
 
         /// TECHNICAL §7, in the order it documents. One table: the parser, the
@@ -65,27 +73,153 @@ namespace typeit::cli {
         /// read this rather than each carrying their own list to fall out of
         /// step with.
         constexpr std::array kOptions{
-                Option{.flag = Flag::Mode, .name = "mode", .letter = 'm', .takes_value = true},
-                Option{.flag = Flag::Time, .name = "time", .letter = 't', .takes_value = true},
-                Option{.flag = Flag::Words, .name = "words", .letter = 'w', .takes_value = true},
-                Option{.flag = Flag::RacePreset, .name = "race-preset", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Text, .name = "text", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::TextId, .name = "text-id", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Section, .name = "section", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Import, .name = "import", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::ImportDirectory, .name = "import-dir", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Url, .name = "url", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::ListTexts, .name = "list-texts", .letter = '\0', .takes_value = false},
-                Option{.flag = Flag::RemoveText, .name = "remove-text", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Stats, .name = "stats", .letter = '\0', .takes_value = false},
-                Option{.flag = Flag::Export, .name = "export", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Last, .name = "last", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Simulate, .name = "simulate", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Doctor, .name = "doctor", .letter = '\0', .takes_value = false},
-                Option{.flag = Flag::Config, .name = "config", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::DataDir, .name = "data-dir", .letter = '\0', .takes_value = true},
-                Option{.flag = Flag::Help, .name = "help", .letter = 'h', .takes_value = false},
-                Option{.flag = Flag::Version, .name = "version", .letter = 'V', .takes_value = false},
+                Option{.flag = Flag::Mode,
+                       .name = "mode",
+                       .letter = 'm',
+                       .takes_value = true,
+                       .group = "Modes",
+                       .placeholder = "<MODE>",
+                       .description = "timed | words | quote | zen | endless | race"},
+                Option{.flag = Flag::Time,
+                       .name = "time",
+                       .letter = 't',
+                       .takes_value = true,
+                       .group = "Modes",
+                       .placeholder = "<SECONDS>",
+                       .description = "duration for timed mode"},
+                Option{.flag = Flag::Words,
+                       .name = "words",
+                       .letter = 'w',
+                       .takes_value = true,
+                       .group = "Modes",
+                       .placeholder = "<N>",
+                       .description = "word count for words mode"},
+                Option{.flag = Flag::RacePreset,
+                       .name = "race-preset",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Modes",
+                       .placeholder = "<PRESET>",
+                       .description = "gentle | standard | brutal"},
+                Option{.flag = Flag::Text,
+                       .name = "text",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Text",
+                       .placeholder = "<PATH>",
+                       .description = "type this file (one-shot; does not import)"},
+                Option{.flag = Flag::TextId,
+                       .name = "text-id",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Text",
+                       .placeholder = "<ID>",
+                       .description = "type a text from the library"},
+                Option{.flag = Flag::Section,
+                       .name = "section",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Text",
+                       .placeholder = "<N>",
+                       .description = "start at section N of the selected text"},
+                Option{.flag = Flag::Import,
+                       .name = "import",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Library",
+                       .placeholder = "<PATH>",
+                       .description = "import into the library and exit"},
+                Option{.flag = Flag::ImportDirectory,
+                       .name = "import-dir",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Library",
+                       .placeholder = "<DIR>",
+                       .description = "import every supported file in a directory"},
+                Option{.flag = Flag::Url,
+                       .name = "url",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Library",
+                       .placeholder = "<URL>",
+                       .description = "fetch and import a web page (requires [network].enabled)"},
+                Option{.flag = Flag::ListTexts,
+                       .name = "list-texts",
+                       .letter = '\0',
+                       .takes_value = false,
+                       .group = "Library",
+                       .placeholder = "",
+                       .description = "list library texts and exit"},
+                Option{.flag = Flag::RemoveText,
+                       .name = "remove-text",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Library",
+                       .placeholder = "<ID>",
+                       .description = "remove a text from the library"},
+                Option{.flag = Flag::Stats,
+                       .name = "stats",
+                       .letter = '\0',
+                       .takes_value = false,
+                       .group = "History",
+                       .placeholder = "",
+                       .description = "print a summary and exit"},
+                Option{.flag = Flag::Export,
+                       .name = "export",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "History",
+                       .placeholder = "<FORMAT>",
+                       .description = "csv | json -- write history to stdout"},
+                Option{.flag = Flag::Last,
+                       .name = "last",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "History",
+                       .placeholder = "<N>",
+                       .description = "limit history output"},
+                Option{.flag = Flag::Simulate,
+                       .name = "simulate",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Diagnostics",
+                       .placeholder = "<SCRIPT>",
+                       .description = "run headless from a keystroke script, print metrics"},
+                Option{.flag = Flag::Doctor,
+                       .name = "doctor",
+                       .letter = '\0',
+                       .takes_value = false,
+                       .group = "Diagnostics",
+                       .placeholder = "",
+                       .description = "report terminal capabilities, paths, database health"},
+                Option{.flag = Flag::Config,
+                       .name = "config",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Diagnostics",
+                       .placeholder = "<PATH>",
+                       .description = "use an alternative config file"},
+                Option{.flag = Flag::DataDir,
+                       .name = "data-dir",
+                       .letter = '\0',
+                       .takes_value = true,
+                       .group = "Diagnostics",
+                       .placeholder = "<PATH>",
+                       .description = "use an alternative data directory"},
+                Option{.flag = Flag::Help,
+                       .name = "help",
+                       .letter = 'h',
+                       .takes_value = false,
+                       .group = "Diagnostics",
+                       .placeholder = "",
+                       .description = "print this help and exit"},
+                Option{.flag = Flag::Version,
+                       .name = "version",
+                       .letter = 'V',
+                       .takes_value = false,
+                       .group = "Diagnostics",
+                       .placeholder = "",
+                       .description = "print the version and exit"},
         };
 
         /// A database id is a positive integer, and there is no upper bound
@@ -493,6 +627,71 @@ namespace typeit::cli {
         }
 
         return state.options;
+    }
+
+    std::string usage() {
+        // The width the descriptions line up at. Wide enough for the longest
+        // flag the table holds, checked by a test rather than by eye — a help
+        // text whose columns drift as flags are added is a help text nobody
+        // trusts.
+        constexpr std::size_t kDescriptionColumn = 29;
+
+        std::string out = "typeit [OPTIONS] [FILE|-]\n";
+        std::string_view group;
+
+        for (const Option& option: kOptions) {
+            if (option.group != group) {
+                group = option.group;
+                out += '\n';
+                out += group;
+                out += '\n';
+            }
+
+            std::string spelled = "  ";
+            if (option.letter != '\0') {
+                spelled += '-';
+                spelled += option.letter;
+                spelled += ", ";
+            } else {
+                spelled += "    ";
+            }
+            spelled += flagged(option.name);
+            if (!option.placeholder.empty()) {
+                spelled += ' ';
+                spelled += option.placeholder;
+            }
+
+            // One space at minimum, however long the flag ran: a description
+            // pushed onto the next line is worse than a ragged column.
+            spelled.append(spelled.size() >= kDescriptionColumn ? 1 : kDescriptionColumn - spelled.size(), ' ');
+            out += spelled;
+            out += option.description;
+            out += '\n';
+        }
+
+        // The positional, which is not an option and so is not in the table.
+        out += "\n  -                            read the text from stdin\n";
+        return out;
+    }
+
+    std::string version_text() {
+        std::string out = "typeit ";
+        out += kVersionString;
+        if (const std::string_view describe = kGitDescribe; !describe.empty()) {
+            out += " (";
+            out += describe;
+            out += ")";
+        }
+        // NDEBUG rather than a configure-time string: under a multi-config
+        // generator the build type is not known until the compiler runs, so a
+        // value baked in at configure time would be a guess.
+#ifdef NDEBUG
+        out += " release";
+#else
+        out += " debug";
+#endif
+        out += '\n';
+        return out;
     }
 
 }  // namespace typeit::cli

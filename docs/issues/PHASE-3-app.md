@@ -310,9 +310,10 @@ user to run when they report a rendering problem in an unfamiliar terminal.
       a difference nobody could explain.
 - [x] No date is printed with a personal best: formatting one needs a calendar this layer has
       no business owning, and `--export` carries the raw numbers for anyone who wants more.
-- [ ] **SIGPIPE waits for the binary.** Whether writing to a closed stdout kills the process
-      is a property of `main`, not of a function returning a string, and there is no `main`
-      yet — see the phase exit note. Ticked in TI-078, which builds the composition root.
+- [x] **SIGPIPE**, closed in TI-078 with the composition root: `main` ignores it, so a closed
+      pipe becomes a failed write the program can report rather than a signal that kills it
+      before it can. The write is checked, too — `typeit --export json | head -1` must not
+      claim it exported everything.
 
 ---
 
@@ -330,16 +331,42 @@ user to run when they report a rendering problem in an unfamiliar terminal.
 - A persisted session row carries the current version.
 - No literal version string exists outside `CMakeLists.txt` (grep test in CI).
 
+**Acceptance**
+- [x] `--version` reports `kVersionString`, `kGitDescribe` and the build type. The build type
+      comes from `NDEBUG` rather than a configure-time string: under a multi-config generator
+      the build type is not known until the compiler runs, so a baked-in value would be a
+      guess.
+- [x] A persisted row carries the version — `SessionServiceTest.TheAppVersionIsReadRatherThanSpelled`,
+      where the record is built. Asserting it twice would not make it truer.
+- [x] The version literal guard is `scripts/version-guard.sh check-literals`, already in CI.
+- [x] **`apps/typeit` — the composition root — landed here.** No Phase 3 issue creates it, and
+      four things need it: `--version` and `--help` have nowhere to print from, `--doctor`
+      cannot be reached from `cli` (which may not see `infra`), TI-077's SIGPIPE case is a
+      property of a process, and the phase exit criterion below is a binary. It is ~250 lines
+      that parse, construct, dispatch and print, with no logic worth a unit test — which is
+      the point of a composition root.
+- [x] `--help` is generated from the parser's own option table, so a flag cannot be added
+      without appearing in it. Phase 9's TI-136 asks for exactly this and now has something to
+      check.
+
 ---
 
 ## Phase exit criteria
 
-- [ ] **`typeit --simulate script.tks` runs a complete session through the real stack — real
+- [x] **`typeit --simulate script.tks` runs a complete session through the real stack — real
       services, real SQLite in a temp directory, real modes — with no terminal, and writes a
-      correct row.** This is the phase's reason for existing.
-- [ ] `--stats`, `--export csv`, `--export json`, `--doctor`, `--version` all work.
-- [ ] Service tests run entirely on fakes and complete in under one second.
-- [ ] Every service failure path is tested with an injected adapter failure.
-- [ ] `app` coverage ≥ 85%.
-- [ ] `app` links `core` only; the negative build test proves it.
-- [ ] The legacy application still builds and passes its own tests.
+      correct row.** This is the phase's reason for existing. Automated as the `cli.end_to_end`
+      test: `apps/typeit/e2e.cmake` drives the real binary, checks the metrics, reruns the
+      same script and compares the bytes, then reads the row back through `--export` and
+      `--stats`. Written as a CMake script rather than a shell one so it runs on Windows too.
+- [x] `--stats`, `--export csv`, `--export json`, `--doctor`, `--version` all work — four of
+      them under `ctest` against the real binary.
+- [x] Service tests run entirely on fakes and complete in under one second: 90 tests in 14 ms.
+- [x] Every service failure path is tested with an injected adapter failure.
+- [x] `app` coverage ≥ 85% — 95.4%, and now **gated** rather than measured once:
+      `scripts/coverage.sh` grew an `app` threshold from TESTING §9, which it had never
+      enforced. (`cli` measures 98.0%; TESTING §9 names no threshold for it, so none was
+      invented.)
+- [x] `app` links `core` only; the negative build test proves it. `cli` links `app` only, and
+      was added to the same layer check.
+- [x] The legacy application still builds and passes its own tests.

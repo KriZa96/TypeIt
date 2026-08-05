@@ -45,6 +45,14 @@ include(StaticAnalysis)
 option(TYPEIT_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
 include(Dependencies)
 
+# enable_testing() belongs at the top level, or ctest run from the build
+# root -- which is what `ctest --preset` does -- finds nothing. It comes before
+# the subdirectories because apps/typeit registers tests of its own, and
+# add_test() before enable_testing() is silently dropped.
+if(TYPEIT_BUILD_TESTS)
+    enable_testing()
+endif()
+
 # The rebuild. src/ below is the 1.0.0 tree, deleted whole at the Phase 4
 # cutover (TI-097).
 add_subdirectory(libs/core)
@@ -52,12 +60,11 @@ add_subdirectory(libs/app)
 add_subdirectory(libs/cli)
 add_subdirectory(libs/infra)
 
+add_subdirectory(apps/typeit)
+
 # src first: it defines the typeit_legacy target the test binary links.
 add_subdirectory(src)
 
-# enable_testing() belongs at the top level, or ctest run from the build
-# root -- which is what `ctest --preset` does -- finds nothing.
 if(TYPEIT_BUILD_TESTS)
-    enable_testing()
     add_subdirectory(tests)
 endif()

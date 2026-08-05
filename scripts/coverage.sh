@@ -22,6 +22,11 @@ CORE_MINIMUM=90
 AREA_MINIMUM=95
 AREAS=(libs/core/src/metrics libs/core/src/text libs/core/src/modes)
 
+# TESTING section 9's figure for the use-case layer. It is high because a
+# service is orchestration over fakes: there is no I/O to stand up, so an
+# uncovered line is a path nobody thought about.
+APP_MINIMUM=85
+
 # `infra` is lower on purpose (TESTING section 9): some of its error paths need
 # a full disk, a permission failure or a corrupt database to reach, and a test
 # that arranges those is a test that only passes on the machine it was written
@@ -100,6 +105,13 @@ gate() {
     read -r percent covered total < <(percent_for libs/core/src)
     printf '%-28s %6s%%  (%s/%s lines, minimum %s%%)\n' "core" "${percent}" "${covered}" "${total}" "${CORE_MINIMUM}"
     if awk -v value="${percent}" -v minimum="${CORE_MINIMUM}" 'BEGIN { exit !(value < minimum) }'; then
+        echo "  below the gate" >&2
+        failed=1
+    fi
+
+    read -r percent covered total < <(percent_for libs/app/src)
+    printf '%-28s %6s%%  (%s/%s lines, minimum %s%%)\n' "app" "${percent}" "${covered}" "${total}" "${APP_MINIMUM}"
+    if awk -v value="${percent}" -v minimum="${APP_MINIMUM}" 'BEGIN { exit !(value < minimum) }'; then
         echo "  below the gate" >&2
         failed=1
     fi
