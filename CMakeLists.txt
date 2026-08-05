@@ -59,6 +59,7 @@ add_subdirectory(libs/core)
 add_subdirectory(libs/app)
 add_subdirectory(libs/cli)
 add_subdirectory(libs/infra)
+add_subdirectory(libs/tui)
 
 add_subdirectory(apps/typeit)
 

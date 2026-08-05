@@ -24,8 +24,19 @@ migrations stall.
 - `TerminalApp` constructs and shuts down cleanly with a stub screen.
 
 **Acceptance**
-- [ ] `tui` cannot see `infra`; the composition root is the only place both are visible.
-- [ ] FTXUI is `PRIVATE`, so it does not leak to `tui`'s consumers.
+- [x] `tui` cannot see `infra`; the composition root is the only place both are visible.
+      Enforced twice: `infra.lint.source_rules` now forbids `typeit/infra/` inside `libs/tui`,
+      and `tui.isolation.infra_is_unreachable` is a target that must fail to compile — with a
+      control beside it, because a negative test that cannot tell "unreachable" from "the
+      compiler never ran" proves nothing.
+- [x] FTXUI is `PRIVATE`, so it does not leak to `tui`'s consumers. Two guarantees rather than
+      one: the link is private so no include directory is inherited, and `TerminalApp.h` names
+      nothing from FTXUI — not a type, not an include — so a consumer could not use them if it
+      had them. `tui.isolation.ftxui_does_not_leak` is the check.
+- [x] The event loop is not entered by any test. FTXUI's loop reads the terminal, and a test
+      that starts it in CI is a test that hangs a pipeline the day stdin behaves differently.
+      The shutdown path is reachable without it: `quit()` before `run()` is honoured without
+      entering the loop at all, which is the only sane answer to "stop" arriving first.
 
 ---
 

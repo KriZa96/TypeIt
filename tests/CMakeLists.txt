@@ -4,6 +4,7 @@ add_subdirectory(app)
 add_subdirectory(cli)
 add_subdirectory(contract)
 add_subdirectory(infra)
+add_subdirectory(tui)
 
 # Below: the 1.0.0 suite, which keeps passing unchanged throughout the rebuild
 # and goes at the Phase 4 cutover (TI-097).

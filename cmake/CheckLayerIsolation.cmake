@@ -18,7 +18,7 @@
 set(TYPEIT_FORBIDDEN_IN_CORE "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/" "typeit/app/")
 set(TYPEIT_FORBIDDEN_IN_APP "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/")
 set(TYPEIT_FORBIDDEN_IN_CLI "sqlite3\\.h" "toml\\+\\+/" "ftxui/" "typeit/infra/")
-set(TYPEIT_FORBIDDEN_IN_TUI "sqlite3\\.h" "toml\\+\\+/")
+set(TYPEIT_FORBIDDEN_IN_TUI "sqlite3\\.h" "toml\\+\\+/" "typeit/infra/")
 set(TYPEIT_FORBIDDEN_IN_INFRA "ftxui/")
 
 function(typeit_check_layer layer directory)
