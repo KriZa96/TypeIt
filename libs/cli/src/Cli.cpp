@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <iterator>
 #include <limits>
-#include <numeric>
 #include <optional>
 #include <span>
 #include <string>
@@ -107,7 +106,13 @@ namespace typeit::cli {
         std::size_t edit_distance(std::string_view left, std::string_view right) {
             std::vector<std::size_t> previous(right.size() + 1);
             std::vector<std::size_t> current(right.size() + 1);
-            std::ranges::iota(previous, std::size_t{0});
+            // Filled by hand rather than with iota: `std::ranges::iota` is
+            // C++23 and libc++ does not have it, and the numbered version trips
+            // modernize-use-ranges. A loop is portable and shorter than the
+            // argument about it.
+            for (std::size_t j = 0; j <= right.size(); ++j) {
+                previous.at(j) = j;
+            }
 
             for (std::size_t i = 0; i < left.size(); ++i) {
                 current.at(0) = i + 1;
