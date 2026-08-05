@@ -1,0 +1,24 @@
+# Pure black and white with the four state colours at full saturation. For low
+# vision, for projectors, and for terminals whose colour rendering is a
+# surprise. Nothing here is a subtle shade of anything.
+theme_version = 1
+
+name        = "high-contrast"
+author      = "TypeIt"
+description = "Maximum contrast, for low vision and bad projectors"
+
+[colors]
+background     = "#000000"
+surface        = "#000000"
+border         = "#ffffff"
+text_pending   = "#808080"
+text_correct   = "#ffffff"
+text_incorrect = "#ff0000"
+text_corrected = "#ffff00"
+caret          = "#00ffff"
+pacer          = "#00ff00"
+accent         = "#00ffff"
+success        = "#00ff00"
+warning        = "#ffff00"
+error          = "#ff0000"
+muted          = "#808080"

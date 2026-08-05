@@ -1,0 +1,24 @@
+# The same palette inverted, for a light terminal. Pending text is lighter than
+# correct text here and darker than it in the dark theme — the relationship
+# that matters is "not yet typed recedes", not any particular lightness.
+theme_version = 1
+
+name        = "typeit-light"
+author      = "TypeIt"
+description = "Default light theme"
+
+[colors]
+background     = "#eff1f5"
+surface        = "#e6e9ef"
+border         = "#bcc0cc"
+text_pending   = "#9ca0b0"
+text_correct   = "#4c4f69"
+text_incorrect = "#d20f39"
+text_corrected = "#df8e1d"
+caret          = "#1e66f5"
+pacer          = "#40a02b"
+accent         = "#1e66f5"
+success        = "#40a02b"
+warning        = "#df8e1d"
+error          = "#d20f39"
+muted          = "#8c8fa1"

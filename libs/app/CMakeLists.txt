@@ -3,7 +3,7 @@
 # Links core and nothing else. `infra` implements these interfaces and depends
 # on this library; the arrow points that way and never back, which is what
 # makes a service testable with a fake and a database testable without one.
-add_library(typeit_app STATIC src/Json.cpp src/Ports.cpp src/services/ConfigService.cpp src/services/HistoryService.cpp src/services/ProfileService.cpp src/services/SessionService.cpp src/services/TextLibraryService.cpp)
+add_library(typeit_app STATIC src/Capabilities.cpp src/Json.cpp src/Ports.cpp src/Theme.cpp src/services/ConfigService.cpp src/services/HistoryService.cpp src/services/ProfileService.cpp src/services/SessionService.cpp src/services/TextLibraryService.cpp)
 add_library(typeit::app ALIAS typeit_app)
 
 target_include_directories(typeit_app PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")

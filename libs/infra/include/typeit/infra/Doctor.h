@@ -62,7 +62,7 @@ namespace typeit::infra {
     struct DoctorReport {
         std::string version;
         std::string git_describe;
-        Capabilities capabilities;
+        app::Capabilities capabilities;
         std::vector<PathReport> paths;
         DatabaseReport database;
         std::string sqlite_version;

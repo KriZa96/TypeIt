@@ -169,8 +169,22 @@ directory.
 - `theme_version` handling per [VERSIONING §5](../VERSIONING.md#5-independent-version-numbers).
 
 **Acceptance**
-- [ ] `typeit-dark`, `typeit-light`, `high-contrast`, and `mono` all ship and load.
-- [ ] Colours are semantic (`text_incorrect`), never positional.
+- [x] `typeit-dark`, `typeit-light`, `high-contrast`, and `mono` all ship in `assets/themes/`
+      and all load — checked against the files themselves, so a theme that stops parsing fails
+      the build rather than the first person to select it. Each is asserted to define **every**
+      semantic colour, because a theme that omitted half of them would load, take the defaults,
+      and quietly look like the default theme.
+- [x] Colours are semantic (`text_incorrect`), never positional. The enum is the vocabulary and
+      the key table is the only spelling, so the loader and any future settings screen cannot
+      disagree about a name.
+- [x] Landed in `app` + `infra`, not `tui`, which ARCHITECTURE §4.4's directory sketch shows.
+      `tui` may not link toml++, so the parser has to be `infra` — the same split the
+      configuration already has (`core::Config` is the value, `TomlConfigStore` is the parser).
+      The value type sits in `app`, where both layers can see it.
+- [x] A theme with a mistake in it still loads: a missing colour, a malformed hex value, an
+      unknown key and a `theme_version` from the future are all warnings against the default.
+      The one fatal case is a file that is not TOML at all — the one case where continuing
+      would mean rendering a theme whose author cannot see the effect of what they wrote.
 
 ---
 
@@ -193,7 +207,21 @@ with no fallback at all.
   is broken at that depth and the test says so.
 
 **Acceptance**
-- [ ] Every shipped theme passes the distinguishability property at all four depths.
+- [x] Every shipped theme passes the distinguishability property — asserted over the theme
+      *files*, not a copy of their values, at truecolor, 256 and 16.
+- [x] **The property is stated over the colours a typing state is read from**, not all
+      fourteen. `background`, `surface` and `border` are three shades of one dark on purpose,
+      and demanding they stay distinct in a sixteen-colour palette would force every theme to
+      be garish. What must survive is what the typist reads meaning from.
+- [x] `mono` is excluded from the colour property by name, because it has no colour at all —
+      that is its whole point. Its states are told apart by attributes instead, and there is a
+      separate test that all four remain distinct that way.
+- [x] **The property found a real defect and the fix is the interesting part.** Nearest-RGB
+      distance — the obvious implementation — maps a pastel pink nearer to white than to red,
+      so the default theme collapsed into two shades of white and `text_correct`,
+      `text_corrected`, `text_incorrect` and `caret` became two colours between them. The
+      quantiser now asks what colour something *is* (hue) and then how bright, which is what
+      keeps a pastel palette readable at sixteen colours.
 
 ---
 

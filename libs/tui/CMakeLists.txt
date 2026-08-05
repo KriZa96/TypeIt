@@ -5,7 +5,7 @@
 # directories, and the header is clean so a consumer could not use them if it
 # had them. `apps/typeit` is the only place FTXUI and SQLite are both visible,
 # and it sees neither through a header of ours.
-add_library(typeit_tui STATIC src/FrameTicker.cpp src/ScreenStack.cpp src/TerminalApp.cpp)
+add_library(typeit_tui STATIC src/ColorQuantizer.cpp src/FrameTicker.cpp src/Glyphs.cpp src/Keymap.cpp src/ScreenStack.cpp src/TerminalApp.cpp)
 add_library(typeit::tui ALIAS typeit_tui)
 
 # The public surface is `include/`, which names nothing from FTXUI. `src/`

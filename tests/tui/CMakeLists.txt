@@ -35,14 +35,22 @@ if(TYPEIT_BUILD_PROBES)
                          PROPERTIES WILL_FAIL TRUE)
 endif()
 
-add_executable(tui_tests FrameTickerTest.cpp ScreenStackTest.cpp TerminalAppTest.cpp)
+add_executable(tui_tests ColorQuantizerTest.cpp FrameTickerTest.cpp GlyphSetTest.cpp KeymapTest.cpp
+                         ScreenStackTest.cpp TerminalAppTest.cpp)
 
 # Reaching into `libs/tui/src` on purpose: `ScreenStack` and `IScreen` are
 # internal because they name FTXUI, and testing them means speaking FTXUI too.
 # The isolation probes above still hold — they link `typeit::tui` alone.
 target_include_directories(tui_tests PRIVATE "${CMAKE_SOURCE_DIR}/libs/tui/src")
-target_link_libraries(tui_tests PRIVATE typeit::tui ftxui::dom ftxui::component
+target_link_libraries(tui_tests PRIVATE typeit::tui typeit::infra ftxui::dom ftxui::screen ftxui::component
                                         GTest::gtest GTest::gtest_main)
+
+# The quantiser's distinguishability property is asserted over the theme files
+# this project actually ships, not over a copy of their values that could drift
+# from them — so the test links `infra` to read them. The *library* still
+# cannot: `tui.isolation.infra_is_unreachable` proves it, and a test binary is
+# not the library.
+target_compile_definitions(tui_tests PRIVATE TYPEIT_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
 
 include(GoogleTest)
 gtest_discover_tests(tui_tests DISCOVERY_TIMEOUT 60)

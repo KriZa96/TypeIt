@@ -19,12 +19,17 @@ add_test(NAME infra.lint.source_rules
          COMMAND "${CMAKE_COMMAND}" "-DTYPEIT_SOURCE_DIR=${CMAKE_SOURCE_DIR}" -P
                  "${CMAKE_SOURCE_DIR}/cmake/CheckLayerIsolation.cmake")
 
-add_executable(infra_tests AssetLocatorTest.cpp ConfigMigrationTest.cpp DependenciesTest.cpp DoctorTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp SqliteHistoryRepositoryTest.cpp SqliteTextLibraryRepositoryTest.cpp StdFileSystemTest.cpp TempEnvTest.cpp TomlConfigStoreTest.cpp)
+add_executable(infra_tests AssetLocatorTest.cpp ConfigMigrationTest.cpp DependenciesTest.cpp DoctorTest.cpp MigratorTest.cpp PlatformPathsTest.cpp SqliteDatabaseTest.cpp SqliteHistoryRepositoryTest.cpp SqliteTextLibraryRepositoryTest.cpp StdFileSystemTest.cpp TempEnvTest.cpp ThemeLoaderTest.cpp TomlConfigStoreTest.cpp)
 
 # typeit_version carries the generated header: a test that needs the
 # application version reads it rather than spelling one (VERSIONING section 6).
 target_link_libraries(infra_tests PRIVATE typeit::infra typeit::test_support typeit_version
                                          GTest::gtest GTest::gtest_main)
+
+# The shipped themes are read from the source tree, never through __FILE__
+# (defect C2): a test of the files must fail on the machine that edits them,
+# and the path is compiled in rather than guessed at runtime.
+target_compile_definitions(infra_tests PRIVATE TYPEIT_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
 
 include(GoogleTest)
 gtest_discover_tests(infra_tests DISCOVERY_TIMEOUT 60)

@@ -1,0 +1,23 @@
+# The default. Dark, low-contrast surfaces, saturated state colours — the four
+# typing states have to be told apart at a glance and nothing else does.
+theme_version = 1
+
+name        = "typeit-dark"
+author      = "TypeIt"
+description = "Default dark theme"
+
+[colors]
+background     = "#1e1e2e"
+surface        = "#313244"
+border         = "#45475a"
+text_pending   = "#6c7086"
+text_correct   = "#cdd6f4"
+text_incorrect = "#f38ba8"
+text_corrected = "#f9e2af"
+caret          = "#89b4fa"
+pacer          = "#a6e3a1"
+accent         = "#89b4fa"
+success        = "#a6e3a1"
+warning        = "#f9e2af"
+error          = "#f38ba8"
+muted          = "#585b70"

@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 
+#include "typeit/app/Capabilities.h"
 #include "typeit/core/Version.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/infra/Doctor.h"
@@ -86,93 +87,94 @@ namespace typeit::infra {
         // --- Capability detection, table-driven over UX section 6.2 ---------
 
         TEST(CapabilityDetectionTest, NoColorBeatsEverything) {
-            const Capabilities detected =
+            const app::Capabilities detected =
                     detect_capabilities(environment_of({{"NO_COLOR", "1"}, {"COLORTERM", "truecolor"}}));
 
-            EXPECT_EQ(detected.color, ColorDepth::Mono);
-            EXPECT_EQ(detected.glyphs, GlyphSet::Ascii);
+            EXPECT_EQ(detected.color, app::ColorDepth::Mono);
+            EXPECT_EQ(detected.glyphs, app::GlyphSet::Ascii);
             EXPECT_EQ(detected.reason, "NO_COLOR is set");
         }
 
         TEST(CapabilityDetectionTest, TheOverridesWin) {
-            const Capabilities colored = detect_capabilities(
+            const app::Capabilities colored = detect_capabilities(
                     environment_of({{"TYPEIT_COLOR", "256"}, {"COLORTERM", "truecolor"}, {"TERM", "dumb"}}));
-            EXPECT_EQ(colored.color, ColorDepth::Ansi256);
+            EXPECT_EQ(colored.color, app::ColorDepth::Ansi256);
             EXPECT_EQ(colored.reason, "TYPEIT_COLOR=256");
 
-            const Capabilities glyphed =
+            const app::Capabilities glyphed =
                     detect_capabilities(environment_of({{"TYPEIT_GLYPHS", "unicode"}, {"TERM", "dumb"}}));
-            EXPECT_EQ(glyphed.glyphs, GlyphSet::Unicode) << "a font that can draw a box is not a colour question";
-            EXPECT_EQ(glyphed.color, ColorDepth::Ansi16);
+            EXPECT_EQ(glyphed.glyphs, app::GlyphSet::Unicode) << "a font that can draw a box is not a colour question";
+            EXPECT_EQ(glyphed.color, app::ColorDepth::Ansi16);
             EXPECT_NE(glyphed.reason.find("TYPEIT_GLYPHS=unicode"), std::string::npos);
         }
 
         TEST(CapabilityDetectionTest, AnOverrideNobodyRecognisesIsIgnoredRatherThanObeyed) {
-            const Capabilities detected =
+            const app::Capabilities detected =
                     detect_capabilities(environment_of({{"TYPEIT_COLOR", "chartreuse"}, {"COLORTERM", "truecolor"}}));
 
-            EXPECT_EQ(detected.color, ColorDepth::TrueColor);
+            EXPECT_EQ(detected.color, app::ColorDepth::TrueColor);
             EXPECT_EQ(detected.reason, "COLORTERM=truecolor");
         }
 
         TEST(CapabilityDetectionTest, ColorTermMeansTrueColorInBothSpellings) {
-            EXPECT_EQ(detect_capabilities(environment_of({{"COLORTERM", "truecolor"}})).color, ColorDepth::TrueColor);
-            EXPECT_EQ(detect_capabilities(environment_of({{"COLORTERM", "24bit"}})).color, ColorDepth::TrueColor);
+            EXPECT_EQ(detect_capabilities(environment_of({{"COLORTERM", "truecolor"}})).color,
+                      app::ColorDepth::TrueColor);
+            EXPECT_EQ(detect_capabilities(environment_of({{"COLORTERM", "24bit"}})).color, app::ColorDepth::TrueColor);
             EXPECT_EQ(detect_capabilities(environment_of({{"COLORTERM", "24bit"}})).reason, "COLORTERM=24bit");
         }
 
         TEST(CapabilityDetectionTest, WindowsTerminalIsRecognisedByItsOwnVariable) {
             // It reports neither COLORTERM nor a useful TERM, and does both.
-            const Capabilities detected = detect_capabilities(environment_of({{"WT_SESSION", "abc-123"}}));
+            const app::Capabilities detected = detect_capabilities(environment_of({{"WT_SESSION", "abc-123"}}));
 
-            EXPECT_EQ(detected.color, ColorDepth::TrueColor);
-            EXPECT_EQ(detected.glyphs, GlyphSet::Unicode);
+            EXPECT_EQ(detected.color, app::ColorDepth::TrueColor);
+            EXPECT_EQ(detected.glyphs, app::GlyphSet::Unicode);
             EXPECT_NE(detected.reason.find("WT_SESSION"), std::string::npos);
         }
 
         TEST(CapabilityDetectionTest, A256ColorTermIsRecognisedAnywhereInTheName) {
-            const Capabilities detected = detect_capabilities(environment_of({{"TERM", "screen-256color"}}));
+            const app::Capabilities detected = detect_capabilities(environment_of({{"TERM", "screen-256color"}}));
 
-            EXPECT_EQ(detected.color, ColorDepth::Ansi256);
+            EXPECT_EQ(detected.color, app::ColorDepth::Ansi256);
             EXPECT_EQ(detected.reason, "TERM=screen-256color");
         }
 
         TEST(CapabilityDetectionTest, TheConsoleAndTheDumbTerminalGetTheFloor) {
             for (const std::string_view name: {"linux", "dumb"}) {
-                const Capabilities detected = detect_capabilities(environment_of({{"TERM", std::string{name}}}));
-                EXPECT_EQ(detected.color, ColorDepth::Ansi16) << name;
-                EXPECT_EQ(detected.glyphs, GlyphSet::Ascii) << name;
+                const app::Capabilities detected = detect_capabilities(environment_of({{"TERM", std::string{name}}}));
+                EXPECT_EQ(detected.color, app::ColorDepth::Ansi16) << name;
+                EXPECT_EQ(detected.glyphs, app::GlyphSet::Ascii) << name;
             }
         }
 
         TEST(CapabilityDetectionTest, AnUnknownTerminalGetsSomethingThatCertainlyWorks) {
-            const Capabilities nothing = detect_capabilities(environment_of({}));
-            EXPECT_EQ(nothing.color, ColorDepth::Ansi16);
-            EXPECT_EQ(nothing.glyphs, GlyphSet::Ascii);
+            const app::Capabilities nothing = detect_capabilities(environment_of({}));
+            EXPECT_EQ(nothing.color, app::ColorDepth::Ansi16);
+            EXPECT_EQ(nothing.glyphs, app::GlyphSet::Ascii);
             EXPECT_EQ(nothing.reason, "neither COLORTERM nor TERM is set");
 
-            const Capabilities unknown = detect_capabilities(environment_of({{"TERM", "vt52"}}));
-            EXPECT_EQ(unknown.color, ColorDepth::Ansi16);
+            const app::Capabilities unknown = detect_capabilities(environment_of({{"TERM", "vt52"}}));
+            EXPECT_EQ(unknown.color, app::ColorDepth::Ansi16);
             EXPECT_NE(unknown.reason.find("vt52"), std::string::npos);
         }
 
         TEST(CapabilityDetectionTest, AVariableSetToNothingIsAVariableNobodySet) {
             // What the whole Environment port means by "set", and what
             // no-color.org itself says about an empty NO_COLOR.
-            const Capabilities detected =
+            const app::Capabilities detected =
                     detect_capabilities(environment_of({{"NO_COLOR", ""}, {"COLORTERM", "truecolor"}}));
 
-            EXPECT_EQ(detected.color, ColorDepth::TrueColor);
+            EXPECT_EQ(detected.color, app::ColorDepth::TrueColor);
         }
 
         TEST(CapabilityDetectionTest, EveryValueHasAStableSpelling) {
             // These names go into `--doctor` output and into the config file.
-            EXPECT_EQ(to_string(ColorDepth::Mono), "mono");
-            EXPECT_EQ(to_string(ColorDepth::Ansi16), "16");
-            EXPECT_EQ(to_string(ColorDepth::Ansi256), "256");
-            EXPECT_EQ(to_string(ColorDepth::TrueColor), "truecolor");
-            EXPECT_EQ(to_string(GlyphSet::Ascii), "ascii");
-            EXPECT_EQ(to_string(GlyphSet::Unicode), "unicode");
+            EXPECT_EQ(to_string(app::ColorDepth::Mono), "mono");
+            EXPECT_EQ(to_string(app::ColorDepth::Ansi16), "16");
+            EXPECT_EQ(to_string(app::ColorDepth::Ansi256), "256");
+            EXPECT_EQ(to_string(app::ColorDepth::TrueColor), "truecolor");
+            EXPECT_EQ(to_string(app::GlyphSet::Ascii), "ascii");
+            EXPECT_EQ(to_string(app::GlyphSet::Unicode), "unicode");
         }
 
         // --- The report -----------------------------------------------------
@@ -183,7 +185,7 @@ namespace typeit::infra {
             const DoctorReport report = diagnose(an_examination({{"COLORTERM", "truecolor"}}));
 
             EXPECT_EQ(report.version, kVersionString);
-            EXPECT_EQ(report.capabilities.color, ColorDepth::TrueColor);
+            EXPECT_EQ(report.capabilities.color, app::ColorDepth::TrueColor);
             EXPECT_TRUE(report.database.exists);
             ASSERT_TRUE(report.database.schema_version.has_value());
             EXPECT_EQ(*report.database.schema_version, report.database.understood_version);

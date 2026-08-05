@@ -1,0 +1,28 @@
+# No colour at all. Every state is black, white or one of two greys, and the
+# renderer tells them apart with underline, reverse video and bold instead —
+# which is what makes TypeIt usable over a serial console and under NO_COLOR.
+#
+# The greys are deliberate rather than lazy: a terminal that *does* have colour
+# still renders this theme, and pending text receding from correct text is the
+# one distinction worth keeping when the rest are attributes.
+theme_version = 1
+
+name        = "mono"
+author      = "TypeIt"
+description = "No colour; states are attributes"
+
+[colors]
+background     = "#000000"
+surface        = "#000000"
+border         = "#ffffff"
+text_pending   = "#555555"
+text_correct   = "#ffffff"
+text_incorrect = "#aaaaaa"
+text_corrected = "#aaaaaa"
+caret          = "#ffffff"
+pacer          = "#ffffff"
+accent         = "#ffffff"
+success        = "#ffffff"
+warning        = "#ffffff"
+error          = "#ffffff"
+muted          = "#555555"
