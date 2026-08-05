@@ -225,15 +225,26 @@ namespace typeit::tui {
                         infra::load_theme(std::filesystem::path{TYPEIT_ASSETS_DIR} / "themes" / (name + ".toml"));
                 ASSERT_TRUE(loaded) << name;
 
-                for (const app::ColorDepth depth:
-                     {app::ColorDepth::Ansi16, app::ColorDepth::Ansi256, app::ColorDepth::TrueColor}) {
-                    std::set<std::string> seen;
-                    for (const app::ThemeColor which: kStateColors) {
-                        const ftxui::Color drawn = quantize(loaded->theme.color(which), depth);
-                        EXPECT_TRUE(seen.insert(drawn.Print(true)).second)
-                                << name << ": " << app::to_string(which) << " collapses into another state at "
-                                << app::to_string(depth);
-                    }
+                // Keyed on what the quantiser decided, not on the escape
+                // sequence FTXUI prints for it: `Color::Print` is not the thing
+                // under test, and CI's FTXUI does not spell it the way this
+                // machine's does — which made this test pass locally and fail
+                // there, for a reason that had nothing to do with colours.
+                std::set<std::uint32_t> at_256;
+                std::set<std::uint32_t> at_16;
+                std::set<std::uint32_t> exact;
+
+                for (const app::ThemeColor which: kStateColors) {
+                    const app::Rgb color = loaded->theme.color(which);
+                    const auto packed = static_cast<std::uint32_t>((color.red << 16U) | (color.green << 8U) |
+                                                                   color.blue);
+
+                    EXPECT_TRUE(exact.insert(packed).second)
+                            << name << ": " << app::to_string(which) << " collapses at truecolor";
+                    EXPECT_TRUE(at_256.insert(xterm256_index(color)).second)
+                            << name << ": " << app::to_string(which) << " collapses at 256";
+                    EXPECT_TRUE(at_16.insert(ansi16_index(color)).second)
+                            << name << ": " << app::to_string(which) << " collapses at 16";
                 }
             }
         }
