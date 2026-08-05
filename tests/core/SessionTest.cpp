@@ -77,11 +77,11 @@ namespace typeit::core {
 
         TEST(SessionTest, CarriesTheStartTimeItWasGiven) {
             auto mode = std::make_unique<testing::SpyMode>();
-            Result<std::unique_ptr<Session>> session = Session::create(
-                    Session::Parts{.mode = std::move(mode),
-                                   .provider = std::make_unique<WholeTextProvider>("hi"),
-                                   .rules = {}},
-                    Millis{5'000});
+            Result<std::unique_ptr<Session>> session =
+                    Session::create(Session::Parts{.mode = std::move(mode),
+                                                   .provider = std::make_unique<WholeTextProvider>("hi"),
+                                                   .rules = {}},
+                                    Millis{5'000});
 
             ASSERT_TRUE(session);
             EXPECT_EQ((*session)->started_at(), Millis{5'000});
@@ -163,11 +163,10 @@ namespace typeit::core {
             // this layer, with a message this one could not write.
             auto mode = std::make_unique<QuoteMode>();
             const QuoteMode* observer = mode.get();
-            Result<std::unique_ptr<Session>> session =
-                    Session::create(Session::Parts{.mode = std::move(mode),
-                                                   .provider = std::make_unique<WholeTextProvider>(""),
-                                                   .rules = {}},
-                                    Millis{0});
+            Result<std::unique_ptr<Session>> session = Session::create(
+                    Session::Parts{
+                            .mode = std::move(mode), .provider = std::make_unique<WholeTextProvider>(""), .rules = {}},
+                    Millis{0});
 
             ASSERT_TRUE(session);
             EXPECT_TRUE((*session)->model().at_end());

@@ -495,9 +495,13 @@ SessionScreen                 SessionService              core::Session
      │                                                          │
  [mode reports finished]                                        │
      ├──────── finish() ───────────►│ Metrics::compute(log)     │
-     │                              ├─► IHistoryRepository::save│
-     │                              ├─► update key/bigram stats │
-     │                              ├─► update personal bests   │
+     │                              ├─► IHistoryRepository::    │
+     │                              │   save_run(record, keys,  │
+     │                              │            errors)        │
+     │                              │   — one transaction: the  │
+     │                              │   session, its samples,   │
+     │                              │   its records and the     │
+     │                              │   lifetime totals         │
      │◄────────── SessionResult ────┤                           │
      │ push ResultsScreen                                       │
 ```

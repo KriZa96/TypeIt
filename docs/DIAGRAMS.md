@@ -451,6 +451,7 @@ classDiagram
     class IHistoryRepository {
         <<interface>>
         +save(SessionRecord) Result~SessionId~*
+        +save_run(SessionRecord, KeyStats, ErrorMap) Result~SessionId~*
         +query(HistoryFilter) Result~vector~SessionRow~~*
         +aggregates(HistoryFilter) Result~Aggregates~*
         +personal_bests() Result~vector~PersonalBest~~*
@@ -974,14 +975,14 @@ sequenceDiagram
     end
 
     MO-->>S: is_finished = true
-    SS->>SV: finish(session)
+    SS->>SV: finish(run, Outcome)
     SV->>SV: Metrics.compute(log, target)
     activate SV
-    Note over SV,R: one transaction
-    SV->>R: save(SessionRecord)
-    SV->>R: save samples
-    SV->>R: merge_key_stats / bigrams / error pairs
-    SV->>R: update personal bests (only if completed and acc >= 90%)
+    Note over SV,R: one call, one transaction
+    SV->>R: save_run(SessionRecord, KeyStats, ErrorMap)
+    R->>R: session + samples
+    R->>R: personal bests (only if completed and acc >= 90%)
+    R->>R: key / bigram / error-pair totals
     R-->>SV: SessionId
     deactivate SV
     SV-->>SS: SessionResult

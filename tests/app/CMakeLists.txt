@@ -1,9 +1,12 @@
 # The app layer's tests. The layer rule — app sees core and never infra — is
 # checked by infra.lint.source_rules, which reads the sources rather than
 # relying on an include path that a system package would defeat anyway.
-add_executable(app_tests ConfigServiceTest.cpp HistoryServiceTest.cpp PortsTest.cpp ProfileServiceTest.cpp TextLibraryServiceTest.cpp)
+add_executable(app_tests ConfigServiceTest.cpp HistoryServiceTest.cpp PortsTest.cpp ProfileServiceTest.cpp SessionServiceTest.cpp TextLibraryServiceTest.cpp)
 
-target_link_libraries(app_tests PRIVATE typeit::app typeit::test_support GTest::gtest GTest::gtest_main)
+# typeit_version carries the generated header: the run record's app_version is
+# read from it, and the test asserts that rather than a literal.
+target_link_libraries(app_tests PRIVATE typeit::app typeit::test_support typeit_version
+                                        GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(app_tests DISCOVERY_TIMEOUT 60)

@@ -57,8 +57,7 @@ namespace typeit::infra {
         /// way `save`, `save_run` and the two merges can share this code
         /// without any of them silently committing another's work.
         [[nodiscard]] core::Result<core::SessionId> write_run(const app::SessionRecord& record,
-                                                              const core::KeyStats& keys,
-                                                              const core::ErrorMap& errors);
+                                                              const core::KeyStats& keys, const core::ErrorMap& errors);
 
         [[nodiscard]] core::Result<core::SessionId> write_session(const app::SessionRecord& record);
         [[nodiscard]] core::Status write_samples(core::SessionId session, const app::SessionRecord& record);

@@ -246,6 +246,11 @@ class IHistoryRepository {
 public:
     virtual ~IHistoryRepository() = default;
     virtual Result<SessionId>              save(const SessionRecord&)                     = 0;
+    // A finished run, whole, in one transaction — TI-068. Three separate calls
+    // cannot be made atomic from above, and a partial write is unrecoverable:
+    // merging the stats again would double-count the run that did land.
+    virtual Result<SessionId>              save_run(const SessionRecord&, const KeyStats&,
+                                                    const ErrorMap&)                      = 0;
     virtual Result<std::vector<SessionRow>> query(const HistoryFilter&)  const            = 0;
     virtual Result<Aggregates>             aggregates(const HistoryFilter&) const         = 0;
     virtual Result<std::vector<PersonalBest>> personal_bests()            const           = 0;

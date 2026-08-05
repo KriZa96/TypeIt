@@ -73,8 +73,20 @@ all in one transaction.
 - Two sequential sessions do not share state — the regression guard for the deleted globals.
 
 **Acceptance**
-- [ ] Failure at every persistence step is tested and leaves no partial write.
-- [ ] No global state is read or written anywhere in the service.
+- [x] Failure at every persistence step is tested and leaves no partial write. The port grew
+      `save_run(record, key_stats, error_map)` for this: `save` + `merge_key_stats` +
+      `merge_error_map` are three transactions and cannot be made atomic from above, and a
+      partial write is unrecoverable because merging the stats again double-counts the run
+      that did land. The write failing outright is `SessionServiceTest`'s; a failure *after*
+      the session row and the personal best is `HistoryRepositoryContract`'s, injected through
+      the one mid-transaction failure the schema affords — `session_sample`'s
+      `(session_id, t_ms)` primary key — and run against both the SQLite adapter and the fake.
+- [x] No global state is read or written anywhere in the service. Both methods are `const`,
+      and everything a finished run is filed under travels in the caller's `ActiveRun`, so two
+      sessions in one process share nothing — asserted by `TwoSequentialSessionsShareNoState`.
+- [x] `core::Session` was created here. ARCHITECTURE §5.2 specifies it and this issue says to
+      construct one, but no issue ever added it. It is immovable and handed out through a
+      `unique_ptr`, because `TypingModel` holds a span into the `TextBuffer` it owns.
 
 ---
 
