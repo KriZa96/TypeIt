@@ -299,6 +299,21 @@ user to run when they report a rendering problem in an unfamiliar terminal.
 - Output is byte-identical across runs for the same database.
 - Piping to a closed stdout does not crash (SIGPIPE handling).
 
+**Acceptance**
+- [x] Neither `--stats` nor `--export` computes anything: `HistoryService` already answers
+      every question, and a function that only forwards is a function that only forwards. What
+      landed here is the part that is genuinely presentation — `1h 12m` rather than
+      milliseconds, and a sentence rather than a table of zeros for a history with nothing in
+      it.
+- [x] Both write through `app::json::number`, the same spelling `--export` and `--simulate`
+      use. Reporting one run's accuracy as 96.3 in one place and 96.300000 in another would be
+      a difference nobody could explain.
+- [x] No date is printed with a personal best: formatting one needs a calendar this layer has
+      no business owning, and `--export` carries the raw numbers for anyone who wants more.
+- [ ] **SIGPIPE waits for the binary.** Whether writing to a closed stdout kills the process
+      is a property of `main`, not of a function returning a string, and there is no `main`
+      yet — see the phase exit note. Ticked in TI-078, which builds the composition root.
+
 ---
 
 ## TI-078 — Version wiring end to end
