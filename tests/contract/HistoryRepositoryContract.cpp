@@ -16,7 +16,9 @@
 
 #include "typeit/app/ports/IHistoryRepository.h"
 #include "typeit/app/records/History.h"
+#include "typeit/core/metrics/ErrorMap.h"
 #include "typeit/core/metrics/KeyStats.h"
+#include "typeit/core/metrics/Timeline.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/infra/db/Migrator.h"
@@ -275,6 +277,51 @@ namespace typeit {
             const core::Result<std::vector<app::PersonalBest>> bests = this->repository().personal_bests();
             ASSERT_TRUE(bests);
             EXPECT_TRUE(bests->empty()) << "a record cannot be bought by typing nonsense quickly";
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, ARunIsSavedWithItsStatsInOneCall) {
+            app::SessionRecord record = TestFixture::a_run();
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0}, .wpm = core::Wpm{90.0}});
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{1'000}, .wpm = core::Wpm{110.0}});
+
+            core::KeyStats stats;
+            stats.per_grapheme["a"] = core::KeyStat{.attempts = 5, .errors = 1};
+            stats.per_bigram["ab"] = core::KeyStat{.attempts = 4, .errors = 1};
+            core::ErrorMap errors;
+            errors.substitutions[{"m", "n"}] = 2;
+
+            const core::Result<core::SessionId> id = this->repository().save_run(record, stats, errors);
+
+            ASSERT_TRUE(id) << (id ? "" : id.error().context);
+            EXPECT_EQ(this->repository().query({}).value_or(std::vector<app::SessionRow>{}).size(), 1U);
+            const core::Result<core::KeyStats> merged = this->repository().key_stats({});
+            ASSERT_TRUE(merged);
+            EXPECT_EQ(merged->per_grapheme.at("a").attempts, 5U);
+            EXPECT_EQ(merged->per_bigram.at("ab").attempts, 4U);
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, AFailureAfterTheSessionRowLeavesNothingBehind) {
+            // The property TI-068 turns on: the run is written whole or not at
+            // all. Two samples at the same millisecond violate
+            // `session_sample`'s primary key, which fails *after* the session
+            // row and the personal best have been written — so a repository
+            // that did not roll back would leave a run with no timeline and a
+            // record it never earned.
+            app::SessionRecord record = TestFixture::a_run();
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0}, .wpm = core::Wpm{90.0}});
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0}, .wpm = core::Wpm{110.0}});
+
+            core::KeyStats stats;
+            stats.per_grapheme["a"] = core::KeyStat{.attempts = 5, .errors = 1};
+
+            const core::Result<core::SessionId> id = this->repository().save_run(record, stats, {});
+
+            ASSERT_FALSE(id) << "a duplicate sample timestamp is not something to accept quietly";
+            EXPECT_TRUE(this->repository().query({}).value_or(std::vector<app::SessionRow>{}).empty());
+            EXPECT_TRUE(this->repository().personal_bests().value_or(std::vector<app::PersonalBest>{}).empty());
+            const core::Result<core::KeyStats> merged = this->repository().key_stats({});
+            ASSERT_TRUE(merged);
+            EXPECT_TRUE(merged->per_grapheme.empty());
         }
 
         TYPED_TEST(HistoryRepositoryContract, KeyStatsMergeRatherThanReplace) {

@@ -57,11 +57,54 @@ namespace typeit::infra {
     Result<core::SessionId> SqliteHistoryRepository::save(const app::SessionRecord& record) {
         // One transaction for the session, its samples and its records. A run
         // is one fact; half of it is worse than none of it.
+        return save_run(record, {}, {});
+    }
+
+    Result<core::SessionId> SqliteHistoryRepository::save_run(const app::SessionRecord& record,
+                                                              const core::KeyStats& keys,
+                                                              const core::ErrorMap& errors) {
         Result<Transaction> transaction = database_->begin();
         if (!transaction) {
             return std::unexpected{transaction.error()};
         }
 
+        const Result<core::SessionId> session = write_run(record, keys, errors);
+        if (!session) {
+            // The transaction's destructor rolls back. Returning here rather
+            // than committing is the whole guarantee: a failure at the fourth
+            // write undoes the first three.
+            return std::unexpected{session.error()};
+        }
+
+        if (const Status committed = transaction->commit(); !committed) {
+            return std::unexpected{committed.error()};
+        }
+        return *session;
+    }
+
+    Result<core::SessionId> SqliteHistoryRepository::write_run(const app::SessionRecord& record,
+                                                               const core::KeyStats& keys,
+                                                               const core::ErrorMap& errors) {
+        const Result<core::SessionId> session = write_session(record);
+        if (!session) {
+            return session;
+        }
+        if (const Status samples = write_samples(*session, record); !samples) {
+            return std::unexpected{samples.error()};
+        }
+        if (const Status bests = update_personal_bests(*session, record); !bests) {
+            return std::unexpected{bests.error()};
+        }
+        if (const Status merged = write_key_stats(keys); !merged) {
+            return std::unexpected{merged.error()};
+        }
+        if (const Status merged = write_error_pairs(errors); !merged) {
+            return std::unexpected{merged.error()};
+        }
+        return session;
+    }
+
+    Result<core::SessionId> SqliteHistoryRepository::write_session(const app::SessionRecord& record) {
         Result<Statement> insert = database_->prepare(
                 "INSERT INTO session (started_at, ended_at, mode, mode_param, text_id, provider, provider_seed,"
                 " duration_ms, graphemes_typed, graphemes_correct, errors_total, errors_uncorrected, backspaces,"
@@ -118,18 +161,7 @@ namespace typeit::infra {
         if (!id) {
             return std::unexpected{id.error()};
         }
-        const core::SessionId session{*id};
-
-        if (const Status samples = write_samples(session, record); !samples) {
-            return std::unexpected{samples.error()};
-        }
-        if (const Status bests = update_personal_bests(session, record); !bests) {
-            return std::unexpected{bests.error()};
-        }
-        if (const Status committed = transaction->commit(); !committed) {
-            return std::unexpected{committed.error()};
-        }
-        return session;
+        return core::SessionId{*id};
     }
 
     Status SqliteHistoryRepository::write_samples(core::SessionId session, const app::SessionRecord& record) {
@@ -326,6 +358,18 @@ namespace typeit::infra {
         if (!transaction) {
             return std::unexpected{transaction.error()};
         }
+        if (const Status written = write_key_stats(stats); !written) {
+            return written;
+        }
+        return transaction->commit();
+    }
+
+    Status SqliteHistoryRepository::write_key_stats(const core::KeyStats& stats) {
+        // Nothing to merge is not a reason to prepare two statements. `save`
+        // reaches here with empty totals on every call.
+        if (stats.per_grapheme.empty() && stats.per_bigram.empty()) {
+            return {};
+        }
 
         Result<Statement> keys = database_->prepare(
                 "INSERT INTO key_stat (grapheme, attempts, errors, total_latency_ms) VALUES (?1, ?2, ?3, ?4)"
@@ -367,7 +411,7 @@ namespace typeit::infra {
             }
         }
 
-        return transaction->commit();
+        return {};
     }
 
     Result<core::KeyStats> SqliteHistoryRepository::key_stats(const app::HistoryFilter& /*filter*/) const {
@@ -428,6 +472,16 @@ namespace typeit::infra {
         if (!transaction) {
             return std::unexpected{transaction.error()};
         }
+        if (const Status written = write_error_pairs(errors); !written) {
+            return written;
+        }
+        return transaction->commit();
+    }
+
+    Status SqliteHistoryRepository::write_error_pairs(const core::ErrorMap& errors) {
+        if (errors.substitutions.empty()) {
+            return {};
+        }
 
         Result<Statement> upsert = database_->prepare(
                 "INSERT INTO error_pair (expected, typed, count) VALUES (?1, ?2, ?3)"
@@ -444,7 +498,7 @@ namespace typeit::infra {
             }
         }
 
-        return transaction->commit();
+        return {};
     }
 
     Result<core::Wpm> SqliteHistoryRepository::best_sustained_wpm(core::Days window) const {

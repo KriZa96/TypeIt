@@ -67,24 +67,14 @@ namespace typeit::testing {
     public:
         [[nodiscard]] core::Result<core::SessionId> save(const app::SessionRecord& record) override {
             TYPEIT_FAIL_IF_ARMED()
-            ++saves;
+            return write_run(record, {}, {});
+        }
 
-            const core::SessionId id{next_id_++};
-            records.push_back(record);
-            rows.push_back(app::SessionRow{
-                    .id = id,
-                    .started_at = record.started_at,
-                    .mode = record.mode,
-                    .mode_param = record.mode_param,
-                    .duration = record.duration,
-                    .net_wpm = record.net_wpm,
-                    .gross_wpm = record.gross_wpm,
-                    .accuracy = record.accuracy,
-                    .consistency = record.consistency,
-                    .completed = record.completed,
-            });
-            update_bests(id, record);
-            return id;
+        [[nodiscard]] core::Result<core::SessionId> save_run(const app::SessionRecord& record,
+                                                             const core::KeyStats& stats,
+                                                             const core::ErrorMap& map) override {
+            TYPEIT_FAIL_IF_ARMED()
+            return write_run(record, stats, map);
         }
 
         [[nodiscard]] core::Result<std::vector<app::SessionRow>> query(
@@ -156,13 +146,7 @@ namespace typeit::testing {
         [[nodiscard]] core::Status merge_key_stats(const core::KeyStats& stats) override {
             TYPEIT_FAIL_IF_ARMED()
             ++merges;
-
-            for (const auto& [grapheme, stat]: stats.per_grapheme) {
-                add_to(keys.per_grapheme[grapheme], stat);
-            }
-            for (const auto& [bigram, stat]: stats.per_bigram) {
-                add_to(keys.per_bigram[bigram], stat);
-            }
+            merge_into(stats);
             return {};
         }
 
@@ -173,10 +157,7 @@ namespace typeit::testing {
 
         [[nodiscard]] core::Status merge_error_map(const core::ErrorMap& map) override {
             TYPEIT_FAIL_IF_ARMED()
-
-            for (const auto& [pair, count]: map.substitutions) {
-                errors.substitutions[pair] += count;
-            }
+            merge_into(map);
             return {};
         }
 
@@ -210,6 +191,58 @@ namespace typeit::testing {
         std::size_t merges = 0;
 
     private:
+        /// Applies every write of a run, or none of them.
+        ///
+        /// Atomicity here is not a formality copied from the SQL: the sample
+        /// primary key is `(session_id, t_ms)`, so a timeline with a repeated
+        /// timestamp fails the real adapter **after** the session row is
+        /// written. A fake that accepted it would let a service test pass over
+        /// a database that would have rolled the run back.
+        [[nodiscard]] core::Result<core::SessionId> write_run(const app::SessionRecord& record,
+                                                              const core::KeyStats& stats, const core::ErrorMap& map) {
+            std::set<std::int64_t> seen;
+            for (const core::TimelineSample& sample: record.timeline) {
+                if (!seen.insert(sample.at.value).second) {
+                    return core::fail(core::ErrorCode::DbQuery, "UNIQUE constraint failed: session_sample.t_ms");
+                }
+            }
+
+            ++saves;
+            const core::SessionId id{next_id_++};
+            records.push_back(record);
+            rows.push_back(app::SessionRow{
+                    .id = id,
+                    .started_at = record.started_at,
+                    .mode = record.mode,
+                    .mode_param = record.mode_param,
+                    .duration = record.duration,
+                    .net_wpm = record.net_wpm,
+                    .gross_wpm = record.gross_wpm,
+                    .accuracy = record.accuracy,
+                    .consistency = record.consistency,
+                    .completed = record.completed,
+            });
+            update_bests(id, record);
+            merge_into(stats);
+            merge_into(map);
+            return id;
+        }
+
+        void merge_into(const core::KeyStats& stats) {
+            for (const auto& [grapheme, stat]: stats.per_grapheme) {
+                add_to(keys.per_grapheme[grapheme], stat);
+            }
+            for (const auto& [bigram, stat]: stats.per_bigram) {
+                add_to(keys.per_bigram[bigram], stat);
+            }
+        }
+
+        void merge_into(const core::ErrorMap& map) {
+            for (const auto& [pair, count]: map.substitutions) {
+                errors.substitutions[pair] += count;
+            }
+        }
+
         static void add_to(core::KeyStat& into, const core::KeyStat& from) {
             into.attempts += from.attempts;
             into.errors += from.errors;
