@@ -339,14 +339,31 @@ changes, which is the whole resize story.
 class ScreenStack {
 public:
     void push(std::shared_ptr<IScreen>);
-    void pop();
+    void pop();                             // refused when it would empty the stack
     void replace(std::shared_ptr<IScreen>);
     [[nodiscard]] IScreen& top();
+
+    [[nodiscard]] ftxui::Element render();  // the top screen, and only it
+    [[nodiscard]] bool on_event(ftxui::Event);
 };
 ```
 
 Replaces the five booleans in the current `GameState`. Only the top screen renders and
-receives events. `IScreen` exposes `Render()`, `OnEvent()`, and `title()`.
+receives events. `IScreen` exposes `render()`, `on_event()`, and `title()` — snake_case per
+[STYLE §2](STYLE.md), unlike `TypingArea` above, whose `Render()` and `OnEvent()` are FTXUI's
+names because it genuinely overrides `ftxui::ComponentBase`.
+
+Two decisions the sketch does not show. **Popping the last screen is refused**: an empty stack
+renders nothing and answers no key, so a program that popped its last screen would be a black
+terminal that ignores the keyboard — leaving is `TerminalApp::quit()`, which says so.
+**Mutation during dispatch is deferred** to the end of the frame: a screen that pushes another
+from inside `on_event` is the ordinary case, and applying it immediately would destroy the
+object whose method is still on the call stack.
+
+`ScreenStack` and `IScreen` are internal to `typeit::tui` rather than part of its public
+headers, because they name `ftxui::Element` and `ftxui::Event` and FTXUI is linked `PRIVATE`.
+The library's public surface is `TerminalApp`: the composition root asks for an application,
+not for a rendering vocabulary.
 
 ### 3.3 Theme and capability detection
 

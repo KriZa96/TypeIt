@@ -5,10 +5,16 @@
 # directories, and the header is clean so a consumer could not use them if it
 # had them. `apps/typeit` is the only place FTXUI and SQLite are both visible,
 # and it sees neither through a header of ours.
-add_library(typeit_tui STATIC src/FrameTicker.cpp src/TerminalApp.cpp)
+add_library(typeit_tui STATIC src/FrameTicker.cpp src/ScreenStack.cpp src/TerminalApp.cpp)
 add_library(typeit::tui ALIAS typeit_tui)
 
-target_include_directories(typeit_tui PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
+# The public surface is `include/`, which names nothing from FTXUI. `src/`
+# holds the headers that do — `IScreen` speaks in `ftxui::Element` — and is
+# private: the composition root asks for an application, not for a rendering
+# vocabulary. tests/tui reaches in deliberately, which is what a white-box test
+# of a library's internals is.
+target_include_directories(typeit_tui PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                      PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 target_link_libraries(typeit_tui PUBLIC typeit::core typeit::app)
 target_link_libraries(typeit_tui PRIVATE ftxui::dom ftxui::screen ftxui::component)

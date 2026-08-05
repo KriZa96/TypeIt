@@ -35,9 +35,14 @@ if(TYPEIT_BUILD_PROBES)
                          PROPERTIES WILL_FAIL TRUE)
 endif()
 
-add_executable(tui_tests FrameTickerTest.cpp TerminalAppTest.cpp)
+add_executable(tui_tests FrameTickerTest.cpp ScreenStackTest.cpp TerminalAppTest.cpp)
 
-target_link_libraries(tui_tests PRIVATE typeit::tui GTest::gtest GTest::gtest_main)
+# Reaching into `libs/tui/src` on purpose: `ScreenStack` and `IScreen` are
+# internal because they name FTXUI, and testing them means speaking FTXUI too.
+# The isolation probes above still hold — they link `typeit::tui` alone.
+target_include_directories(tui_tests PRIVATE "${CMAKE_SOURCE_DIR}/libs/tui/src")
+target_link_libraries(tui_tests PRIVATE typeit::tui ftxui::dom ftxui::component
+                                        GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(tui_tests DISCOVERY_TIMEOUT 60)

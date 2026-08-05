@@ -96,7 +96,24 @@ Navigation as an explicit stack, replacing the five interacting booleans in the 
 - Push during event handling is deferred to the end of the frame, not applied mid-dispatch.
 
 **Acceptance**
-- [ ] No boolean navigation flag exists anywhere in `tui`.
+- [x] No boolean navigation flag exists anywhere in `tui`. Where the program is has exactly one
+      representation — the stack — and nothing else can disagree with it. The five booleans
+      that remain in the layer are not navigation: `dispatching_` is a re-entrancy guard for
+      one function, `quitting` is the application's lifecycle, and the ticker's three are
+      thread and rate state.
+- [x] Popping the last screen is **refused**, which is the documented choice this issue leaves
+      open. An empty stack renders nothing and answers no key, so a program that popped its
+      last screen would be a black terminal that ignores the keyboard. Leaving is
+      `TerminalApp::quit()`, which says so.
+- [x] `ScreenStack` and `IScreen` are internal to the library, not public headers: they name
+      `ftxui::Element` and `ftxui::Event`, and TI-079's guarantee is that FTXUI stops at this
+      library's edge. `tests/tui` reaches into `libs/tui/src` deliberately — that is what a
+      white-box test of a library's internals is — and the isolation probes still link
+      `typeit::tui` alone.
+- [x] `IScreen` uses snake_case, unlike TECHNICAL §3.2's original sketch. Those were FTXUI's
+      names, correct on `TypingArea` because it overrides `ftxui::ComponentBase`; `IScreen`
+      overrides nothing, so STYLE.md applies. The sketch has been updated to match rather than
+      left to contradict the code.
 
 ---
 
