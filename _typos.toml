@@ -12,6 +12,9 @@ configurably = "configurably" # standard adverb; typos 1.49 disagrees, 1.34 does
 # 1.34: better to declare them now than to have a version bump fail a build for
 # a typo somebody meant.
 tiemd = "tiemd"
+# ScriptParserTest quotes a mistyped verb back to the reader, which only works
+# if the verb is actually mistyped (TI-075).
+tpye = "tpye"
 
 [files]
 # Added 2026-07-31 (CI-006). These two paragraphs quote the misspellings that
