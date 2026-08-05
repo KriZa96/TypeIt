@@ -35,7 +35,7 @@ if(TYPEIT_BUILD_PROBES)
                          PROPERTIES WILL_FAIL TRUE)
 endif()
 
-add_executable(tui_tests TerminalAppTest.cpp)
+add_executable(tui_tests FrameTickerTest.cpp TerminalAppTest.cpp)
 
 target_link_libraries(tui_tests PRIVATE typeit::tui GTest::gtest GTest::gtest_main)
 

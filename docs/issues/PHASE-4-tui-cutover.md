@@ -58,8 +58,24 @@ state.
   countdown latch on posted events rather than wall-clock waits.
 
 **Acceptance**
-- [ ] No `sleep_for` in the tests; the file runs in well under 100 ms.
-- [ ] The ticker holds no reference to any model type.
+- [x] No `sleep_for` in the tests — the word appears once, in a comment saying so. Every wait
+      is a condition variable on posted events, which is both exact and instant: the file runs
+      in **70–80 ms** against the three seconds the five `ScreenTest` cases spent sleeping.
+      Not the "well under 100 ms" this issue asked for, and the remainder is inherent: a
+      hundred thread create/join cycles cost about 20 ms of pure OS work, and watching an
+      interval lengthen means waiting out one lengthened interval. The intervals are injectable
+      so the tests choose milliseconds rather than the shipped 60/500.
+- [x] The ticker holds no reference to any model type. It holds a `std::function<void()>` and
+      nothing else; the header names no domain type at all.
+- [x] Verified under TSan as well as ASan — this is the first thread in the rebuild, which is
+      what the nightly TSan job was put there for. `tui_tests` is clean with
+      `-fsanitize=thread -fno-sanitize-recover=all`. The nightly job itself cannot run yet and
+      will not link when it does, for a reason that predates this issue: see the note under
+      [CI-013](PHASE-0A-cicd.md#ci-013--nightly-workflow).
+- [x] `FrameIntervals` is at namespace scope rather than nested in `FrameTicker`. A nested
+      type's default member initialisers are not parsed until the enclosing class is complete,
+      so `Intervals intervals = {}` as a default argument inside the class body is ill-formed —
+      accepted by gcc, rejected by clang, and therefore a CI failure rather than a local one.
 
 ---
 

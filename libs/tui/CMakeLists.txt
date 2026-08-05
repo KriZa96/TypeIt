@@ -5,7 +5,7 @@
 # directories, and the header is clean so a consumer could not use them if it
 # had them. `apps/typeit` is the only place FTXUI and SQLite are both visible,
 # and it sees neither through a header of ours.
-add_library(typeit_tui STATIC src/TerminalApp.cpp)
+add_library(typeit_tui STATIC src/FrameTicker.cpp src/TerminalApp.cpp)
 add_library(typeit::tui ALIAS typeit_tui)
 
 target_include_directories(typeit_tui PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")

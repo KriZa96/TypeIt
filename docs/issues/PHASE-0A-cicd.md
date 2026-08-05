@@ -323,6 +323,20 @@ The slow, rarely-broken checks.
 > `404: not found on the default branch`. The seven push-triggered workflows all run and are
 > green. The three activate the moment `v2` becomes `main` (TI-097), and verifying them is part
 > of that cutover rather than something a `v2` push can do.
+>
+> **Found in TI-080, and waiting for that same cutover: the TSan job will not link.**
+> `tests/support`'s allocation counter replaces global `operator new`/`delete`, and so does
+> TSan's runtime — `libclang_rt.tsan_cxx` reports a multiple definition of every one of them,
+> so `core_tests` fails to link before a single test runs. The same reasoning that keeps the
+> counter out of `test_support` applies here: a binary built with a sanitizer that owns the
+> allocator must not link it. The fix is a compile-time opt-out plus a `GTEST_SKIP` in the two
+> tests that count allocations, and it belongs to whoever first makes this workflow run,
+> because until then there is nothing to check it against.
+>
+> TI-080's ticker — the first thread in the rebuild, and the reason the job exists — was
+> verified under TSan directly: `tui_tests` builds and passes clean with
+> `-fsanitize=thread -fno-sanitize-recover=all`, including the hundred construct/destruct
+> cycles and the destruction-during-a-post case.
 
 ---
 
