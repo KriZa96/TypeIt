@@ -228,10 +228,13 @@ namespace typeit::cli {
         }
 
         TEST(CliParserTest, AnIdentifierIsPositive) {
-            EXPECT_EQ(refusal({"--text-id", "0"}).substr(0, 20), "--text-id = 0 (expec");
-            EXPECT_EQ(refusal({"--remove-text", "-3"}).substr(0, 21), "--remove-text = -3 (e");
-            EXPECT_EQ(refusal({"--section", "0"}).substr(0, 18), "--section = 0 (exp");
-            EXPECT_EQ(refusal({"--last", "0"}).substr(0, 15), "--last = 0 (exp");
+            // The upper bound is int64's, which is not worth spelling out in an
+            // expectation; what matters is that the value and the floor are
+            // both named.
+            EXPECT_NE(refusal({"--text-id", "0"}).find("--text-id = 0 (expected 1.."), std::string::npos);
+            EXPECT_NE(refusal({"--remove-text", "-3"}).find("--remove-text = -3 (expected 1.."), std::string::npos);
+            EXPECT_NE(refusal({"--section", "0"}).find("--section = 0 (expected 1.."), std::string::npos);
+            EXPECT_NE(refusal({"--last", "0"}).find("--last = 0 (expected 1.."), std::string::npos);
         }
 
         // --- Vocabularies -----------------------------------------------
