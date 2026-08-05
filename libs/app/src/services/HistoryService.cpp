@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 
+#include "typeit/app/Json.h"
 #include "typeit/app/records/History.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
@@ -52,60 +53,6 @@ namespace typeit::app {
                 out += byte;
             }
             out += '"';
-        }
-
-        void append_json_string(std::string& out, std::string_view value) {
-            out += '"';
-            for (const char byte: value) {
-                switch (byte) {
-                    case '"':
-                        out += "\\\"";
-                        break;
-                    case '\\':
-                        out += "\\\\";
-                        break;
-                    case '\n':
-                        out += "\\n";
-                        break;
-                    case '\r':
-                        out += "\\r";
-                        break;
-                    case '\t':
-                        out += "\\t";
-                        break;
-                    default:
-                        if (static_cast<unsigned char>(byte) < 0x20) {
-                            // The control characters JSON has no short escape
-                            // for. Everything above them, UTF-8 included,
-                            // passes through as itself.
-                            constexpr std::string_view kHex = "0123456789abcdef";
-                            out += "\\u00";
-                            out += kHex.at((static_cast<unsigned char>(byte) >> 4U) & 0xFU);
-                            out += kHex.at(static_cast<unsigned char>(byte) & 0xFU);
-                        } else {
-                            out += byte;
-                        }
-                        break;
-                }
-            }
-            out += '"';
-        }
-
-        /// Shortest round-trippable form, and never `nan` or `inf`, which are
-        /// not JSON and which no spreadsheet reads either. The metrics cannot
-        /// produce them; a column that could would be a column that breaks
-        /// every consumer of the export.
-        std::string number(double value) {
-            if (!(value == value) || value > 1e308 || value < -1e308) {
-                return "0";
-            }
-            std::string text = std::to_string(value);
-            // std::to_string gives six decimals; trim the ones that say nothing.
-            const std::size_t last = text.find_last_not_of('0');
-            if (text.contains('.') && last != std::string::npos) {
-                text.erase(text.at(last) == '.' ? last : last + 1);
-            }
-            return text;
         }
 
     }  // namespace
@@ -201,13 +148,13 @@ namespace typeit::app {
             out += ',';
             out += std::to_string(row.duration.value);
             out += ',';
-            out += number(row.net_wpm.value);
+            out += json::number(row.net_wpm.value);
             out += ',';
-            out += number(row.gross_wpm.value);
+            out += json::number(row.gross_wpm.value);
             out += ',';
-            out += number(row.accuracy.value);
+            out += json::number(row.accuracy.value);
             out += ',';
-            out += number(row.consistency);
+            out += json::number(row.consistency);
             out += ',';
             out += row.completed ? "1" : "0";
             out += '\n';
@@ -231,14 +178,14 @@ namespace typeit::app {
             out += R"({"id":)" + std::to_string(row.id.value);
             out += R"(,"started_at":)" + std::to_string(row.started_at.value);
             out += R"(,"mode":)";
-            append_json_string(out, row.mode);
+            json::append_string(out, row.mode);
             out += R"(,"mode_param":)";
-            append_json_string(out, row.mode_param);
+            json::append_string(out, row.mode_param);
             out += R"(,"duration_ms":)" + std::to_string(row.duration.value);
-            out += R"(,"net_wpm":)" + number(row.net_wpm.value);
-            out += R"(,"gross_wpm":)" + number(row.gross_wpm.value);
-            out += R"(,"accuracy":)" + number(row.accuracy.value);
-            out += R"(,"consistency":)" + number(row.consistency);
+            out += R"(,"net_wpm":)" + json::number(row.net_wpm.value);
+            out += R"(,"gross_wpm":)" + json::number(row.gross_wpm.value);
+            out += R"(,"accuracy":)" + json::number(row.accuracy.value);
+            out += R"(,"consistency":)" + json::number(row.consistency);
             out += R"(,"completed":)";
             out += row.completed ? "true" : "false";
             out += '}';
