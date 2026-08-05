@@ -291,9 +291,20 @@ the actual source of the ćčšđž problem the README attributes to FTXUI.
 - `blind_mode` hides state colouring until the run ends.
 
 **Acceptance**
-- [ ] `git grep "ftxui::Input"` returns nothing in `tui`.
-- [ ] The render-purity test passes.
-- [ ] The multi-byte test passes, closing the README's documented limitation.
+- [x] `git grep "ftxui::Input"` returns nothing in `tui`. The widget consumes `Event::Character`
+      directly, which is the whole of ADR-011.
+- [x] The render-purity test passes — and asserts both halves: the same pixels twice, and the
+      model byte-identical afterwards (states, cursor and log length). A widget that redrew
+      correctly while advancing the log would pass a pixel comparison alone.
+- [x] The multi-byte test passes, closing the README's documented limitation. It is not FTXUI:
+      `Event::Character` has always carried the whole UTF-8 sequence, and 1.0 reads back
+      `input_text_.back()` — one byte of it. `ćčšđž` all work, one keystroke each.
+- [x] A paste (one event, several graphemes) is **typed in turn** rather than dropped. Losing
+      all but the first would leave the model disagreeing with what the screen shows, which is
+      worse than either accepting or refusing it.
+- [x] The widget drives `core::Session`, not `TypingModel` directly, so the mode hears about
+      every keystroke exactly as it does in a scripted run — one code path, not two.
+      TECHNICAL §3.1's sketch predates `Session`.
 
 ---
 
@@ -416,9 +427,17 @@ supports this and the current project uses none of it.
 - Out: individual snapshots (they live with their widgets).
 
 **Acceptance**
-- [ ] Goldens are plain text and reviewable as code in a diff.
-- [ ] Updating a golden is deliberate and visible in the diff, never automatic in CI.
-- [ ] The purity assertion is available to every widget test.
+- [x] Goldens are plain text and reviewable as code in a diff — **styling stripped**. A golden
+      full of `\x1b[38;2;205;214;244m` is technically plain text and reviewable by nobody. What
+      a snapshot is for is layout; colour has its own tests, and `render_to_styled_text` is
+      there for the two that are about it.
+- [x] Updating a golden is deliberate and visible: `TYPEIT_UPDATE_GOLDENS=1` rewrites them, CI
+      never sets it, and a run that rewrote a golden **skips rather than passes** — so nobody
+      commits an "all green" that only means the files now agree with whatever the code does.
+- [x] The purity assertion is available to every widget test as
+      `testing::expect_render_is_pure`. The *model* half cannot be generic — the harness does
+      not know what state a widget draws from — so a widget that owns one asserts on it
+      directly, as `TypingAreaTest` does.
 
 ---
 

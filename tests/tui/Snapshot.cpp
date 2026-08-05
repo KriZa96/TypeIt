@@ -1,0 +1,107 @@
+#include "Snapshot.h"
+
+#include <cstddef>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <ftxui/component/component_base.hpp>
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/screen.hpp>
+#include <gtest/gtest.h>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <utility>
+
+namespace typeit::testing {
+    namespace {
+
+        std::filesystem::path golden_path(std::string_view name) {
+            return std::filesystem::path{TYPEIT_GOLDEN_DIR} / (std::string{name} + ".txt");
+        }
+
+        bool updating() { return std::getenv("TYPEIT_UPDATE_GOLDENS") != nullptr; }
+
+        /// The screen without its styling.
+        ///
+        /// A golden full of `\x1b[38;2;205;214;244m` is technically plain text
+        /// and reviewable by nobody. What a snapshot is for is layout — where
+        /// the words are, where they wrap, what the caret sits on — and colour
+        /// has its own tests: the quantiser's distinguishability property, and
+        /// a widget test that asserts the four states render differently.
+        std::string without_styling(std::string_view screen) {
+            std::string out;
+            out.reserve(screen.size());
+
+            for (std::size_t at = 0; at < screen.size(); ++at) {
+                if (screen[at] == '\r') {
+                    continue;  // FTXUI ends lines with CRLF; a file need not.
+                }
+                if (screen[at] != '\x1b') {
+                    out += screen[at];
+                    continue;
+                }
+                // A CSI sequence: ESC [ parameters final-byte. Skipping to the
+                // final byte is enough — nothing here emits anything else.
+                while (at < screen.size() && (screen[at] < '@' || screen[at] > '~' || screen[at] == '[')) {
+                    ++at;
+                }
+            }
+            return out;
+        }
+
+    }  // namespace
+
+    std::string render_to_text(ftxui::Element element, std::size_t columns, std::size_t rows) {
+        ftxui::Screen screen = ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(columns)),
+                                                     ftxui::Dimension::Fixed(static_cast<int>(rows)));
+        ftxui::Render(screen, element);
+        return without_styling(screen.ToString());
+    }
+
+    std::string render_to_text(const ftxui::Component& component, std::size_t columns, std::size_t rows) {
+        return render_to_text(component->Render(), columns, rows);
+    }
+
+    std::string render_to_styled_text(const ftxui::Component& component, std::size_t columns, std::size_t rows) {
+        ftxui::Screen screen = ftxui::Screen::Create(ftxui::Dimension::Fixed(static_cast<int>(columns)),
+                                                     ftxui::Dimension::Fixed(static_cast<int>(rows)));
+        ftxui::Render(screen, component->Render());
+        return screen.ToString();
+    }
+
+    void expect_render_is_pure(const ftxui::Component& component, std::size_t columns, std::size_t rows) {
+        const std::string first = render_to_styled_text(component, columns, rows);
+        const std::string second = render_to_styled_text(component, columns, rows);
+        EXPECT_EQ(first, second) << "rendering changed something it drew from";
+    }
+
+    void expect_matches_golden(std::string_view name, const std::string& rendered) {
+        const std::filesystem::path path = golden_path(name);
+
+        if (updating()) {
+            std::filesystem::create_directories(path.parent_path());
+            std::ofstream file{path, std::ios::binary};
+            file << rendered;
+            // Not a pass: a run that rewrote the goldens has checked nothing,
+            // and saying so stops somebody committing an "all green" that only
+            // means the files now agree with whatever the code does.
+            GTEST_SKIP() << "rewrote " << path.string();
+        }
+
+        std::ifstream file{path, std::ios::binary};
+        if (!file) {
+            ADD_FAILURE() << "no golden at " << path.string()
+                          << "\nrun with TYPEIT_UPDATE_GOLDENS=1 to create it, then read it before committing\n"
+                          << rendered;
+            return;
+        }
+
+        std::ostringstream expected;
+        expected << file.rdbuf();
+        // Printed whole rather than diffed line by line: a terminal screen is
+        // read by looking at it, and twenty-four lines fit on one.
+        EXPECT_EQ(rendered, expected.str()) << "expected:\n" << expected.str() << "\ngot:\n" << rendered;
+    }
+
+}  // namespace typeit::testing

@@ -236,8 +236,8 @@ namespace typeit::tui {
 
                 for (const app::ThemeColor which: kStateColors) {
                     const app::Rgb color = loaded->theme.color(which);
-                    const auto packed = static_cast<std::uint32_t>((color.red << 16U) | (color.green << 8U) |
-                                                                   color.blue);
+                    const auto packed =
+                            static_cast<std::uint32_t>((color.red << 16U) | (color.green << 8U) | color.blue);
 
                     EXPECT_TRUE(exact.insert(packed).second)
                             << name << ": " << app::to_string(which) << " collapses at truecolor";
