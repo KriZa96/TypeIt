@@ -5,11 +5,14 @@
 // are about looking have goldens.
 
 #include <cstddef>
+#include <filesystem>
 #include <ftxui/component/event.hpp>
 #include <gtest/gtest.h>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "ScreenStack.h"
 #include "Snapshot.h"
@@ -33,6 +36,12 @@ namespace typeit::tui {
             app::Theme theme;
             Keymap keymap;
             core::Config config;
+            /// The three corpora the application ships, without the disk they
+            /// normally live on — the loader below is a parameter precisely so
+            /// a test can be the file system.
+            std::vector<TextChoice> texts{{.name = "simple", .path = "simple.txt"},
+                                          {.name = "medium", .path = "medium.txt"},
+                                          {.name = "hard", .path = "hard.txt"}};
             ScreenContext context;
 
             Fixture() {
@@ -40,6 +49,13 @@ namespace typeit::tui {
                 context.theme = &theme;
                 context.keymap = &keymap;
                 context.config = &config;
+                context.texts = &texts;
+                context.load_text = [](const std::filesystem::path& path) -> core::Result<std::string> {
+                    if (path.extension() == ".txt") {
+                        return std::string{"the quick brown fox"};
+                    }
+                    return core::fail(core::ErrorCode::FileNotFound, path.string());
+                };
                 context.size = TerminalSize{.columns = 80, .rows = 24};
             }
         };
@@ -313,6 +329,93 @@ namespace typeit::tui {
             EXPECT_EQ(screen.selection().mode, first);
         }
 
+        TEST(MenuScreenTest, TheBundledTextsCycleWithTheArrowsAndEndAtACustomPath) {
+            // 1.0's parity item: three difficulty texts plus "type a path",
+            // which is exactly what its fourth radio button was.
+            Fixture fixture;
+            MenuScreen screen{fixture.context};
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_EQ(screen.focused(), MenuField::Text);
+
+            EXPECT_EQ(screen.selection().text, 0U);
+            for (std::size_t step = 1; step <= fixture.texts.size(); ++step) {
+                ASSERT_TRUE(screen.on_event(ftxui::Event::ArrowRight));
+                EXPECT_EQ(screen.selection().text, step);
+            }
+            // One past the last entry is the custom path, and one more wraps.
+            ASSERT_TRUE(screen.on_event(ftxui::Event::ArrowRight));
+            EXPECT_EQ(screen.selection().text, 0U);
+        }
+
+        TEST(MenuScreenTest, ACustomPathThatCannotBeReadIsReportedAndRefusesToStart) {
+            // The validity feedback 1.0 never had: it opened whatever was typed
+            // and showed an empty typing area when the open failed.
+            Fixture fixture;
+            MenuScreen screen{fixture.context};
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            // One press per entry lands one past the last, which is the
+            // custom path.
+            for (std::size_t step = 0; step < fixture.texts.size(); ++step) {
+                ASSERT_TRUE(screen.on_event(ftxui::Event::ArrowRight));
+            }
+            EXPECT_FALSE(screen.message().empty()) << "an empty path is not a path";
+
+            for (const char letter: std::string_view{"nope.md"}) {
+                ASSERT_TRUE(screen.on_event(ftxui::Event::Character(letter)));
+            }
+            EXPECT_EQ(screen.selection().custom_path, "nope.md");
+            EXPECT_FALSE(screen.message().empty());
+
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+            EXPECT_FALSE(screen.take_start()) << "refused, with the reason still on screen";
+        }
+
+        TEST(MenuScreenTest, ACustomPathThatReadsClearsTheMessageAndStarts) {
+            Fixture fixture;
+            MenuScreen screen{fixture.context};
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            // One press per entry lands one past the last, which is the
+            // custom path.
+            for (std::size_t step = 0; step < fixture.texts.size(); ++step) {
+                ASSERT_TRUE(screen.on_event(ftxui::Event::ArrowRight));
+            }
+            for (const char letter: std::string_view{"mine.txt"}) {
+                ASSERT_TRUE(screen.on_event(ftxui::Event::Character(letter)));
+            }
+
+            EXPECT_TRUE(screen.message().empty()) << screen.message();
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+            EXPECT_TRUE(screen.take_start());
+
+            // And backspace walks it back to being wrong again.
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Backspace));
+            EXPECT_EQ(screen.selection().custom_path, "mine.tx");
+            EXPECT_FALSE(screen.message().empty());
+        }
+
+        TEST(MenuScreenTest, WithNoCatalogueThereIsNothingToChooseAndStartingStillWorks) {
+            // An installation missing its assets. The field says "built-in" and
+            // the run types whatever the composition root supplied, rather than
+            // offering three entries that fail the moment they are chosen.
+            Fixture fixture;
+            fixture.context.texts = nullptr;
+            MenuScreen screen{fixture.context};
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Tab));
+            ASSERT_EQ(screen.focused(), MenuField::Text);
+
+            EXPECT_FALSE(screen.on_event(ftxui::Event::ArrowRight)) << "nothing to cycle through";
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+            EXPECT_TRUE(screen.take_start());
+        }
+
         TEST(MenuScreenTest, SnapshotAt80x24) {
             Fixture fixture;
             MenuScreen screen{fixture.context};
@@ -533,6 +636,32 @@ namespace typeit::tui {
             ResultsScreen screen{fixture.context, a_record()};
 
             testing::expect_matches_golden("results_80x24", testing::render_to_text(screen.render(), 80, 24));
+        }
+
+        // --- The purity guard, on every screen -----------------------------------
+
+        TEST(ScreenPurityTest, NoScreenChangesAnythingByDrawing) {
+            // Phase 4's exit criterion, and the defect the whole rewrite is
+            // about: 1.0 advances the thing it is measuring from inside a
+            // render transform. `SessionScreen` has its own version of this
+            // with the model asserted as well, because it is the one that owns
+            // a model to get wrong; these four own only what they draw.
+            Fixture fixture;
+            MenuScreen menu{fixture.context};
+            HelpScreen help{fixture.context};
+            TerminalTooSmallScreen small{fixture.context};
+            ResultsScreen results{fixture.context, a_record()};
+
+            testing::expect_render_is_pure([&menu] { return menu.render(); }, 80, 24);
+            testing::expect_render_is_pure([&help] { return help.render(); }, 80, 40);
+            testing::expect_render_is_pure([&small] { return small.render(); }, 30, 10);
+            testing::expect_render_is_pure([&results] { return results.render(); }, 80, 24);
+
+            // And the menu still says what it said: a screen that reset its own
+            // selection on the third draw would pass the comparison above and
+            // still be wrong.
+            EXPECT_EQ(menu.focused(), MenuField::Mode);
+            EXPECT_EQ(menu.selection().text, 0U);
         }
 
     }  // namespace

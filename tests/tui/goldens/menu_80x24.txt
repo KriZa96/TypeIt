@@ -3,10 +3,10 @@ TypeIt
   (*) mode      timed                                                           
   ( ) seconds   30                                                              
   ( ) words     50                                                              
+  ( ) text      simple                                                          
   ( ) start                                                                     
                                                                                 
 f1 keys  ctrl-q quit                                                            
-                                                                                
                                                                                 
                                                                                 
                                                                                 

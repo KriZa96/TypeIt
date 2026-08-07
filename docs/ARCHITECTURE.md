@@ -224,6 +224,13 @@ Special-casing them in the session loop would reproduce the coupling we are remo
 **Cost.** One indirection. Adding a mode becomes: implement the interface, register it, write
 its tests.
 
+**Amendment (TI-098).** A mode's *parameter* — thirty seconds, fifty words — travels with the
+id as `core::ModeParams` rather than being closed over at registration. It was closed over, and
+the consequence was that choosing fifteen seconds on the menu changed the number written to the
+history and nothing about the run: the registry handed back the mode the configuration had been
+baked into. Zero fields mean "whatever the registration's own default is", so a mode with
+nothing to parameterise, and a caller with nothing to say, both work without a special case.
+
 ---
 
 ### ADR-009 — `std::expected` for expected failures; exceptions for broken invariants

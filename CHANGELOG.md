@@ -8,6 +8,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as narrowe
 
 ## [Unreleased]
 
+### Changed — breaking
+
+These are the three places 2.0 does not agree with 1.0. Everything else is additive.
+
+- **Metric definitions.** Words-per-minute is now divided by the span of the run's own
+  keystroke log — first keystroke to last — rather than by the duration the mode was configured
+  with, so a thirty-second run abandoned after five seconds no longer reports a sixth of the
+  speed it was typed at (defect C5). Accuracy is first-attempt accuracy and is no longer
+  reduced by pressing backspace; what is still wrong at the end is reported separately as
+  *correctness* (defect C4). A history exported from 1.0 and one exported from 2.0 are not
+  comparable figure for figure.
+- **Keybindings.** `Ctrl+T` is retired: it is SIGINFO on BSD, a tab key in several emulators,
+  and the common tmux prefix. Quitting is `Ctrl+Q`, going back is `Escape`, restarting is
+  `Ctrl+R`, and help is `F1`. Every one of them is rebindable from `config.toml`, which 1.0 had
+  no way to do.
+- **Data locations.** Settings, history and assets live in the platform's directories
+  (`$XDG_CONFIG_HOME/typeit`, `$XDG_DATA_HOME/typeit`, and the asset search path of
+  TECHNICAL §4.1) instead of beside the source tree. 1.0 located its bundled texts with
+  `__FILE__` at runtime, so the binary only worked on the machine that compiled it, with the
+  sources still in place (defect C2). The bundled corpora have moved from `files/` to
+  `assets/texts/` to match.
+
 ### Added
 
 - Continuous integration: build and test matrix across Linux gcc, Linux clang and Windows MSVC

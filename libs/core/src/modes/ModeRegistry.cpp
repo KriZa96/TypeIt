@@ -15,12 +15,16 @@ namespace typeit::core {
         factories_.insert_or_assign(std::string{id}, std::move(factory));
     }
 
-    Result<std::unique_ptr<IMode>> ModeRegistry::create(std::string_view id) const {
+    void ModeRegistry::register_mode(std::string_view id, std::function<std::unique_ptr<IMode>()> factory) {
+        factories_.insert_or_assign(std::string{id}, [made = std::move(factory)](const ModeParams&) { return made(); });
+    }
+
+    Result<std::unique_ptr<IMode>> ModeRegistry::create(std::string_view id, const ModeParams& params) const {
         const auto found = factories_.find(id);
         if (found == factories_.end()) {
             return fail(ErrorCode::UnknownMode, std::string{id});
         }
-        return found->second();
+        return found->second(params);
     }
 
     bool ModeRegistry::contains(std::string_view id) const { return factories_.contains(id); }

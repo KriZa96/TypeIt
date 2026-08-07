@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/dom/node.hpp>
+#include <functional>
 #include <string>
 #include <string_view>
 
@@ -39,6 +40,10 @@ namespace typeit::testing {
     /// widget draws from — so a widget that owns one asserts on it directly,
     /// as `TypingAreaTest` does.
     void expect_render_is_pure(const ftxui::Component& component, std::size_t columns, std::size_t rows);
+
+    /// The same guard for a screen, which draws an `Element` rather than being
+    /// a `Component`. Takes a callable so it can draw more than once.
+    void expect_render_is_pure(const std::function<ftxui::Element()>& draw, std::size_t columns, std::size_t rows);
 
     /// Compares against `tests/tui/goldens/<name>.txt`, failing with both
     /// screens printed side by side. Writes the file instead when

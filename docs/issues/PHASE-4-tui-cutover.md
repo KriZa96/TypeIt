@@ -368,6 +368,18 @@ Mode, duration/word-count, and text selection, plus the recent-runs sparkline.
 - Keyboard navigation reaches every control; tab order is stable.
 - Snapshot at 80×24.
 
+**Acceptance**
+- [x] Mode, duration and word count are held by the screen and validated on change.
+- [x] Text selection: the three bundled corpora, and one position past the last for a path the
+      user types. Landed after the rest of the screen, because nothing wired the menu to the
+      application until TI-098 and the gap was invisible until something ran.
+- [x] The path is validated by *opening* it, not by asking whether it exists — "it is there"
+      and "I can read it" are different answers and the run needs the second. The menu never
+      touches a disk itself: `ScreenContext::load_text` is supplied by the composition root,
+      which is the only layer allowed to.
+- [x] With no catalogue found the field reads `built-in` and cannot be edited, rather than
+      offering three entries that fail the moment one is chosen.
+
 ---
 
 ## TI-092 — `SessionScreen`
@@ -471,8 +483,15 @@ console state on exit** — including on abnormal exit.
       happens on a normal return and on an exception unwinding through `main`.
 - [x] A console too old for VT processing gets the ASCII glyph set and a note for `--doctor`,
       not an aborted start.
-- [x] The type exists on every platform and is empty off Windows, so the composition root has
-      no `#ifdef` in it — a platform test at the call site is how a platform bug hides.
+- [x] The type exists on every platform, so the composition root has no `#ifdef` in it — a
+      platform test at the call site is how a platform bug hides. It is **no longer empty off
+      Windows**, and the rename to `ConsoleMode` says so: a Unix tty in its default state
+      intercepts `Ctrl+S` and `Ctrl+Q` as XOFF and XON and never delivers them, so the shipped
+      force-quit binding could not be pressed at all. FTXUI clears `ICANON` and `ECHO` and
+      nothing else. `IXON` and `IXANY` are cleared on the way in, and only `c_iflag` is put
+      back on the way out — restoring a whole `termios` captured before FTXUI ran would undo
+      FTXUI's raw mode as a side effect. Found by TI-098, which is the first time anything ran
+      the program.
 - [ ] **Ctrl+C is not covered.** It does not run destructors, so restoring on it needs a
       console control handler, and there is no Windows machine here to check one on. Left for
       the Windows CI job to prove or disprove rather than written blind.
@@ -508,44 +527,99 @@ One commit, reviewable as a whole. Only after TI-098 passes.
 The written checklist that gates TI-097. Everything 1.0.0 does, 2.0.0-alpha.5 must do.
 
 **Parity checklist**
-- [ ] Three bundled difficulty texts selectable
-- [ ] Custom file path input with validity feedback
-- [ ] 15 / 30 / 60 second and custom timers
-- [ ] Live WPM display
-- [ ] Live accuracy display
-- [ ] Countdown of remaining time
-- [ ] Per-character colouring: correct, incorrect, untyped
-- [ ] Incorrect space rendered as `_`
-- [ ] Multi-line text with automatic scrolling as you type
-- [ ] Backspace including across a line boundary
-- [ ] Restart the current session from a key
-- [ ] Return to menu from a key
-- [ ] Session-complete state shown when the text is finished or time expires
-- [ ] Info/help text available from the menu
+
+Each item below is ticked on two grounds: a named automated test, and one end-to-end run of the
+real binary driven through a pty on Linux. That is **not** the four-terminal sweep the
+acceptance asks for — see the acceptance note.
+
+- [x] Three bundled difficulty texts selectable —
+      `MenuScreenTest.TheBundledTextsCycleWithTheArrowsAndEndAtACustomPath`; the corpora moved
+      from `files/` to `assets/texts/` and are found through the asset search path.
+- [x] Custom file path input with validity feedback —
+      `MenuScreenTest.ACustomPathThatCannotBeReadIsReportedAndRefusesToStart` and
+      `…ThatReadsClearsTheMessageAndStarts`.
+- [x] 15 / 30 / 60 second and custom timers — any duration in range is typed into the field.
+      This was broken until it was run: the registry's factories took no arguments, so the
+      duration was baked in at registration and choosing fifteen seconds changed the number
+      written to the history and nothing about the run.
+      `ModeRegistryTest.TheParameterReachesTheFactoryThatWasRegisteredForIt` is the guard.
+- [x] Live WPM display — `StatsBarTest`, and read off a live run.
+- [x] Live accuracy display — `StatsBarTest`.
+- [x] Countdown of remaining time — `StatsBarTest`; a live 15-second run ended at fifteen
+      seconds and produced a saved record.
+- [x] Per-character colouring: correct, incorrect, untyped — `TypingAreaTest.TheFourStatesRenderDistinctly`.
+- [x] Incorrect space rendered as `_` — `TypingAreaTest.AnIncorrectSpaceRendersAsAnUnderscore`.
+- [x] Multi-line text with automatic scrolling as you type —
+      `TypingAreaTest.TheViewScrollsToFollowTheCursorOffTheBottom`.
+- [x] Backspace including across a line boundary — `TypingAreaTest.BackspaceCrossesALineBoundary`.
+- [x] Restart the current session from a key — `Ctrl+R`; the restart reads the selection back
+      off the menu underneath rather than a default one.
+- [x] Return to menu from a key — `Escape`, and the run in progress is saved as abandoned
+      rather than dropped.
+- [x] Session-complete state shown when the text is finished or time expires — `ResultsScreen`,
+      seen at the end of the live 15-second run.
+- [x] Info/help text available from the menu — `F1`, `HelpScreenTest.ItListsTheActualBindings`;
+      the live run showed the real bindings.
 
 **Improvements delivered at the same time** (verified, not merely claimed)
-- [ ] Metrics are correct (C4, C5 closed)
-- [ ] Terminal resize supported mid-session
-- [ ] Themes and colour-depth fallback
-- [ ] ASCII glyph fallback
-- [ ] Rebindable keys, with `Ctrl+T` retired
-- [ ] Every run recorded to history
-- [ ] Binary is relocatable (C2 closed)
-- [ ] No global mutable state
+- [x] Metrics are correct (C4, C5 closed) — `SessionServiceTest.TheHeadlineMetricsComeFromTheLogRatherThanTheConfiguredDuration`
+      and `…AnUncorrectedMistakeIsCountedTwice`.
+- [x] Terminal resize supported mid-session — `TypingAreaTest.ResizePreservesCursorAndModelExactly`,
+      `…ARapidSequenceOfResizesDoesNotCorruptState`, `LayoutTest`, and the too-small gate's
+      hysteresis test. The size is re-read every frame rather than cached.
+- [x] Themes and colour-depth fallback — `ThemeLoaderTest`, `ColorQuantizerTest`.
+- [x] ASCII glyph fallback — `GlyphSetTest`.
+- [x] Rebindable keys, with `Ctrl+T` retired — `KeymapTest`;
+      `HelpScreenTest.ItFollowsARebindRatherThanAHardcodedList`. `git grep` for `Ctrl+T` in the
+      rebuilt tree returns nothing.
+- [x] Every run recorded to history — `SessionServiceTest.EverythingIsWrittenThroughOneCall`;
+      confirmed against the real database after a live run, including an abandoned one.
+- [x] Binary is relocatable (C2 closed) — `AssetLocatorTest`; no `__FILE__` in the rebuilt tree.
+- [x] No global mutable state — `TerminalAppTest.TwoApplicationsDoNotShareState`,
+      `MenuScreenTest.TheSelectionIsHeldByTheScreen`, and the allocation-counter suite.
+
+**Defects this verification found** (all fixed here, each with a regression test)
+- The chosen duration and word count never reached the mode — see the timers item above.
+- `Ctrl+Q` could not be pressed at all. A tty in its default state intercepts `Ctrl+S` and
+  `Ctrl+Q` as XOFF and XON; FTXUI clears `ICANON` and `ECHO` and nothing else, so the shipped
+  force-quit binding never arrived and the application had to be killed from another terminal.
+  `ConsoleMode` (was `WindowsConsole`) now clears `IXON` and `IXANY` on the way in and restores
+  the input flags on the way out.
+- The results screen truncated its own numbers. `json::number` gives six decimals and the field
+  is eight wide and truncates from the *left*, so a 27 WPM run was displayed as `7.972028`.
+  Figures are rounded for reading; the export keeps its precision.
+- Restarting from the results screen built a default `MenuSelection`, so a sixty-second run
+  restarted as a thirty-second one.
 
 **Acceptance**
 - [ ] Every parity item verified **manually** in alacritty, kitty, GNOME Terminal, and Windows
       Terminal, at 80×24 and 120×40, with the result recorded in the issue.
-- [ ] Every improvement item has an automated test.
+      **Outstanding, and not something an automated run can close.** What has been done is the
+      list above: every item has a test, and the whole flow — menu, text choice, countdown,
+      typing, completion, results, history — was driven end to end through a pty on Linux at
+      80×24. What that cannot see is what these four terminals actually put on a screen:
+      glyph widths, colour rendition at each depth, and whether a resize mid-run redraws
+      cleanly. Someone has to look. Until they have, this box stays empty and **TI-097 does not
+      start** — its own scope says "only after TI-098 passes".
+- [x] Every improvement item has an automated test — named beside each item above.
 
 ---
 
 ## Phase exit criteria
 
-- [ ] TI-098 checklist fully ticked.
-- [ ] Legacy tree deleted; the grep checks in TI-097 are clean.
-- [ ] `tui` coverage ≥ 60%; every widget has at least one snapshot and one interaction test.
-- [ ] The render-purity assertion is applied to every widget.
+- [x] TI-098 checklist fully ticked — the parity and improvement lists are. Its **acceptance**
+      is not: the four-terminal manual sweep is outstanding, which is what still holds TI-097.
+- [ ] Legacy tree deleted; the grep checks in TI-097 are clean. Blocked on that sweep, by
+      TI-097's own scope. The one part done early is the corpora: `files/*.txt` moved to
+      `assets/texts/` because the menu needed somewhere to find them.
+- [x] `tui` coverage ≥ 60%; every widget has at least one snapshot and one interaction test.
+      It measures **84.54%** (1154/1365 lines), and the gate is now in `scripts/coverage.sh`
+      rather than in this document — a criterion nothing checks is a wish.
+- [x] The render-purity assertion is applied to every widget.
+      `ScreenPurityTest.NoScreenChangesAnythingByDrawing` covers the menu, help, too-small and
+      results screens; `SessionScreenTest.RenderingAdvancesNeither` and
+      `TypingAreaTest.RenderTwiceChangesNothing` cover the two that own a model, and assert the
+      model as well as the pixels.
 - [ ] Full suite green on all CI configurations, including Windows.
-- [ ] `CHANGELOG.md` records the breaking changes: metric definitions, keybindings, data
+- [x] `CHANGELOG.md` records the breaking changes: metric definitions, keybindings, data
       locations.

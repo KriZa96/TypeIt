@@ -27,7 +27,10 @@ namespace typeit::tui {
                 case Action::NewText:
                     return "a new text, same settings";
                 case Action::Menu:
-                    return "the menu (confirms during a run)";
+                    // No confirmation, and the text says so rather than
+                    // promising one: leaving mid-run saves it as abandoned,
+                    // which is not a destructive thing to need protecting from.
+                    return "the menu (a run in progress is saved)";
                 case Action::History:
                     return "history";
                 case Action::TextLibrary:

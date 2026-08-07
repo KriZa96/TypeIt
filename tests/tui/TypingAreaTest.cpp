@@ -258,6 +258,40 @@ namespace typeit::tui {
             EXPECT_EQ(seeing->states(), blind->states()) << "and the model says the same thing either way";
         }
 
+        TEST(TypingAreaTest, TheViewScrollsToFollowTheCursorOffTheBottom) {
+            // A parity item, and the reason `lines_visible` exists: 1.0 draws
+            // from the top of the text forever, so a typist on line six is
+            // typing something they cannot see.
+            const std::unique_ptr<Area> area =
+                    an_area("aaaa bbbb cccc dddd eeee ffff", TypingAreaOptions{.columns = 10, .lines_visible = 2});
+
+            const std::string first = testing::render_to_text(area->area, 20, 4);
+            ASSERT_NE(first.find("aaaa"), std::string::npos) << first;
+
+            area->type("aaaa bbbb cccc dddd ");
+
+            const std::string later = testing::render_to_text(area->area, 20, 4);
+            EXPECT_EQ(later.find("aaaa"), std::string::npos) << "the first line has scrolled away:\n" << later;
+            EXPECT_NE(later.find("eeee"), std::string::npos) << later;
+        }
+
+        TEST(TypingAreaTest, BackspaceCrossesALineBoundary) {
+            // The other half of the same parity item. Deleting the first
+            // character of a wrapped line has to walk back onto the line above,
+            // not stop at the edge of the one it is on.
+            const std::unique_ptr<Area> area =
+                    an_area("aaaa bbbb cccc", TypingAreaOptions{.columns = 10, .lines_visible = 3});
+            area->type("aaaa bbbb c");
+            ASSERT_EQ(area->model().cursor().value, 11U);
+
+            for (int step = 0; step < 3; ++step) {
+                area->backspace();
+            }
+
+            EXPECT_EQ(area->model().cursor().value, 8U) << "back over the wrap, not stopped at it";
+            EXPECT_EQ(area->states(), "CCCCCCCC......");
+        }
+
         // --- Wrapping and resize -------------------------------------------------
 
         TEST(TypingAreaTest, ResizePreservesCursorAndModelExactly) {

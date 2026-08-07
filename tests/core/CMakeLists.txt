@@ -59,7 +59,7 @@ add_executable(core_tests ChunkedProviderTest.cpp ConfigValidationTest.cpp Diffi
 # The corpora are found through the path CMake compiled in, never through
 # __FILE__ (defect C2): a test that only passes on the machine that built it is
 # a test that stops telling anyone anything the moment CI runs it.
-target_compile_definitions(core_tests PRIVATE TYPEIT_TEST_CORPUS_DIR="${CMAKE_SOURCE_DIR}/files")
+target_compile_definitions(core_tests PRIVATE TYPEIT_TEST_CORPUS_DIR="${CMAKE_SOURCE_DIR}/assets/texts")
 
 target_link_libraries(core_tests PRIVATE typeit::core typeit::test_support typeit::allocation_counter
                                      GTest::gtest GTest::gtest_main)

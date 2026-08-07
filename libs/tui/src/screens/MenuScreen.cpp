@@ -26,6 +26,8 @@ namespace typeit::tui {
                     return "seconds";
                 case MenuField::WordCount:
                     return "words";
+                case MenuField::Text:
+                    return "text";
                 case MenuField::Start:
                     return "start";
             }
@@ -45,6 +47,15 @@ namespace typeit::tui {
         selection_.mode = context.config->general.default_mode;
         selection_.seconds = context.config->general.default_duration_s;
         selection_.words = context.config->general.default_word_count;
+    }
+
+    std::size_t MenuScreen::text_choices() const { return context_->texts == nullptr ? 0 : context_->texts->size(); }
+
+    bool MenuScreen::typing_a_path() const {
+        // With nothing to choose between there is no "custom" position either:
+        // the run types whatever the composition root supplied, and a path
+        // field nobody can act on is worse than no field at all.
+        return text_choices() != 0 && selection_.text >= text_choices();
     }
 
     void MenuScreen::focus_next() {
@@ -83,6 +94,13 @@ namespace typeit::tui {
     }
 
     void MenuScreen::backspace_field() {
+        if (focused_ == MenuField::Text && typing_a_path()) {
+            if (!selection_.custom_path.empty()) {
+                selection_.custom_path.pop_back();
+            }
+            static_cast<void>(validate());
+            return;
+        }
         if (editing_.empty()) {
             return;
         }
@@ -111,6 +129,20 @@ namespace typeit::tui {
         if (std::ranges::find(core::kModeNames, selection_.mode) == core::kModeNames.end()) {
             message_ = "no mode called \"" + selection_.mode + "\"";
             return false;
+        }
+        if (typing_a_path()) {
+            if (selection_.custom_path.empty()) {
+                message_ = "type the path of a text file";
+                return false;
+            }
+            // Actually opened, not merely checked for existence: "it is there"
+            // and "I can read it" are different answers, and the second is the
+            // one the run needs. The corpora are a kilobyte each, so reading
+            // one per keystroke costs nothing worth avoiding.
+            if (const core::Result<std::string> text = context_->load_text(selection_.custom_path); !text) {
+                message_ = core::to_string(text.error());
+                return false;
+            }
         }
 
         message_.clear();
@@ -143,6 +175,15 @@ namespace typeit::tui {
                 case MenuField::WordCount:
                     value = std::to_string(selection_.words);
                     break;
+                case MenuField::Text:
+                    if (text_choices() == 0) {
+                        value = "built-in";
+                    } else if (typing_a_path()) {
+                        value = "custom  " + selection_.custom_path;
+                    } else {
+                        value = context_->texts->at(selection_.text).name;
+                    }
+                    break;
                 case MenuField::Start:
                     break;
             }
@@ -170,6 +211,56 @@ namespace typeit::tui {
         return ftxui::vbox(std::move(rows));
     }
 
+    void MenuScreen::request_start() {
+        // Refused with a message rather than silently doing nothing, which is
+        // what an invalid selection does in 1.0.
+        start_requested_ = validate();
+        if (!start_requested_ && message_.empty()) {
+            message_ = "that selection cannot be started";
+        }
+    }
+
+    bool MenuScreen::typed(char letter) {
+        if (focused_ == MenuField::Text && typing_a_path()) {
+            // A path takes every printable character, digits included, so this
+            // comes before the numeric field.
+            selection_.custom_path += letter;
+            static_cast<void>(validate());
+            return true;
+        }
+        if (letter >= '0' && letter <= '9') {
+            edit(letter);
+            return true;
+        }
+        // Left and right cycle the lists; a letter is not how one is chosen,
+        // and swallowing letters here would eat the help key.
+        return false;
+    }
+
+    bool MenuScreen::cycle(bool forward) {
+        if (focused_ == MenuField::Text && text_choices() != 0) {
+            // One position past the last entry is "a path I type myself",
+            // which is where 1.0's fourth radio button sat too.
+            const std::size_t count = text_choices() + 1;
+            selection_.text = forward ? (selection_.text + 1) % count : (selection_.text + count - 1) % count;
+            static_cast<void>(validate());
+            return true;
+        }
+
+        if (focused_ == MenuField::Mode) {
+            // NOLINTNEXTLINE(readability-qualified-auto) -- MSVC's array iterator is not a pointer
+            const auto at = std::ranges::find(core::kModeNames, selection_.mode);
+            const std::size_t index =
+                    at == core::kModeNames.end() ? 0 : static_cast<std::size_t>(at - core::kModeNames.begin());
+            const std::size_t count = core::kModeNames.size();
+            selection_.mode = core::kModeNames.at(forward ? (index + 1) % count : (index + count - 1) % count);
+            static_cast<void>(validate());
+            return true;
+        }
+
+        return false;
+    }
+
     bool MenuScreen::on_event(ftxui::Event event) {
         if (event == ftxui::Event::Tab || event == ftxui::Event::ArrowDown) {
             focus_next();
@@ -179,48 +270,20 @@ namespace typeit::tui {
             focus_previous();
             return true;
         }
-
         if (event == ftxui::Event::Return) {
-            // Refused with a message rather than silently doing nothing, which
-            // is what an invalid selection does in 1.0.
-            start_requested_ = validate();
-            if (!start_requested_ && message_.empty()) {
-                message_ = "that selection cannot be started";
-            }
+            request_start();
             return true;
         }
-
         if (event == ftxui::Event::Backspace) {
             backspace_field();
             return true;
         }
-
         if (event.is_character() && event.character().size() == 1) {
-            const char typed = event.character().front();
-            if (typed >= '0' && typed <= '9') {
-                edit(typed);
-                return true;
-            }
-            if (focused_ == MenuField::Mode) {
-                // Left and right cycle the mode; a letter is not how a mode is
-                // chosen, and swallowing letters here would eat the help key.
-                return false;
-            }
+            return typed(event.character().front());
         }
-
-        if (focused_ == MenuField::Mode && (event == ftxui::Event::ArrowLeft || event == ftxui::Event::ArrowRight)) {
-            // NOLINTNEXTLINE(readability-qualified-auto) -- MSVC's array iterator is not a pointer
-            const auto at = std::ranges::find(core::kModeNames, selection_.mode);
-            const std::size_t index =
-                    at == core::kModeNames.end() ? 0 : static_cast<std::size_t>(at - core::kModeNames.begin());
-            const std::size_t count = core::kModeNames.size();
-            const std::size_t next =
-                    event == ftxui::Event::ArrowRight ? (index + 1) % count : (index + count - 1) % count;
-            selection_.mode = core::kModeNames.at(next);
-            static_cast<void>(validate());
-            return true;
+        if (event == ftxui::Event::ArrowLeft || event == ftxui::Event::ArrowRight) {
+            return cycle(event == ftxui::Event::ArrowRight);
         }
-
         return false;
     }
 

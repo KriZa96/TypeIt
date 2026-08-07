@@ -38,14 +38,17 @@ namespace typeit::app {
 
     /// What to play. Everything the caller decided, in one value.
     struct SessionRequest {
-        /// The id the mode is registered under. A mode's *parameter* — thirty
-        /// seconds, fifty words — is baked into the factory that registered it
-        /// (ADR-008), so it does not appear here.
+        /// The id the mode is registered under.
         std::string mode;
+        /// What to build it with — thirty seconds, fifty words. Zero fields
+        /// mean the registration's own default, which is what a mode with
+        /// nothing to parameterise and a caller with nothing to say both want.
+        core::ModeParams params;
         /// The same parameter as JSON, recorded verbatim. `IMode` has no way to
         /// describe itself, and a column per mode would mean a migration per
         /// mode, so the caller that chose the parameter is the one that names
-        /// it.
+        /// it. It must agree with `params` above: a history saying "15 seconds"
+        /// beside a run that lasted thirty is worse than no history.
         std::string mode_param;
 
         /// UTF-8, already normalised — normalisation happens at import

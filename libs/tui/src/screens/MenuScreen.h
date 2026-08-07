@@ -33,17 +33,23 @@ namespace typeit::tui {
         Mode,
         Duration,
         WordCount,
+        Text,
         Start,
     };
 
-    inline constexpr std::array<MenuField, 4> kMenuFields{MenuField::Mode, MenuField::Duration, MenuField::WordCount,
-                                                          MenuField::Start};
+    inline constexpr std::array<MenuField, 5> kMenuFields{MenuField::Mode, MenuField::Duration, MenuField::WordCount,
+                                                          MenuField::Text, MenuField::Start};
 
     /// What the menu decided, handed to whoever starts the run.
     struct MenuSelection {
         std::string mode = "timed";
         std::int64_t seconds = 30;
         std::int64_t words = 50;
+
+        /// Which entry of the context's catalogue. One past the last means the
+        /// path below, which is how 1.0's fourth radio button worked too.
+        std::size_t text = 0;
+        std::string custom_path;
     };
 
     class MenuScreen : public IScreen {
@@ -68,11 +74,23 @@ namespace typeit::tui {
     private:
         void focus_next();
         void focus_previous();
+        /// Enter: validates, and says why if it will not start.
+        void request_start();
+        /// One printable character, into whichever field wants it.
+        [[nodiscard]] bool typed(char letter);
+        /// Left or right on a list-valued field.
+        [[nodiscard]] bool cycle(bool forward);
         /// Applies a digit or a deletion to the focused numeric field, and
         /// validates the result **now**.
         void edit(char digit);
         void backspace_field();
         [[nodiscard]] bool validate();
+
+        /// How many texts the catalogue offers. The index one past the last is
+        /// "a path I type myself", so the field always has one more position
+        /// than there are entries.
+        [[nodiscard]] std::size_t text_choices() const;
+        [[nodiscard]] bool typing_a_path() const;
 
         const ScreenContext* context_;
         MenuSelection selection_;

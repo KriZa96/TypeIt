@@ -8,6 +8,7 @@
 
 #include "typeit/core/modes/IMode.h"
 #include "typeit/core/modes/ModeRegistry.h"
+#include "typeit/core/modes/TimedMode.h"
 #include "typeit/core/session/Keystroke.h"
 #include "typeit/core/session/TypingModel.h"
 #include "typeit/core/text/TextBuffer.h"
@@ -159,6 +160,45 @@ namespace typeit::core {
             EXPECT_EQ(registry.ids(), (std::vector<std::string>{"quote", "timed", "zen"}));
             EXPECT_TRUE(registry.contains("zen"));
             EXPECT_FALSE(registry.contains("race"));
+        }
+
+        TEST(ModeRegistryTest, TheParameterReachesTheFactoryThatWasRegisteredForIt) {
+            // The defect this closes: the duration was baked in at registration
+            // time, so choosing fifteen seconds on the menu changed the number
+            // written to the history and nothing about the run.
+            ModeRegistry registry;
+            registry.register_mode("timed", [](const ModeParams& params) {
+                return std::make_unique<TimedMode>(params.duration.value > 0 ? params.duration : Millis{30'000});
+            });
+
+            const Result<std::unique_ptr<IMode>> fifteen =
+                    registry.create("timed", ModeParams{.duration = Millis{15'000}, .words = 0});
+            ASSERT_TRUE(fifteen);
+            // The clock starts on the first keystroke, not when the run was
+            // offered — a typist is not charged for the countdown.
+            testing::ModeDriver chosen{"ab", **fifteen};
+            chosen.type("a");
+            chosen.tick(30, Millis{500});
+            EXPECT_TRUE((*fifteen)->is_finished()) << "fifteen seconds of ticks ended a fifteen-second run";
+
+            // And no parameter still means the registration's own default.
+            const Result<std::unique_ptr<IMode>> configured = registry.create("timed");
+            ASSERT_TRUE(configured);
+            testing::ModeDriver fallback{"ab", **configured};
+            fallback.type("a");
+            fallback.tick(30, Millis{500});
+            EXPECT_FALSE((*configured)->is_finished()) << "the thirty-second default is untouched";
+        }
+
+        TEST(ModeRegistryTest, AModeWithNothingToParameteriseIgnoresTheParameter) {
+            ModeRegistry registry;
+            registry.register_mode("quote", [] { return spy("quote"); });
+
+            const Result<std::unique_ptr<IMode>> mode =
+                    registry.create("quote", ModeParams{.duration = Millis{15'000}, .words = 7});
+
+            ASSERT_TRUE(mode);
+            EXPECT_EQ((*mode)->id(), "quote");
         }
 
         TEST(ModeRegistryTest, AnEmptyRegistryKnowsNothing) {

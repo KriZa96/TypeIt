@@ -41,6 +41,11 @@ namespace typeit::tui {
                                     .theme = &theme,
                                     .clock = &clock,
                                     .capabilities = {},
+                                    // No catalogue: these tests are about the
+                                    // application's lifetime, and a run here
+                                    // types the fallback text below.
+                                    .texts = {},
+                                    .load_text = {},
                                     .text = "hi there"};
             }
         };

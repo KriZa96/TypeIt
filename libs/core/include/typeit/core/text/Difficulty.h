@@ -6,8 +6,8 @@
 // weighted sum of surface features is right about prose.
 //
 // The formula is TECHNICAL §8.3. What makes it checkable rather than
-// decorative is the project's own corpora: files/simple.txt, medium.txt and
-// hard.txt have to come out in that order, and they are the test.
+// decorative is the project's own corpora: assets/texts/simple.txt, medium.txt
+// and hard.txt have to come out in that order, and they are the test.
 #ifndef TYPEIT_CORE_TEXT_DIFFICULTY_H
 #define TYPEIT_CORE_TEXT_DIFFICULTY_H
 

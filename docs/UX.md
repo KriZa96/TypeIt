@@ -90,6 +90,13 @@ five interacting booleans in the current `GameState`.
 The sparkline of recent runs sits on the menu deliberately: the whole point of recording
 history is to see it without asking.
 
+**What 2.0.0-alpha.5 actually draws**, since the sketch above is the destination rather than a
+screenshot: one row per control — mode, seconds, words, text, start — with left and right
+cycling the list-valued ones. The text row offers the three bundled corpora and, one position
+past the last, a path the user types, which is validated by opening it. The sparkline is not
+there: it reads history, and the query behind it is Phase 5. `endless` and `race` are not there
+either, for the same reason — they are Phase 7.
+
 ### 3.2 Session — timed
 
 ```

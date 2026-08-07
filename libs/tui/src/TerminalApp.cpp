@@ -1,5 +1,7 @@
 #include "typeit/tui/TerminalApp.h"
 
+#include <cstdint>
+#include <filesystem>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/screen_interactive.hpp>
@@ -7,12 +9,13 @@
 #include <ftxui/screen/terminal.hpp>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 
+#include "ConsoleMode.h"
 #include "Keymap.h"
 #include "ScreenContext.h"
 #include "ScreenStack.h"
-#include "WindowsConsole.h"
 #include "screens/HelpScreen.h"
 #include "screens/MenuScreen.h"
 #include "screens/ResultsScreen.h"
@@ -21,6 +24,10 @@
 #include "typeit/tui/FrameTicker.h"
 
 namespace typeit::tui {
+
+    namespace {
+        constexpr std::int64_t kMillisPerSecond = 1'000;
+    }  // namespace
 
     /// The whole of FTXUI and the whole of the navigation, kept here. The
     /// header opposite names none of it.
@@ -31,7 +38,7 @@ namespace typeit::tui {
         /// Configured and, more importantly, put back afterwards. Declared
         /// first so it is destroyed last: the console must still be ours while
         /// FTXUI is tearing its screen down. Off Windows it does nothing.
-        WindowsConsole console;
+        ConsoleMode console;
 
         ftxui::ScreenInteractive screen = ftxui::ScreenInteractive::Fullscreen();
         Dependencies dependencies;
@@ -52,6 +59,8 @@ namespace typeit::tui {
             context.keymap = &keymap;
             context.config = dependencies.config;
             context.capabilities = dependencies.capabilities;
+            context.texts = &dependencies.texts;
+            context.load_text = dependencies.load_text;
             context.size = TerminalSize{.columns = 80, .rows = 24};
         }
 
@@ -63,6 +72,20 @@ namespace typeit::tui {
                                         .rows = static_cast<std::size_t>(size.dimy)};
         }
 
+        /// What the menu's text field resolves to. Read at start rather than
+        /// held by the menu, so a file edited between choosing it and pressing
+        /// start is the file that gets typed.
+        [[nodiscard]] std::string text_for(const MenuSelection& selection) const {
+            if (dependencies.texts.empty() || !dependencies.load_text) {
+                return dependencies.text;
+            }
+            const std::filesystem::path path = selection.text < dependencies.texts.size()
+                                                       ? dependencies.texts.at(selection.text).path
+                                                       : std::filesystem::path{selection.custom_path};
+            core::Result<std::string> loaded = dependencies.load_text(path);
+            return loaded ? std::move(*loaded) : std::string{};
+        }
+
         /// Starts a run from what the menu chose.
         void start(const MenuSelection& selection) {
             app::SessionRequest request;
@@ -71,7 +94,17 @@ namespace typeit::tui {
             // itself is resolved by the registry the composition root built.
             request.mode_param = selection.mode == "words" ? R"({"words":)" + std::to_string(selection.words) + "}"
                                                            : R"({"seconds":)" + std::to_string(selection.seconds) + "}";
-            request.text = dependencies.text;
+            // The same numbers the line above records, so the history cannot
+            // say "15 seconds" beside a run that lasted the configured thirty.
+            request.params.duration = core::Millis{selection.seconds * kMillisPerSecond};
+            request.params.words = static_cast<std::size_t>(selection.words);
+            request.text = text_for(selection);
+            if (request.text.empty()) {
+                // The menu refuses to start on an unreadable path, so getting
+                // here means the catalogue itself is gone. Staying put with the
+                // menu's message on screen beats an empty typing area.
+                return;
+            }
             request.rules = dependencies.config->typing;
 
             core::Result<std::unique_ptr<SessionScreen>> started =

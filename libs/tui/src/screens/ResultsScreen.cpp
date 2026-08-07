@@ -1,5 +1,6 @@
 #include "screens/ResultsScreen.h"
 
+#include <cmath>
 #include <cstdint>
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -27,7 +28,18 @@ namespace typeit::tui {
             });
         }
 
-        std::string percent(core::Accuracy value) { return app::json::number(value.value * 100.0) + "%"; }
+        /// Two decimals, which is what a person reads.
+        ///
+        /// The export keeps the full precision; a results screen is not an
+        /// interchange format. `json::number` gives six decimals, so a net WPM
+        /// of 27.972028 is nine characters in an eight-wide field — and the
+        /// field truncates from the *left*, so a 27 WPM run was displayed as
+        /// 7.972028. Rounding here rather than widening the field, because a
+        /// column that grows with the precision of the number in it stops being
+        /// a column.
+        std::string rounded(double value) { return app::json::number(std::round(value * 100.0) / 100.0); }
+
+        std::string percent(core::Accuracy value) { return rounded(value.value * 100.0) + "%"; }
 
     }  // namespace
 
@@ -42,18 +54,18 @@ namespace typeit::tui {
                        ftxui::color(record_.completed ? accent.color : muted.color));
         rows.push_back(ftxui::text(""));
 
-        // Every number is formatted through the same helper the exports use, so
-        // a figure on screen and the same figure in a CSV cannot disagree.
-        rows.push_back(figure("net wpm", app::json::number(record_.net_wpm.value), muted, plain));
-        rows.push_back(figure("gross wpm", app::json::number(record_.gross_wpm.value), muted, plain));
-        rows.push_back(figure("raw wpm", app::json::number(record_.raw_wpm.value), muted, plain));
+        // Every number goes through the same helper the exports use, rounded
+        // for reading: a figure on screen and the same figure in a CSV cannot
+        // disagree about anything but the digits nobody reads.
+        rows.push_back(figure("net wpm", rounded(record_.net_wpm.value), muted, plain));
+        rows.push_back(figure("gross wpm", rounded(record_.gross_wpm.value), muted, plain));
+        rows.push_back(figure("raw wpm", rounded(record_.raw_wpm.value), muted, plain));
         rows.push_back(figure("accuracy", percent(record_.accuracy), muted, plain));
         rows.push_back(figure("correctness", percent(record_.final_correctness), muted, plain));
-        rows.push_back(figure("consistency", app::json::number(record_.consistency), muted, plain));
+        rows.push_back(figure("consistency", rounded(record_.consistency), muted, plain));
         rows.push_back(figure("characters", std::to_string(record_.graphemes_typed), muted, plain));
         rows.push_back(figure("errors", std::to_string(record_.errors_total), muted, plain));
-        rows.push_back(figure("seconds", app::json::number(static_cast<double>(record_.duration.value) / 1000.0), muted,
-                              plain));
+        rows.push_back(figure("seconds", rounded(static_cast<double>(record_.duration.value) / 1000.0), muted, plain));
 
         rows.push_back(ftxui::text(""));
         const std::vector<Hint> hints{

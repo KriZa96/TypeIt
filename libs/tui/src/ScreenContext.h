@@ -7,11 +7,14 @@
 #ifndef TYPEIT_TUI_SCREENCONTEXT_H
 #define TYPEIT_TUI_SCREENCONTEXT_H
 
+#include <vector>
+
 #include "Keymap.h"
 #include "Layout.h"
 #include "typeit/app/Capabilities.h"
 #include "typeit/app/Theme.h"
 #include "typeit/core/config/Config.h"
+#include "typeit/tui/TerminalApp.h"
 
 namespace typeit::tui {
 
@@ -20,6 +23,12 @@ namespace typeit::tui {
         const Keymap* keymap = nullptr;
         const core::Config* config = nullptr;
         app::Capabilities capabilities;
+
+        /// The texts on offer, owned by the application. Null or empty means
+        /// there are none to choose between, and the menu says so rather than
+        /// offering an empty list.
+        const std::vector<TextChoice>* texts = nullptr;
+        TextLoader load_text;
         /// The terminal as last reported. A screen reads it rather than asking
         /// FTXUI, so every layout case is a value in a test.
         TerminalSize size;

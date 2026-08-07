@@ -432,6 +432,13 @@ searched in order:
 The first hit wins; if nothing is found the app reports it clearly and still runs with
 user-imported texts.
 
+What lives under the directory that wins:
+
+| | |
+|---|---|
+| `themes/` | the shipped `.toml` themes; a user's own go in `$XDG_CONFIG_HOME/typeit/themes` and are searched first |
+| `texts/` | the bundled corpora — `simple.txt`, `medium.txt`, `hard.txt`, which 1.0 kept in `files/` and found with `__FILE__` |
+
 ### 4.2 SQLite
 
 - One connection, opened with `SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE`.

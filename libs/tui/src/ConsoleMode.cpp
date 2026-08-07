@@ -1,4 +1,4 @@
-#include "WindowsConsole.h"
+#include "ConsoleMode.h"
 
 #include <string>
 #include <vector>
@@ -6,13 +6,16 @@
 #ifdef _WIN32
 // NOLINTNEXTLINE(llvm-include-order) -- windows.h must come before its own headers
 #include <windows.h>
+#else
+#include <termios.h>
+#include <unistd.h>
 #endif
 
 namespace typeit::tui {
 
 #ifdef _WIN32
 
-    WindowsConsole::WindowsConsole() {
+    ConsoleMode::ConsoleMode() {
         const HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
         const HANDLE in = GetStdHandle(STD_INPUT_HANDLE);
         if (out == INVALID_HANDLE_VALUE || in == INVALID_HANDLE_VALUE) {
@@ -50,7 +53,7 @@ namespace typeit::tui {
         }
     }
 
-    WindowsConsole::~WindowsConsole() {
+    ConsoleMode::~ConsoleMode() {
         if (previous_output_page_ != 0) {
             static_cast<void>(SetConsoleOutputCP(previous_output_page_));
         }
@@ -72,11 +75,43 @@ namespace typeit::tui {
 
 #else
 
-    // Everywhere else a terminal is already a terminal. The type still exists
-    // so the composition root has no platform test in it — a `#ifdef` at the
-    // call site is how a platform bug hides.
-    WindowsConsole::WindowsConsole() = default;
-    WindowsConsole::~WindowsConsole() = default;
+    ConsoleMode::ConsoleMode() {
+        static_assert(sizeof(tcflag_t) <= sizeof(unsigned int),
+                      "the header stores c_iflag as an unsigned int to avoid including <termios.h>");
+
+        termios settings{};
+        if (tcgetattr(STDIN_FILENO, &settings) != 0) {
+            // Not a terminal. Nothing to configure and nothing to restore,
+            // which is how `--export` runs into a pipe.
+            problems_.emplace_back("no terminal attached; input is redirected");
+            return;
+        }
+        previous_input_flags_ = static_cast<unsigned int>(settings.c_iflag);
+        captured_ = true;
+
+        // The whole point. IXON makes the line discipline swallow Ctrl+S and
+        // Ctrl+Q as XOFF and XON, so the shipped force-quit key never reaches
+        // the program; IXANY would make any key resume a stopped output stream,
+        // which is the same trap wearing a hat.
+        settings.c_iflag &= static_cast<tcflag_t>(~(IXON | IXANY));
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &settings) != 0) {
+            problems_.emplace_back("flow control could not be turned off; ctrl-q may not work");
+        }
+    }
+
+    ConsoleMode::~ConsoleMode() {
+        if (!captured_) {
+            return;
+        }
+        // Read back and put one field: FTXUI owns the rest of this structure
+        // and restoring a copy taken before it ran would undo its raw mode.
+        termios settings{};
+        if (tcgetattr(STDIN_FILENO, &settings) != 0) {
+            return;
+        }
+        settings.c_iflag = static_cast<tcflag_t>(previous_input_flags_);
+        static_cast<void>(tcsetattr(STDIN_FILENO, TCSANOW, &settings));
+    }
 
 #endif
 

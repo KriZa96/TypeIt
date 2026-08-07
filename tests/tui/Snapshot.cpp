@@ -84,6 +84,17 @@ namespace typeit::testing {
         EXPECT_EQ(first, second) << "rendering changed something it drew from";
     }
 
+    void expect_render_is_pure(const std::function<ftxui::Element()>& draw, std::size_t columns, std::size_t rows) {
+        // Three, not two. Twice catches a counter that ticks on every draw;
+        // a third catches one that settles after the first — which is what
+        // 1.0's "advance on render" looked like from the outside.
+        const std::string first = render_to_text(draw(), columns, rows);
+        const std::string second = render_to_text(draw(), columns, rows);
+        const std::string third = render_to_text(draw(), columns, rows);
+        EXPECT_EQ(first, second) << "rendering changed something it drew from";
+        EXPECT_EQ(second, third) << "rendering changed something it drew from";
+    }
+
     void expect_matches_golden(std::string_view name, const std::string& rendered) {
         const std::filesystem::path path = golden_path(name);
 

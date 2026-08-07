@@ -18,16 +18,34 @@
 #ifndef TYPEIT_TUI_TERMINALAPP_H
 #define TYPEIT_TUI_TERMINALAPP_H
 
+#include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "typeit/app/Capabilities.h"
 #include "typeit/app/Theme.h"
 #include "typeit/app/services/SessionService.h"
 #include "typeit/core/config/Config.h"
 #include "typeit/core/util/IClock.h"
+#include "typeit/core/util/Result.h"
 
 namespace typeit::tui {
+
+    /// A text the menu can offer, already located. Resolving where the bundled
+    /// corpora live is infra's job (defect C2 was 1.0 doing it with `__FILE__`
+    /// at runtime), and `tui` may not see infra — so the composition root hands
+    /// the paths over already found.
+    struct TextChoice {
+        std::string name;
+        std::filesystem::path path;
+    };
+
+    /// Reads one. A parameter rather than a call, for the same reason: this is
+    /// the only way anything in `tui` reaches a disk, and it reaches it through
+    /// something the composition root supplied.
+    using TextLoader = std::function<core::Result<std::string>(const std::filesystem::path&)>;
 
     /// Everything the application needs from below it. All borrowed; the
     /// composition root owns every one of them and outlives the application.
@@ -37,8 +55,15 @@ namespace typeit::tui {
         const app::Theme* theme = nullptr;
         const core::IClock* clock = nullptr;
         app::Capabilities capabilities;
-        /// The text a run types. Phase 6 replaces this with the library; until
-        /// then the composition root supplies one.
+
+        /// What the menu offers, in menu order. Empty is not an error: nothing
+        /// found means the run types `text` below, and a user with their own
+        /// file loses nothing.
+        std::vector<TextChoice> texts;
+        TextLoader load_text;
+
+        /// The text a run types when the catalogue is empty. Phase 6 replaces
+        /// this with the library; until then the composition root supplies one.
         std::string text;
     };
 

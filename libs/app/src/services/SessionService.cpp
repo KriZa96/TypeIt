@@ -56,7 +56,7 @@ namespace typeit::app {
     }  // namespace
 
     core::Result<ActiveRun> SessionService::start(const SessionRequest& request) const {
-        core::Result<std::unique_ptr<core::IMode>> mode = modes_->create(request.mode);
+        core::Result<std::unique_ptr<core::IMode>> mode = modes_->create(request.mode, request.params);
         if (!mode) {
             return std::unexpected{mode.error()};
         }

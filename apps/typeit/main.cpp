@@ -87,16 +87,21 @@ namespace {
         return std::cout.good() ? kOk : kFailed;
     }
 
-    /// The modes a run can be started in, each closed over the configuration it
-    /// needs. `ModeRegistry`'s factories take no arguments by design (ADR-008),
-    /// so the parameter is baked in here, where the configuration is known.
+    /// The modes a run can be started in, each closed over the configured
+    /// default it falls back to. The caller's choice wins; the configuration is
+    /// what a caller with nothing to say gets.
     typeit::core::ModeRegistry built_in_modes(const typeit::core::Config& config) {
         typeit::core::ModeRegistry registry;
-        registry.register_mode("timed", [duration = typeit::core::Millis{config.general.default_duration_s * 1'000}] {
-            return std::make_unique<typeit::core::TimedMode>(duration);
+        // The configured value is the default, and whatever the caller chose
+        // wins. Baking the configured one in was the bug: the menu's seconds
+        // field changed the number written to the history and nothing else.
+        registry.register_mode("timed", [fallback = typeit::core::Millis{config.general.default_duration_s * 1'000}](
+                                                const typeit::core::ModeParams& params) {
+            return std::make_unique<typeit::core::TimedMode>(params.duration.value > 0 ? params.duration : fallback);
         });
-        registry.register_mode("words", [words = static_cast<std::size_t>(config.general.default_word_count)] {
-            return std::make_unique<typeit::core::WordCountMode>(words);
+        registry.register_mode("words", [fallback = static_cast<std::size_t>(config.general.default_word_count)](
+                                                const typeit::core::ModeParams& params) {
+            return std::make_unique<typeit::core::WordCountMode>(params.words > 0 ? params.words : fallback);
         });
         registry.register_mode("quote", [] { return std::make_unique<typeit::core::QuoteMode>(); });
         registry.register_mode("zen", [] { return std::make_unique<typeit::core::ZenMode>(); });
@@ -256,6 +261,29 @@ namespace {
 #endif
     }
 
+    /// The texts the menu offers: whatever `--text` named, then the three
+    /// bundled corpora that are actually there.
+    ///
+    /// Existence is checked here rather than in the menu, so an installation
+    /// missing its assets offers a short list instead of three entries that
+    /// fail the moment they are chosen.
+    std::vector<typeit::tui::TextChoice> bundled_texts(const typeit::cli::CliOptions& options,
+                                                       const std::filesystem::path& assets) {
+        std::vector<typeit::tui::TextChoice> texts;
+        if (options.text_path.has_value()) {
+            const std::filesystem::path given{*options.text_path};
+            texts.push_back({.name = given.stem().string(), .path = given});
+        }
+        for (const std::string_view name: {"simple", "medium", "hard"}) {
+            std::filesystem::path path = assets / "texts" / (std::string{name} + ".txt");
+            std::error_code failed;
+            if (std::filesystem::exists(path, failed)) {
+                texts.push_back({.name = std::string{name}, .path = std::move(path)});
+            }
+        }
+        return texts;
+    }
+
     /// The terminal application: everything constructed, then handed over.
     int run_terminal(const typeit::cli::CliOptions& options, const typeit::infra::Environment& environment) {
         if (!has_a_terminal()) {
@@ -318,11 +346,12 @@ namespace {
                 .theme = &theme,
                 .clock = &clock,
                 .capabilities = typeit::infra::detect_capabilities(environment),
-                // Phase 6's library replaces this. Until then a run types what
-                // `--text` gave it, or the sentence every typing test starts
-                // with.
-                .text = options.text_path.has_value() ? read_file(*options.text_path).value_or(std::string{})
-                                                      : "the quick brown fox jumps over the lazy dog",
+                .texts = bundled_texts(options, assets.value_or(std::filesystem::path{})),
+                .load_text = read_file,
+                // Only reached when nothing was found to offer, which means an
+                // installation missing its assets. A sentence to type is better
+                // than an empty screen; Phase 6's library replaces all of this.
+                .text = "the quick brown fox jumps over the lazy dog",
         }};
         app.run();
         return kOk;
