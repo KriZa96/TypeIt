@@ -212,6 +212,25 @@ Type a book across many sessions and resume where you stopped.
 - The stream never ends.
 - No sentence repeats until the pool is exhausted (documented shuffle-bag behaviour).
 
+**Acceptance**
+- [x] A **shuffle bag**, not independent draws: every sentence is used once before any is used
+      twice, and each pass is shuffled again rather than repeating one permutation. Sampling
+      would show the same sentence three times in a row often enough to be noticed, and a
+      typing test that repeats itself is one somebody stops reading and starts pattern-matching.
+- [x] Abbreviations are a **list, not a rule**, because there is no rule: "Dr." ends in a stop
+      and continues, "etc." ends in a stop and usually does not. Getting a rare one wrong costs
+      a split in an odd place; getting `e.g.` wrong costs one in every technical article there
+      is, which is most of what anybody imports.
+- [x] A terminator only ends a sentence when whitespace or the end follows it, which is what
+      keeps `3.14` and `example.com` whole. Closing quotes and brackets stay with the sentence
+      they close, or the next one begins with a stray `"`.
+- [x] Text with no terminator is one sentence — the usual shape of a code snippet, and the
+      input this feature is most often given.
+- [x] Nothing to shuffle is refused rather than served: an endless provider over no sentences
+      is an endless stream of nothing, which hangs a run instead of reporting anything.
+- [x] Fisher-Yates is written out rather than `std::shuffle`, for the same reason as
+      `Prng::below` below — see TI-117.
+
 ---
 
 ## TI-117 — `WordPoolProvider`
@@ -233,7 +252,33 @@ manual, race against endless Rust-manual vocabulary.
 - Generated chunks never split a word.
 
 **Acceptance**
-- [ ] Determinism from the seed holds across platforms — a race replay must be reproducible.
+- [x] Determinism from the seed holds across platforms — and it **did not**, which this issue
+      is what uncovered. `Prng::below` used `std::uniform_int_distribution`, whose mapping from
+      engine output onto a range is implementation-defined: libstdc++ and libc++ disagree, so a
+      run recorded on Linux and replayed on Windows produced different text from the same seed.
+      "Reproduce this run exactly" was untrue on precisely the machine somebody reads a bug
+      report on. It is now rejection sampling written out — `std::mt19937_64` itself is
+      specified exactly, so the engine was never the problem. `std::shuffle` has the same
+      defect and is likewise replaced by a written-out Fisher-Yates.
+- [x] A pinned expected chunk for a known seed, so the guarantee is a test rather than a hope.
+      If it changes, a recorded replay has broken and somebody has to have meant it.
+- [x] Sampling is **with replacement**, weighted by count. A shuffle bag would say "the" as
+      many times as the source did and then not at all, which is the opposite of generating
+      text in a source's style. The distribution is asserted over a thousand chunks against a
+      deliberately loose bound: a tight one on a statistical property is a test that fails on a
+      Tuesday.
+- [x] Every word in the pool can come out. A weighted draw that never reaches the last entry is
+      an off-by-one nobody would see in the ratios.
+- [x] The frequency table is in **first-appearance order**, not sorted. A `std::map` would make
+      the weighted pick depend on the alphabet rather than on the text — harmless right up
+      until two runs are compared and the seeds no longer mean the same thing.
+- [x] Punctuation and capitalisation are preserved when enabled and absent when disabled, and
+      multi-byte characters survive either way: `ispunct` is only ever asked about ASCII bytes,
+      so a UTF-8 continuation byte is never mistaken for punctuation.
+- [x] An empty source, and a source whose every word is below the length threshold, are both
+      refused before they can produce an endless stream of nothing.
+- [x] Chunks never split a word: separators go between words and never at an edge, so two
+      chunks joined cannot split a word or double a space.
 
 ---
 

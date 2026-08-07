@@ -121,8 +121,8 @@ namespace typeit::app {
             const std::string utf32le = std::string{"\xFF\xFE\x00\x00", 4} + std::string{"h\0\0\0", 4};
             const std::string utf32be = std::string{"\x00\x00\xFE\xFF", 4} + std::string{"\0\0\0h", 4};
 
-            for (const auto& [bytes, name]: {std::pair{utf16be, "UTF-16BE"}, std::pair{utf32le, "UTF-32LE"},
-                                             std::pair{utf32be, "UTF-32BE"}}) {
+            for (const auto& [bytes, name]:
+                 {std::pair{utf16be, "UTF-16BE"}, std::pair{utf32le, "UTF-32LE"}, std::pair{utf32be, "UTF-32BE"}}) {
                 library_.texts.clear();
                 const core::Result<ImportOutcome> imported = import_bytes("foreign.txt", bytes);
 

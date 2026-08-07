@@ -105,8 +105,7 @@ namespace typeit::infra {
 
             ASSERT_FALSE(reattached);
             EXPECT_EQ(reattached.error().code, ErrorCode::UnsupportedTerminal);
-            EXPECT_NE(reattached.error().context.find("terminal"), std::string::npos)
-                    << reattached.error().context;
+            EXPECT_NE(reattached.error().context.find("terminal"), std::string::npos) << reattached.error().context;
         }
 
         TEST(ImportStdinTest, ReattachingPointsStdinAtTheDeviceItWasGiven) {
@@ -114,8 +113,7 @@ namespace typeit::infra {
             // call, reading `stdin` reads the *new* device rather than whatever
             // it held before. The test writes a file, reattaches to it, and
             // reads a byte back.
-            const std::filesystem::path file =
-                    std::filesystem::temp_directory_path() / "typeit-stdin-reattach.txt";
+            const std::filesystem::path file = std::filesystem::temp_directory_path() / "typeit-stdin-reattach.txt";
             {
                 std::FILE* written = std::fopen(file.string().c_str(), "w");
                 ASSERT_NE(written, nullptr);
