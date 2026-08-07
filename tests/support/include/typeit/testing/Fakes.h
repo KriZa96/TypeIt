@@ -380,6 +380,7 @@ namespace typeit::testing {
 
         [[nodiscard]] core::Result<std::vector<app::TextSummary>> list(const app::TextFilter& filter) const override {
             TYPEIT_FAIL_IF_ARMED()
+            ++lists;
 
             std::vector<app::TextSummary> matched;
             for (const app::TextItem& text: texts) {
@@ -477,6 +478,10 @@ namespace typeit::testing {
 
         mutable FailureSwitch failure;
         std::vector<app::TextItem> texts;
+        /// How many times anybody asked for a listing. `mutable` because
+        /// `list` is const and counting the calls is the only way to assert
+        /// that drawing a screen does not make any.
+        mutable std::size_t lists = 0;
         std::map<std::int64_t, std::vector<std::string>> tags;
         std::map<std::int64_t, app::Bookmark> bookmarks;
         /// How many rows were written. Distinct from `texts.size()`: a service

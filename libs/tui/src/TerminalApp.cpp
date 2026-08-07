@@ -23,6 +23,7 @@
 #include "screens/SessionDetailScreen.h"
 #include "screens/SessionScreen.h"
 #include "screens/TerminalTooSmallScreen.h"
+#include "screens/TextLibraryScreen.h"
 #include "typeit/tui/FrameTicker.h"
 
 namespace typeit::tui {
@@ -51,6 +52,9 @@ namespace typeit::tui {
         /// The screen the run is on, borrowed so the tick can reach it. Null
         /// whenever the top is not a session.
         SessionScreen* session = nullptr;
+        /// The library's answer, held only for as long as it takes to start the
+        /// run it was chosen for.
+        std::optional<core::TextId> chosen_text;
         bool quitting = false;
 
         explicit Impl(Dependencies given) :
@@ -65,6 +69,7 @@ namespace typeit::tui {
             context.load_text = dependencies.load_text;
             context.save_text = dependencies.save_text;
             context.history = dependencies.history;
+            context.library = dependencies.library;
             context.size = TerminalSize{.columns = 80, .rows = 24};
         }
 
@@ -80,6 +85,14 @@ namespace typeit::tui {
         /// held by the menu, so a file edited between choosing it and pressing
         /// start is the file that gets typed.
         [[nodiscard]] std::string text_for(const MenuSelection& selection) const {
+            if (chosen_text.has_value() && dependencies.library.records != nullptr) {
+                // A text picked from the library beats whatever the menu was
+                // showing: it is the more recent and more specific request.
+                const core::Result<std::optional<app::TextItem>> item = dependencies.library.records->get(*chosen_text);
+                if (item && item->has_value()) {
+                    return (*item)->content;
+                }
+            }
             if (dependencies.texts.empty() || !dependencies.load_text) {
                 return dependencies.text;
             }
@@ -184,6 +197,12 @@ namespace typeit::tui {
                 stack.push(std::make_shared<HistoryScreen>(context));
                 return true;
             }
+            // Same rule as the history: not from inside a run, where the timer
+            // would keep going behind a screen the typist cannot type into.
+            if (action == Action::TextLibrary && session == nullptr && stack.top().title() != "text library") {
+                stack.push(std::make_shared<TextLibraryScreen>(context));
+                return true;
+            }
             return false;
         }
 
@@ -247,6 +266,15 @@ namespace typeit::tui {
             } else if (auto* const history = dynamic_cast<HistoryScreen*>(&top); history != nullptr) {
                 if (const std::optional<core::SessionId> opened = history->take_opened(); opened.has_value()) {
                     stack.push(std::make_shared<SessionDetailScreen>(context, *opened));
+                }
+            } else if (auto* const library = dynamic_cast<TextLibraryScreen*>(&top); library != nullptr) {
+                if (const std::optional<core::TextId> chosen = library->take_chosen(); chosen.has_value()) {
+                    // Popped first: the run starts from the menu underneath,
+                    // which still holds the mode and duration that were chosen.
+                    chosen_text = chosen;
+                    stack.pop();
+                    start_again();
+                    chosen_text.reset();
                 }
             } else if (auto* const detail = dynamic_cast<SessionDetailScreen*>(&top); detail != nullptr) {
                 if (detail->take_back()) {

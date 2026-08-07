@@ -3,8 +3,8 @@
 #include <cmath>
 #include <cstddef>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "typeit/app/Json.h"

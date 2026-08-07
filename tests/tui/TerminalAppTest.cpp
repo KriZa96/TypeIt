@@ -51,6 +51,7 @@ namespace typeit::tui {
                                     // the application's lifetime, and the
                                     // screens draw their empty states.
                                     .history = {},
+                                    .library = {},
                                     .text = "hi there"};
             }
         };

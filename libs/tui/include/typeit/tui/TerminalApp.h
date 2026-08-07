@@ -27,8 +27,10 @@
 #include "typeit/app/Capabilities.h"
 #include "typeit/app/Theme.h"
 #include "typeit/app/ports/IHistoryRepository.h"
+#include "typeit/app/ports/ITextLibraryRepository.h"
 #include "typeit/app/services/HistoryService.h"
 #include "typeit/app/services/SessionService.h"
+#include "typeit/app/services/TextLibraryService.h"
 #include "typeit/core/config/Config.h"
 #include "typeit/core/util/IClock.h"
 #include "typeit/core/util/Result.h"
@@ -78,6 +80,18 @@ namespace typeit::tui {
         app::UtcOffsetMinutes utc_offset = 0;
     };
 
+    /// What the text library screen reads and writes.
+    ///
+    /// Two again, and for the same reason as `HistorySource`: the repository
+    /// answers the plain questions — list, tag, remove — and the service owns
+    /// the ones with an opinion, which is importing and the bookmark
+    /// arithmetic. Null is a normal state: a layout test should not have to
+    /// stand up a database, and the screen has a first-run state anyway.
+    struct LibrarySource {
+        app::TextLibraryService* service = nullptr;
+        app::ITextLibraryRepository* records = nullptr;
+    };
+
     /// Everything the application needs from below it. All borrowed; the
     /// composition root owns every one of them and outlives the application.
     struct Dependencies {
@@ -96,6 +110,7 @@ namespace typeit::tui {
         /// should not show a key that does nothing.
         TextWriter save_text;
         HistorySource history;
+        LibrarySource library;
 
         /// The text a run types when the catalogue is empty. Phase 6 replaces
         /// this with the library; until then the composition root supplies one.

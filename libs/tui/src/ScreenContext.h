@@ -35,6 +35,7 @@ namespace typeit::tui {
         /// not an error: a layout test should not have to stand up a database,
         /// and every screen that reads history has an empty state anyway.
         HistorySource history;
+        LibrarySource library;
         /// The terminal as last reported. A screen reads it rather than asking
         /// FTXUI, so every layout case is a value in a test.
         TerminalSize size;

@@ -8,7 +8,7 @@
 add_library(typeit_tui STATIC src/Bars.cpp src/Charts.cpp src/ColorQuantizer.cpp src/FrameTicker.cpp src/Layout.cpp src/Glyphs.cpp src/Heatmap.cpp src/Keymap.cpp src/ScreenStack.cpp src/TerminalApp.cpp src/TypingArea.cpp
                                 src/screens/HelpScreen.cpp src/screens/HistoryScreen.cpp src/screens/MenuScreen.cpp
                                 src/screens/ResultsScreen.cpp src/screens/SessionDetailScreen.cpp src/screens/SessionScreen.cpp
-                                src/screens/TerminalTooSmallScreen.cpp src/ConsoleMode.cpp)
+                                src/screens/TerminalTooSmallScreen.cpp src/screens/TextLibraryScreen.cpp src/ConsoleMode.cpp)
 add_library(typeit::tui ALIAS typeit_tui)
 
 # The public surface is `include/`, which names nothing from FTXUI. `src/`

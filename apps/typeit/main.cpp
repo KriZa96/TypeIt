@@ -461,13 +461,17 @@ namespace {
         // makes a bookmark worth keeping. `--text` is deliberately different:
         // it types a file once and imports nothing (GAMEPLAY §5.1), so the two
         // reach the run by different routes and neither surprises the other.
+        // Opened for the whole run rather than only for `--text-id`: the
+        // library screen reads it too, and opening one database twice in a
+        // process is two connections disagreeing about a write.
+        const Result<std::unique_ptr<Library>> library = open_library(*directory);
+        if (!library) {
+            return complain(library.error());
+        }
+
         std::string from_library;
         std::vector<typeit::tui::TextChoice> catalogue;
         if (options.text_id.has_value()) {
-            const Result<std::unique_ptr<Library>> library = open_library(*directory);
-            if (!library) {
-                return complain(library.error());
-            }
             const Result<std::optional<typeit::app::TextItem>> item = (*library)->repository.get(*options.text_id);
             if (!item) {
                 return complain(item.error());
@@ -504,6 +508,8 @@ namespace {
                                                       .records = &(*history)->repository,
                                                       .wall_clock = &clock,
                                                       .utc_offset = 0},
+                .library =
+                        typeit::tui::LibrarySource{.service = &(*library)->service, .records = &(*library)->repository},
                 .text = starting_text(from_library, piped),
         }};
         app.run();

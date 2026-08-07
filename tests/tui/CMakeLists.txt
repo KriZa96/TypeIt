@@ -46,7 +46,7 @@ add_executable(tui_tests ColorQuantizerTest.cpp FrameTickerTest.cpp GlyphSetTest
                          KeymapTest.cpp
                          LineChartTest.cpp
                          LayoutTest.cpp SparklineTest.cpp StatsBarTest.cpp
-                         ScreensTest.cpp ScreenStackTest.cpp SessionDetailScreenTest.cpp Snapshot.cpp TerminalAppTest.cpp TypingAreaTest.cpp)
+                         ScreensTest.cpp ScreenStackTest.cpp SessionDetailScreenTest.cpp TextLibraryScreenTest.cpp Snapshot.cpp TerminalAppTest.cpp TypingAreaTest.cpp)
 
 # Reaching into `libs/tui/src` on purpose: `ScreenStack` and `IScreen` are
 # internal because they name FTXUI, and testing them means speaking FTXUI too.

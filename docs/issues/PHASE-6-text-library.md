@@ -101,6 +101,18 @@ A multi-line input area in the library screen.
 - Non-ASCII paste content survives intact.
 - Cancelling discards without storing.
 
+**Acceptance**
+- [x] A paste arrives as **one event** carrying every character, not a keystroke storm: FTXUI
+      hands the whole sequence over, and the prompt appends `event.character()` rather than its
+      first byte. That first byte is 1.0's original multi-byte defect, and it would be back the
+      moment somebody pasted `čitanka`.
+- [x] Line breaks survive into the stored text, so a pasted paragraph is still a paragraph.
+- [x] Non-ASCII content survives intact.
+- [x] Cancelling discards. Something typed and thought better of is not a text somebody wanted.
+- [x] Size is the importer's rule, not a second one here: `kMaxImportBytes` already names the
+      limit and reports it, and a screen with its own opinion would be a second answer that
+      could disagree.
+
 ---
 
 ## TI-113 — Content deduplication
@@ -294,6 +306,30 @@ manual, race against endless Rust-manual vocabulary.
 - An empty library renders a helpful first-run state.
 - Long titles truncate without breaking the layout, including with wide characters.
 - Snapshot at 80×24.
+
+**Acceptance**
+- [x] Titles are cut by **display cell**, not by byte or code point. A CJK title is two cells a
+      character, so cutting by byte would either overflow the column or slice a character in
+      half; the width comes from the segmenter that already measured it rather than being
+      computed a second time.
+- [x] **Deleting confirms, and only an explicit `y` goes through.** Enter on a confirmation
+      nobody read is how somebody deletes a book they spent a month typing. It then reports
+      what else went — the tags, the bookmark, and that past runs are kept — because "deleted"
+      alone leaves them wondering about the runs they typed from it.
+- [x] Search filters live as you type. The alternative, searching only on enter, is a filter
+      somebody has to remember to submit; the query is over a local library and costs nothing.
+- [x] A search matching nothing says so, and an empty library says something different, because
+      they are two situations with two different ways out.
+- [x] One mode rather than four booleans: exactly one prompt is open at a time, and two
+      booleans could both be true. One typed buffer for the same reason — four would be three
+      ways to show somebody yesterday's typing.
+- [x] **A prompt owns the keyboard while it is open.** A `d` typed into a search box must not
+      open a delete confirmation, and an arrow inside a tag prompt must not move the selection
+      out from under it, or the tag lands on a text the user is no longer looking at.
+- [x] Nothing is queried in `render` — the same guard as the history screen, asserted the same
+      way, with a counter on the fake.
+- [x] `ctrl-l` opens it, but not from inside a run: the timer would keep going behind a screen
+      the typist cannot type into.
 
 ---
 
