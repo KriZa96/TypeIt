@@ -17,6 +17,7 @@
 #include "ScreenContext.h"
 #include "ScreenStack.h"
 #include "screens/HelpScreen.h"
+#include "screens/HistoryScreen.h"
 #include "screens/MenuScreen.h"
 #include "screens/ResultsScreen.h"
 #include "screens/SessionScreen.h"
@@ -61,6 +62,7 @@ namespace typeit::tui {
             context.capabilities = dependencies.capabilities;
             context.texts = &dependencies.texts;
             context.load_text = dependencies.load_text;
+            context.history = dependencies.history;
             context.size = TerminalSize{.columns = 80, .rows = 24};
         }
 
@@ -126,6 +128,76 @@ namespace typeit::tui {
         void start_again() {
             if (auto* const menu = dynamic_cast<MenuScreen*>(&stack.top()); menu != nullptr) {
                 start(menu->selection());
+            }
+        }
+
+        /// Ends the run, if there is one, and asks the loop to stop.
+        ///
+        /// On `Impl` rather than only on `TerminalApp` so the event handler can
+        /// reach it without a round trip through the public class — and because
+        /// everything it touches lives here.
+        void stop() {
+            if (std::exchange(quitting, true)) {
+                return;
+            }
+            // A run still in progress is saved as abandoned rather than
+            // dropped: it happened, and quitting is not a reason to pretend
+            // otherwise.
+            if (session != nullptr) {
+                session->abandon();
+                session = nullptr;
+            }
+            // `ExitLoopClosure` is safe to call when no loop is running: it
+            // posts a task the loop reads on its next turn, and a loop that
+            // never starts simply never reads it.
+            screen.ExitLoopClosure()();
+        }
+
+        /// A frame: time passes here and nowhere else.
+        void tick() {
+            if (session != nullptr) {
+                session->on_tick(dependencies.clock->now());
+            }
+            apply_requests();
+        }
+
+        /// The keys that mean the same thing wherever the user is.
+        ///
+        /// Handled above the stack so no screen can swallow them: a help key
+        /// that works everywhere except the one screen somebody is stuck on is
+        /// the same as no help key.
+        [[nodiscard]] bool handle_global(const ftxui::Event& event) {
+            const std::optional<Action> action = keymap.action_for(event);
+            if (action == Action::ForceQuit) {
+                stop();
+                return true;
+            }
+            if (action == Action::Help && stack.top().title() != "help") {
+                stack.push(std::make_shared<HelpScreen>(context));
+                return true;
+            }
+            // Not from inside a run: `ctrl-h` mid-session would leave the timer
+            // running behind a screen the typist cannot type into.
+            if (action == Action::History && session == nullptr && stack.top().title() != "history") {
+                stack.push(std::make_shared<HistoryScreen>(context));
+                return true;
+            }
+            return false;
+        }
+
+        /// Everything else, offered to the top screen first.
+        void handle_screen(const ftxui::Event& event) {
+            const bool handled = stack.on_event(event);
+            apply_requests();
+            if (handled || keymap.action_for(event) != Action::QuitOrBack) {
+                return;
+            }
+            // Nothing wanted it, so it means "go back". At the root that is
+            // refused, which is why leaving is a separate binding.
+            if (stack.size() > 1) {
+                stack.pop();
+            } else {
+                stop();
             }
         }
 
@@ -205,56 +277,20 @@ namespace typeit::tui {
 
         const ftxui::Component with_events = ftxui::CatchEvent(ui, [this](const ftxui::Event& event) {
             if (event == ftxui::Event::Custom) {
-                // A frame. Time passes here and nowhere else.
-                if (impl_->session != nullptr) {
-                    impl_->session->on_tick(impl_->dependencies.clock->now());
-                }
-                impl_->apply_requests();
-                return true;
+                impl_->tick();
+            } else if (!impl_->handle_global(event)) {
+                impl_->handle_screen(event);
             }
-
-            if (impl_->keymap.action_for(event) == Action::ForceQuit) {
-                quit();
-                return true;
-            }
-            if (impl_->keymap.action_for(event) == Action::Help && impl_->stack.top().title() != "help") {
-                impl_->stack.push(std::make_shared<HelpScreen>(impl_->context));
-                return true;
-            }
-
-            const bool handled = impl_->stack.on_event(event);
-            impl_->apply_requests();
-
-            if (!handled && impl_->keymap.action_for(event) == Action::QuitOrBack) {
-                // Nothing wanted it, so it means "go back". At the root that is
-                // refused, which is why leaving is a separate binding.
-                if (impl_->stack.size() > 1) {
-                    impl_->stack.pop();
-                } else {
-                    quit();
-                }
-            }
+            // Always: FTXUI redraws on a handled event, and every event here
+            // either advanced something or was offered to a screen that may
+            // have.
             return true;
         });
 
         impl_->screen.Loop(with_events);
     }
 
-    void TerminalApp::quit() {
-        if (std::exchange(impl_->quitting, true)) {
-            return;
-        }
-        // A run still in progress is saved as abandoned rather than dropped: it
-        // happened, and quitting is not a reason to pretend otherwise.
-        if (impl_->session != nullptr) {
-            impl_->session->abandon();
-            impl_->session = nullptr;
-        }
-        // `ExitLoopClosure` is safe to call when no loop is running: it posts a
-        // task the loop reads on its next turn, and a loop that never starts
-        // simply never reads it.
-        impl_->screen.ExitLoopClosure()();
-    }
+    void TerminalApp::quit() { impl_->stop(); }
 
     bool TerminalApp::is_quitting() const noexcept { return impl_->quitting; }
 

@@ -6,7 +6,7 @@
 # had them. `apps/typeit` is the only place FTXUI and SQLite are both visible,
 # and it sees neither through a header of ours.
 add_library(typeit_tui STATIC src/Bars.cpp src/Charts.cpp src/ColorQuantizer.cpp src/FrameTicker.cpp src/Layout.cpp src/Glyphs.cpp src/Heatmap.cpp src/Keymap.cpp src/ScreenStack.cpp src/TerminalApp.cpp src/TypingArea.cpp
-                                src/screens/HelpScreen.cpp src/screens/MenuScreen.cpp
+                                src/screens/HelpScreen.cpp src/screens/HistoryScreen.cpp src/screens/MenuScreen.cpp
                                 src/screens/ResultsScreen.cpp src/screens/SessionScreen.cpp
                                 src/screens/TerminalTooSmallScreen.cpp src/ConsoleMode.cpp)
 add_library(typeit::tui ALIAS typeit_tui)

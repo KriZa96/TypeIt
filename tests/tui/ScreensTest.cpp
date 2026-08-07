@@ -21,6 +21,7 @@
 #include "screens/ResultsScreen.h"
 #include "screens/SessionScreen.h"
 #include "screens/TerminalTooSmallScreen.h"
+#include "typeit/app/records/History.h"
 #include "typeit/app/services/SessionService.h"
 #include "typeit/core/modes/ModeRegistry.h"
 #include "typeit/core/modes/QuoteMode.h"
@@ -412,6 +413,105 @@ namespace typeit::tui {
             ASSERT_EQ(screen.focused(), MenuField::Text);
 
             EXPECT_FALSE(screen.on_event(ftxui::Event::ArrowRight)) << "nothing to cycle through";
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+            EXPECT_TRUE(screen.take_start());
+        }
+
+        // --- The menu's recent-runs sparkline (TI-106) --------------------------
+
+        /// A history with `count` runs in it, oldest slowest, so a trend that
+        /// came back in the wrong order is visible rather than merely wrong.
+        void seed_runs(testing::FakeHistoryRepository& history, std::size_t count) {
+            for (std::size_t at = 0; at < count; ++at) {
+                app::SessionRecord record;
+                record.mode = "timed";
+                record.started_at = core::Millis{1'767'225'600'000 + static_cast<std::int64_t>(at) * 60'000};
+                record.ended_at = record.started_at;
+                record.duration = core::Millis{30'000};
+                record.net_wpm = core::Wpm{50.0 + static_cast<double>(at)};
+                record.accuracy = core::Accuracy{0.9};
+                record.completed = true;
+                EXPECT_TRUE(history.save_run(record, {}, {}));
+            }
+        }
+
+        TEST(MenuScreenTest, WithNoRunsTheSparklineIsAPromptRatherThanAnEmptyBox) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            fixture.context.history = HistorySource{.records = &history};
+            MenuScreen screen{fixture.context};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 24);
+
+            EXPECT_NE(drawn.find("no runs yet"), std::string::npos) << drawn;
+        }
+
+        TEST(MenuScreenTest, FewerThanTenRunsStillDraws) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            seed_runs(history, 3);
+            fixture.context.history = HistorySource{.records = &history};
+            MenuScreen screen{fixture.context};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 24);
+
+            EXPECT_NE(drawn.find("last 3"), std::string::npos) << drawn;
+            EXPECT_NE(drawn.find("avg"), std::string::npos) << drawn;
+        }
+
+        TEST(MenuScreenTest, TheFiguresBesideTheSparklineMatchTheRuns) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            seed_runs(history, 5);  // 50, 51, 52, 53, 54 wpm at 90%.
+            fixture.context.history = HistorySource{.records = &history};
+            MenuScreen screen{fixture.context};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 24);
+
+            EXPECT_NE(drawn.find("avg 52"), std::string::npos) << drawn;
+            EXPECT_NE(drawn.find("best 54"), std::string::npos) << drawn;
+            EXPECT_NE(drawn.find("acc 90%"), std::string::npos) << drawn;
+        }
+
+        TEST(MenuScreenTest, MoreThanTenRunsShowsTheLastTen) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            seed_runs(history, 25);
+            fixture.context.history = HistorySource{.records = &history};
+            MenuScreen screen{fixture.context};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 24);
+
+            EXPECT_NE(drawn.find("last 10"), std::string::npos) << drawn;
+            // The last ten are the fastest ten, so the average is well above
+            // the lifetime one — which is the check that it took the *recent*
+            // runs rather than the first ten it found.
+            EXPECT_NE(drawn.find("best 74"), std::string::npos) << drawn;
+        }
+
+        TEST(MenuScreenTest, TheHistoryIsReadOnceRatherThanOnEveryFrame) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            seed_runs(history, 5);
+            fixture.context.history = HistorySource{.records = &history};
+            MenuScreen screen{fixture.context};
+            const std::size_t after_open = history.queries;
+
+            static_cast<void>(testing::render_to_text(screen.render(), 80, 24));
+            static_cast<void>(testing::render_to_text(screen.render(), 80, 24));
+
+            EXPECT_EQ(history.queries, after_open) << "drawing asked the database nothing";
+        }
+
+        TEST(MenuScreenTest, AFailingHistoryQueryLeavesTheMenuUsable) {
+            // A run nobody can start because the sparkline failed to load would
+            // be the worse trade.
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            history.failure.fail_next(core::make_error(core::ErrorCode::DbQuery, "the fixture asked it to"));
+            fixture.context.history = HistorySource{.records = &history};
+            MenuScreen screen{fixture.context};
+
             ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
             EXPECT_TRUE(screen.take_start());
         }

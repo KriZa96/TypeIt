@@ -36,7 +36,8 @@ if(TYPEIT_BUILD_PROBES)
 endif()
 
 add_executable(tui_tests ColorQuantizerTest.cpp FrameTickerTest.cpp GlyphSetTest.cpp
-                         HeatmapTest.cpp HistogramTest.cpp KeymapTest.cpp
+                         HeatmapTest.cpp HistogramTest.cpp HistoryScreenTest.cpp
+                         KeymapTest.cpp
                          LineChartTest.cpp
                          LayoutTest.cpp SparklineTest.cpp StatsBarTest.cpp
                          ScreensTest.cpp ScreenStackTest.cpp Snapshot.cpp TerminalAppTest.cpp TypingAreaTest.cpp)

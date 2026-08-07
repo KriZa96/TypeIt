@@ -5,11 +5,13 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "Bars.h"
+#include "Charts.h"
 #include "ColorQuantizer.h"
 #include "Glyphs.h"
 #include "Keymap.h"
@@ -34,6 +36,11 @@ namespace typeit::tui {
             return "";
         }
 
+        /// Ten, which is what UX §3.1 shows and what fits beside the figures.
+        constexpr std::size_t kRecentRuns = 10;
+
+        std::string whole(double value) { return std::to_string(static_cast<std::int64_t>(value)); }
+
         std::string range_message(std::string_view field, core::Range range) {
             return std::string{field} + " must be between " + std::to_string(range.low) + " and " +
                    std::to_string(range.high);
@@ -47,6 +54,40 @@ namespace typeit::tui {
         selection_.mode = context.config->general.default_mode;
         selection_.seconds = context.config->general.default_duration_s;
         selection_.words = context.config->general.default_word_count;
+        load_recent();
+    }
+
+    void MenuScreen::load_recent() {
+        // Read once, here. A query in `render` would run against a file on disk
+        // every frame, and the last ten runs do not change while somebody
+        // chooses a duration.
+        if (context_->history.records == nullptr) {
+            return;
+        }
+        app::HistoryFilter filter;
+        filter.limit = kRecentRuns;
+        const core::Result<std::vector<app::SessionRow>> rows = context_->history.records->query(filter);
+        if (!rows) {
+            // The menu still works without it. A run nobody can start because
+            // the sparkline failed to load would be the worse trade.
+            return;
+        }
+
+        double total = 0.0;
+        double accuracy = 0.0;
+        // Oldest first: `query` gives newest first, and a trend line that runs
+        // backwards is a trend line pointing the wrong way.
+        for (const app::SessionRow& row: std::ranges::reverse_view(*rows)) {
+            recent_.wpm.push_back(row.net_wpm.value);
+            total += row.net_wpm.value;
+            accuracy += row.accuracy.value;
+            recent_.best = core::Wpm{std::max(recent_.best.value, row.net_wpm.value)};
+        }
+        if (!recent_.wpm.empty()) {
+            const auto count = static_cast<double>(recent_.wpm.size());
+            recent_.mean = core::Wpm{total / count};
+            recent_.accuracy = core::Accuracy{accuracy / count};
+        }
     }
 
     std::size_t MenuScreen::text_choices() const { return context_->texts == nullptr ? 0 : context_->texts->size(); }
@@ -194,6 +235,24 @@ namespace typeit::tui {
                     ftxui::text(name + std::string(name.size() < 10 ? 10 - name.size() : 1, ' ')) |
                             ftxui::color(muted.color),
                     ftxui::text(value) | ftxui::color(accent.color),
+            }));
+        }
+
+        // The point of recording history is to see it without asking, so it is
+        // on the menu rather than behind a key.
+        rows.push_back(ftxui::text(""));
+        if (recent_.wpm.empty()) {
+            rows.push_back(ftxui::text("  no runs yet") | ftxui::color(muted.color));
+        } else {
+            rows.push_back(ftxui::hbox({
+                    ftxui::text("  last " + std::to_string(recent_.wpm.size()) + "  ") | ftxui::color(muted.color),
+                    sparkline(recent_.wpm, *context_->theme, {.width = kRecentRuns, .glyphs = glyphs, .depth = depth}),
+                    ftxui::text("   avg ") | ftxui::color(muted.color),
+                    ftxui::text(whole(recent_.mean.value)) | ftxui::color(accent.color),
+                    ftxui::text(" best ") | ftxui::color(muted.color),
+                    ftxui::text(whole(recent_.best.value)) | ftxui::color(accent.color),
+                    ftxui::text(" acc ") | ftxui::color(muted.color),
+                    ftxui::text(whole(recent_.accuracy.value * 100.0) + "%") | ftxui::color(accent.color),
             }));
         }
 

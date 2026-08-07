@@ -1,0 +1,357 @@
+#include "screens/HistoryScreen.h"
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <ftxui/component/event.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "Bars.h"
+#include "Charts.h"
+#include "ColorQuantizer.h"
+#include "Heatmap.h"
+#include "Keymap.h"
+#include "typeit/app/Json.h"
+#include "typeit/core/config/Validation.h"
+
+namespace typeit::tui {
+    namespace {
+
+        constexpr std::int64_t kMillisPerDay = 86'400'000;
+        constexpr std::int64_t kMillisPerMinute = 60'000;
+
+        /// How many session rows the list gets. The rest of the screen — trend,
+        /// totals, bests, heatmap — is a fixed height, so this is what is left.
+        constexpr std::size_t kChromeRows = 18;
+        constexpr std::size_t kMinimumRows = 1;
+
+        /// How many records fit on the one line they get. More than this and
+        /// the line wraps, which is worse than a shorter list.
+        constexpr std::size_t kBestsShown = 4;
+
+        /// `all` plus every mode a run can be recorded under, so the filter
+        /// offers what the history can contain rather than what it happens to.
+        const std::vector<std::string>& mode_choices() {
+            static const std::vector<std::string> choices = [] {
+                std::vector<std::string> all{"all"};
+                for (const std::string_view mode: core::kModeNames) {
+                    all.emplace_back(mode);
+                }
+                return all;
+            }();
+            return choices;
+        }
+
+        std::string duration_text(core::Millis total) {
+            const std::int64_t minutes = total.value / kMillisPerMinute;
+            return std::to_string(minutes / 60) + "h " + std::to_string(minutes % 60) + "m";
+        }
+
+        std::string whole(double value) { return std::to_string(static_cast<std::int64_t>(value)); }
+
+    }  // namespace
+
+    std::string_view to_string(DateRange range) {
+        switch (range) {
+            case DateRange::All:
+                return "all time";
+            case DateRange::Week:
+                return "7 days";
+            case DateRange::Month:
+                return "30 days";
+            case DateRange::Year:
+                return "365 days";
+        }
+        return "all time";
+    }
+
+    std::int64_t days_in(DateRange range) {
+        switch (range) {
+            case DateRange::All:
+                return 0;
+            case DateRange::Week:
+                return 7;
+            case DateRange::Month:
+                return 30;
+            case DateRange::Year:
+                return 365;
+        }
+        return 0;
+    }
+
+    HistoryScreen::HistoryScreen(const ScreenContext& context) : context_{&context} {
+        // Abandoned runs are in: this screen is a record of what happened, and
+        // a run left half way through happened. The trend excludes them by
+        // asking for its own filter.
+        filter_.completed_only = false;
+        reload();
+    }
+
+    void HistoryScreen::reload() {
+        data_ = {};
+        const HistorySource& source = context_->history;
+        if (source.records == nullptr) {
+            // No history to read. Not an error and not a message — the empty
+            // state below is what a new user sees, and it is the same one.
+            return;
+        }
+
+        const auto note = [&](const core::Error& error) { data_.problems.push_back(core::to_string(error)); };
+
+        if (core::Result<std::vector<app::SessionRow>> rows = source.records->query(filter_); rows) {
+            data_.sessions = std::move(*rows);
+        } else {
+            note(rows.error());
+        }
+        if (const core::Result<app::Aggregates> totals = source.records->aggregates(filter_); totals) {
+            data_.totals = *totals;
+        } else {
+            note(totals.error());
+        }
+        if (const core::Result<std::vector<app::PersonalBest>> bests = source.records->personal_bests(); bests) {
+            data_.bests = *bests;
+        } else {
+            note(bests.error());
+        }
+        if (core::Result<core::KeyStats> keys = source.records->key_stats(filter_); keys) {
+            data_.keys = std::move(*keys);
+        } else {
+            note(keys.error());
+        }
+
+        if (source.service != nullptr) {
+            if (core::Result<std::vector<app::TrendPoint>> trend =
+                        source.service->trend(filter_, app::TrendBucket::Day, source.utc_offset);
+                trend) {
+                data_.trend = std::move(*trend);
+            } else {
+                note(trend.error());
+            }
+            if (source.wall_clock != nullptr) {
+                if (const core::Result<app::Streak> streak =
+                            source.service->streak(filter_, source.wall_clock->unix_now(), source.utc_offset);
+                    streak) {
+                    data_.streak = *streak;
+                } else {
+                    note(streak.error());
+                }
+            }
+        }
+
+        selected_ = 0;
+        first_row_ = 0;
+    }
+
+    std::size_t HistoryScreen::page_size() const {
+        const std::size_t rows = context_->size.rows;
+        return rows > kChromeRows ? rows - kChromeRows : kMinimumRows;
+    }
+
+    void HistoryScreen::cycle_mode(bool forward) {
+        const std::vector<std::string>& choices = mode_choices();
+        const std::string current = filter_.mode.value_or("all");
+        // NOLINTNEXTLINE(readability-qualified-auto) -- MSVC's vector iterator is not a pointer
+        const auto at = std::ranges::find(choices, current);
+        const std::size_t index = at == choices.end() ? 0 : static_cast<std::size_t>(at - choices.begin());
+        const std::size_t count = choices.size();
+        const std::string& next = choices.at(forward ? (index + 1) % count : (index + count - 1) % count);
+
+        // `all` is the absence of a filter, not a mode called "all" — a query
+        // for `mode = 'all'` matches nothing.
+        filter_.mode = next == "all" ? std::optional<std::string>{} : std::optional<std::string>{next};
+        reload();
+    }
+
+    void HistoryScreen::cycle_range(bool forward) {
+        const auto index = static_cast<std::size_t>(range_);
+        const std::size_t count = kAllDateRanges.size();
+        range_ = kAllDateRanges.at(forward ? (index + 1) % count : (index + count - 1) % count);
+
+        // Combinable with the mode filter by construction: this touches `since`
+        // and nothing else.
+        const std::int64_t days = days_in(range_);
+        if (days == 0 || context_->history.wall_clock == nullptr) {
+            filter_.since.reset();
+        } else {
+            filter_.since = core::Millis{context_->history.wall_clock->unix_now().value - (days * kMillisPerDay)};
+        }
+        reload();
+    }
+
+    void HistoryScreen::move_selection(std::int64_t by) {
+        if (data_.sessions.empty()) {
+            return;
+        }
+        const auto last = static_cast<std::int64_t>(data_.sessions.size() - 1);
+        const auto wanted = std::clamp(static_cast<std::int64_t>(selected_) + by, std::int64_t{0}, last);
+        selected_ = static_cast<std::size_t>(wanted);
+
+        // The window follows the selection rather than the other way round, so
+        // paging past the end lands on the last row instead of scrolling into
+        // blank space.
+        const std::size_t page = page_size();
+        if (selected_ < first_row_) {
+            first_row_ = selected_;
+        } else if (selected_ >= first_row_ + page) {
+            first_row_ = selected_ - page + 1;
+        }
+    }
+
+    std::optional<core::SessionId> HistoryScreen::take_opened() {
+        std::optional<core::SessionId> taken = opened_;
+        opened_.reset();
+        return taken;
+    }
+
+    namespace {
+
+        ftxui::Element bests_line(const std::vector<app::PersonalBest>& bests, const Styling& muted,
+                                  const Styling& accent) {
+            if (bests.empty()) {
+                return ftxui::text("  no records yet") | ftxui::color(muted.color);
+            }
+            std::vector<ftxui::Element> parts{ftxui::text("  bests   ") | ftxui::color(muted.color)};
+            // Per `(mode, parameter, metric)`: a 15-second best and a
+            // 60-second best are separate records because they measure
+            // different things, and a WPM record and an accuracy record are not
+            // comparable at all — so the metric is named rather than left for
+            // the reader to infer from the magnitude.
+            for (std::size_t at = 0; at < bests.size() && at < kBestsShown; ++at) {
+                const app::PersonalBest& best = bests.at(at);
+                parts.push_back(ftxui::text(best.mode + " " + best.metric + " ") | ftxui::color(muted.color));
+                parts.push_back(ftxui::text(app::json::number(best.value) + "   ") | ftxui::color(accent.color));
+            }
+            return ftxui::hbox(std::move(parts));
+        }
+
+    }  // namespace
+
+    ftxui::Element HistoryScreen::render() {
+        const app::ColorDepth depth = context_->capabilities.color;
+        const Styling accent = style_for(*context_->theme, app::ThemeColor::Accent, depth);
+        const Styling muted = style_for(*context_->theme, app::ThemeColor::Muted, depth);
+        const Styling error = style_for(*context_->theme, app::ThemeColor::Error, depth);
+        const Layout layout = context_->layout();
+
+        std::vector<ftxui::Element> rows;
+        rows.push_back(ftxui::hbox({
+                ftxui::text("History  ") | ftxui::color(accent.color),
+                ftxui::text("mode ") | ftxui::color(muted.color),
+                ftxui::text(filter_.mode.value_or("all") + "  ") |
+                        ftxui::color(focused_ == HistoryField::Mode ? accent.color : muted.color),
+                ftxui::text("range ") | ftxui::color(muted.color),
+                ftxui::text(std::string{to_string(range_)}) |
+                        ftxui::color(focused_ == HistoryField::Range ? accent.color : muted.color),
+        }));
+        rows.push_back(ftxui::text(""));
+
+        if (data_.totals.sessions == 0) {
+            // The state a new user opens this on. A sentence beats a table of
+            // zeros, which reads as a broken screen rather than an empty one.
+            rows.push_back(ftxui::text("  Nothing recorded yet. Finish a run and it will show up here.") |
+                           ftxui::color(muted.color));
+        } else {
+            LineChartData chart;
+            for (std::size_t at = 0; at < data_.trend.size(); ++at) {
+                chart.series.push_back(
+                        {.x = static_cast<double>(at), .y = data_.trend.at(at).mean_net_wpm.value});
+            }
+            chart.empty_message = "not enough days to plot a trend yet";
+            rows.push_back(line_chart(chart, *context_->theme,
+                                      {.width = layout.text_columns, .height = 6, .depth = depth}));
+            rows.push_back(ftxui::text(""));
+
+            rows.push_back(ftxui::hbox({
+                    ftxui::text("  " + std::to_string(data_.totals.sessions) + " runs") |
+                            ftxui::color(accent.color),
+                    ftxui::text(" · " + duration_text(data_.totals.total_time) + " typed") |
+                            ftxui::color(muted.color),
+                    ftxui::text(" · mean " + whole(data_.totals.mean_net_wpm.value) + " wpm") |
+                            ftxui::color(muted.color),
+                    ftxui::text(" · streak " + std::to_string(data_.streak.current) + " (best " +
+                                std::to_string(data_.streak.longest) + ")") |
+                            ftxui::color(muted.color),
+            }));
+            rows.push_back(bests_line(data_.bests, muted, accent));
+            rows.push_back(ftxui::text(""));
+
+            rows.push_back(ftxui::text("  Errors by key") | ftxui::color(muted.color));
+            rows.push_back(heatmap(data_.keys, *context_->theme,
+                                   {.glyphs = context_->capabilities.glyphs, .depth = depth}));
+            rows.push_back(ftxui::text(""));
+
+            rows.push_back(ftxui::text("  Recent") | ftxui::color(muted.color));
+            const std::size_t last = std::min(data_.sessions.size(), first_row_ + page_size());
+            for (std::size_t at = first_row_; at < last; ++at) {
+                const app::SessionRow& row = data_.sessions.at(at);
+                const bool here = at == selected_ && focused_ == HistoryField::Sessions;
+                std::string line = "  ";
+                line += here ? "> " : "  ";
+                line += fixed_width(row.mode, 6) + "  ";
+                line += fixed_width(whole(row.net_wpm.value), 3) + " wpm  ";
+                line += fixed_width(whole(row.accuracy.value * 100.0) + "%", 4);
+                line += row.completed ? "" : "  (abandoned)";
+                rows.push_back(ftxui::text(line) | ftxui::color(here ? accent.color : muted.color));
+            }
+        }
+
+        for (const std::string& problem: data_.problems) {
+            // In place of the part that failed, never instead of the screen.
+            rows.push_back(ftxui::text("  " + problem) | ftxui::color(error.color));
+        }
+
+        rows.push_back(ftxui::text(""));
+        rows.push_back(key_hint_bar({{.action = Action::QuitOrBack, .label = "back"}}, *context_->keymap,
+                                    *context_->theme, depth));
+        return ftxui::vbox(std::move(rows));
+    }
+
+    bool HistoryScreen::on_event(ftxui::Event event) {
+        if (event == ftxui::Event::Tab) {
+            focused_ = focused_ == HistoryField::Sessions
+                               ? HistoryField::Mode
+                               : static_cast<HistoryField>(static_cast<std::uint8_t>(focused_) + 1);
+            return true;
+        }
+        if (event == ftxui::Event::Return && focused_ == HistoryField::Sessions && !data_.sessions.empty()) {
+            opened_ = data_.sessions.at(selected_).id;
+            return true;
+        }
+
+        if (focused_ == HistoryField::Sessions) {
+            if (event == ftxui::Event::ArrowDown) {
+                move_selection(1);
+                return true;
+            }
+            if (event == ftxui::Event::ArrowUp) {
+                move_selection(-1);
+                return true;
+            }
+            if (event == ftxui::Event::PageDown) {
+                move_selection(static_cast<std::int64_t>(page_size()));
+                return true;
+            }
+            if (event == ftxui::Event::PageUp) {
+                move_selection(-static_cast<std::int64_t>(page_size()));
+                return true;
+            }
+            return false;
+        }
+
+        if (event != ftxui::Event::ArrowLeft && event != ftxui::Event::ArrowRight) {
+            return false;
+        }
+        const bool forward = event == ftxui::Event::ArrowRight;
+        if (focused_ == HistoryField::Mode) {
+            cycle_mode(forward);
+        } else {
+            cycle_range(forward);
+        }
+        return true;
+    }
+
+}  // namespace typeit::tui

@@ -80,6 +80,7 @@ namespace typeit::testing {
         [[nodiscard]] core::Result<std::vector<app::SessionRow>> query(
                 const app::HistoryFilter& filter) const override {
             TYPEIT_FAIL_IF_ARMED()
+            ++queries;
 
             std::vector<app::SessionRow> matched;
             for (const app::SessionRow& row: rows) {
@@ -189,6 +190,11 @@ namespace typeit::testing {
         core::ErrorMap errors;
         std::size_t saves = 0;
         std::size_t merges = 0;
+        /// How many times anybody asked for rows. `mutable` because `query` is
+        /// const and counting the calls is the only way to assert that drawing
+        /// a screen does not make any — which is the whole of TI-103's
+        /// "nothing is queried in render".
+        mutable std::size_t queries = 0;
 
     private:
         /// Applies every write of a run, or none of them.

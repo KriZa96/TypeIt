@@ -339,6 +339,7 @@ namespace {
         const typeit::core::ModeRegistry modes = built_in_modes(config);
         const typeit::infra::SystemClock clock;
         const typeit::app::SessionService sessions{(*history)->repository, modes, clock, clock};
+        const typeit::app::HistoryService past_runs{(*history)->repository};
 
         typeit::tui::TerminalApp app{typeit::tui::Dependencies{
                 .sessions = &sessions,
@@ -348,6 +349,15 @@ namespace {
                 .capabilities = typeit::infra::detect_capabilities(environment),
                 .texts = bundled_texts(options, assets.value_or(std::filesystem::path{})),
                 .load_text = read_file,
+                // The offset is zero, which means UTC days — the same thing
+                // `--stats` does today. Local days are TI-107's job, along with
+                // the DST transition they have to survive; guessing at a
+                // portable local offset here would be a second answer to a
+                // question that is about to get a proper one.
+                .history = typeit::tui::HistorySource{.service = &past_runs,
+                                                      .records = &(*history)->repository,
+                                                      .wall_clock = &clock,
+                                                      .utc_offset = 0},
                 // Only reached when nothing was found to offer, which means an
                 // installation missing its assets. A sentence to type is better
                 // than an empty screen; Phase 6's library replaces all of this.

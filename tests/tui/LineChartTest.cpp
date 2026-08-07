@@ -23,7 +23,8 @@ namespace typeit::tui {
             std::vector<Point> points;
             points.reserve(60);
             for (std::size_t second = 0; second < 60; ++second) {
-                points.push_back({.x = static_cast<double>(second), .y = 40.0 + static_cast<double>(second) * 2.0 / 3.0});
+                points.push_back(
+                        {.x = static_cast<double>(second), .y = 40.0 + static_cast<double>(second) * 2.0 / 3.0});
             }
             return points;
         }

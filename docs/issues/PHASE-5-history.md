@@ -145,6 +145,31 @@ list.
 - Totals and streak figures match `HistoryService` for a known history.
 - Snapshots at 80×24 and 120×40.
 
+**Acceptance**
+- [x] **Nothing is queried in `render`.** The database is asked when the screen opens and when
+      a filter changes, and drawing reads a member. `HistoryScreenTest.NothingIsQueriedByDrawing`
+      counts the calls and asserts drawing twice adds none — a query inside a render callback
+      runs sixty times a second against a file on disk, which is 1.0's `std::stoi`-in-a-render-
+      transform wearing a much more expensive hat.
+- [x] A failing query is reported **in place**, and the parts that did read still draw. A
+      screen that blanks because one aggregate failed tells its reader nothing about the runs
+      it can see.
+- [x] The two filters combine, because the range touches `since` and the mode touches `mode`
+      and neither reaches for the other. `all` is the *absence* of a mode filter, not a mode
+      called "all" — a query for `mode = 'all'` matches nothing.
+- [x] Abandoned runs are listed. This screen is a record of what happened, and a run left half
+      way through happened; `--stats` excludes them because it is about records, which is a
+      different question.
+- [x] Empty history renders a sentence, not a table of zeros — a screen of zeroes reads as
+      broken rather than as new. It renders with no history *source* at all too, which is what
+      a layout test and a build with no database both look like.
+- [x] Selecting a row **reports** the session rather than pushing a screen. TI-081's rule: the
+      stack is driven from one place. Nothing consumes `take_opened()` yet — the screen it
+      opens is TI-104, which depends on this issue by design, and which needs a repository
+      method to read one session whole. Pressing Enter is therefore inert until then, and that
+      is deliberate rather than missed.
+- [x] Snapshots at both sizes.
+
 ---
 
 ## TI-104 — `SessionDetailScreen`
@@ -192,6 +217,16 @@ recording history is to see it without asking.
 - Fewer than ten runs renders correctly.
 - Zero runs renders a neutral prompt, not an empty box.
 - Figures match `HistoryService`.
+
+**Acceptance**
+- [x] Read once when the menu opens, never in `render` — same guard as the history screen, and
+      the same test: drawing twice asks the database nothing.
+- [x] Oldest first. `query` returns newest first, and a trend line drawn in that order runs
+      backwards, which is a picture that says the opposite of the truth.
+- [x] A failing query leaves the menu usable. A run nobody can start because a sparkline failed
+      to load would be the worse trade, so the failure is swallowed here rather than reported —
+      the one place in the rebuild where that is the right answer, because the menu's job is
+      not to show history.
 
 ---
 

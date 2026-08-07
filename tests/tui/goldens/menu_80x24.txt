@@ -6,9 +6,9 @@ TypeIt
   ( ) text      simple                                                          
   ( ) start                                                                     
                                                                                 
+  no runs yet                                                                   
+                                                                                
 f1 keys  ctrl-q quit                                                            
-                                                                                
-                                                                                
                                                                                 
                                                                                 
                                                                                 

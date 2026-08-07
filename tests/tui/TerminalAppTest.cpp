@@ -46,6 +46,10 @@ namespace typeit::tui {
                                     // types the fallback text below.
                                     .texts = {},
                                     .load_text = {},
+                                    // No history either: these tests are about
+                                    // the application's lifetime, and the
+                                    // screens draw their empty states.
+                                    .history = {},
                                     .text = "hi there"};
             }
         };

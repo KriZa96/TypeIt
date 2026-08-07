@@ -23,10 +23,10 @@ namespace typeit::tui {
 
         core::KeyStats a_few_keys() {
             core::KeyStats stats;
-            stats.per_grapheme["a"] = {.attempts = 100, .errors = 0};    // Perfect.
-            stats.per_grapheme["s"] = {.attempts = 100, .errors = 3};    // A little off.
-            stats.per_grapheme["d"] = {.attempts = 100, .errors = 30};   // Bad.
-            stats.per_grapheme[","] = {.attempts = 20, .errors = 8};     // Punctuation counts.
+            stats.per_grapheme["a"] = {.attempts = 100, .errors = 0};  // Perfect.
+            stats.per_grapheme["s"] = {.attempts = 100, .errors = 3};  // A little off.
+            stats.per_grapheme["d"] = {.attempts = 100, .errors = 30};  // Bad.
+            stats.per_grapheme[","] = {.attempts = 20, .errors = 8};  // Punctuation counts.
             return stats;
         }
 
@@ -79,8 +79,8 @@ namespace typeit::tui {
             core::KeyStats stats;
             stats.per_grapheme["a"] = {.attempts = 100, .errors = 0};
 
-            const std::string drawn = testing::render_to_text(
-                    heatmap(stats, theme, {.glyphs = app::GlyphSet::Ascii}), 40, 6);
+            const std::string drawn =
+                    testing::render_to_text(heatmap(stats, theme, {.glyphs = app::GlyphSet::Ascii}), 40, 6);
 
             EXPECT_NE(drawn.find("a "), std::string::npos) << "typed and clean:\n" << drawn;
             EXPECT_NE(drawn.find("p?"), std::string::npos) << "never typed, and marked as such:\n" << drawn;
@@ -90,11 +90,9 @@ namespace typeit::tui {
             app::Theme theme;
             const core::KeyStats stats = a_few_keys();
 
-            for (const app::ColorDepth depth:
-                 {app::ColorDepth::TrueColor, app::ColorDepth::Ansi256, app::ColorDepth::Ansi16,
-                  app::ColorDepth::Mono}) {
-                const std::string drawn =
-                        testing::render_to_text(heatmap(stats, theme, {.depth = depth}), 40, 6);
+            for (const app::ColorDepth depth: {app::ColorDepth::TrueColor, app::ColorDepth::Ansi256,
+                                               app::ColorDepth::Ansi16, app::ColorDepth::Mono}) {
+                const std::string drawn = testing::render_to_text(heatmap(stats, theme, {.depth = depth}), 40, 6);
 
                 EXPECT_NE(drawn.find('q'), std::string::npos) << "depth " << static_cast<int>(depth);
                 EXPECT_NE(drawn.find('a'), std::string::npos) << "depth " << static_cast<int>(depth);

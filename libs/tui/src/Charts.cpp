@@ -75,7 +75,8 @@ namespace typeit::tui {
                 return kSparklineLevels / 2;
             }
             const double fraction = (value - span.low) / (span.high - span.low);
-            const auto level = static_cast<std::size_t>(std::lround(fraction * static_cast<double>(kSparklineLevels - 1)));
+            const auto level =
+                    static_cast<std::size_t>(std::lround(fraction * static_cast<double>(kSparklineLevels - 1)));
             return std::min(level, kSparklineLevels - 1);
         }
 
@@ -272,8 +273,8 @@ namespace typeit::tui {
             const auto draw = [&](const std::vector<Point>& points, char mark) {
                 for (const Point& point: points) {
                     const double fraction = (point.y - axes.y.low) / (axes.y.high - axes.y.low);
-                    const auto from_bottom = static_cast<std::size_t>(std::clamp(fraction, 0.0, 1.0) *
-                                                                      static_cast<double>(height - 1));
+                    const auto from_bottom =
+                            static_cast<std::size_t>(std::clamp(fraction, 0.0, 1.0) * static_cast<double>(height - 1));
                     grid.at(height - 1 - from_bottom).at(column_of(point.x, axes.x, width)) = mark;
                 }
             };
@@ -361,8 +362,8 @@ namespace typeit::tui {
         for (std::size_t row = 0; row < plot_height; ++row) {
             const double at_this_row =
                     y.high - ((y.high - y.low) * static_cast<double>(row) / static_cast<double>(plot_height));
-            const bool labelled = std::ranges::any_of(
-                    ticks, [&](double tick) { return std::abs(tick - at_this_row) < tolerance; });
+            const bool labelled =
+                    std::ranges::any_of(ticks, [&](double tick) { return std::abs(tick - at_this_row) < tolerance; });
 
             rows.push_back(ftxui::hbox({
                     ftxui::text(labelled ? tick_label(at_this_row) : std::string(kGutter, ' ')) |

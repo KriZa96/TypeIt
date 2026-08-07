@@ -1,0 +1,24 @@
+History  mode all  range all time                                               
+                                                                                
+   76|                                                                 *        
+     |                                                                          
+   70|                                                 *                        
+     |                                 *                                        
+   65|                *                                                         
+     |*                                                                         
+     +------------------------------------------------------------------        
+                                                                                
+  5 runs · 0h 2m typed · mean 68 wpm · streak 5 (best 5)                        
+  bests   timed accuracy 0.97   timed net_wpm 76                                
+                                                                                
+  Errors by key                                                                 
+1? 2? 3? 4? 5? 6? 7? 8? 9? 0? -? =?                                             
+ q? w? e? r? t? y? u? i? o? p? [? ]?                                            
+  a? s? d? f? g? h? j? k? l? ;? '?                                              
+    z? x? c? v? b? n? m? ,? .? /?                                               
+                                                                                
+  Recent                                                                        
+     timed   76 wpm   97%                                                       
+     timed   72 wpm   97%                                                       
+     timed   68 wpm   97%                                                       
+     timed   64 wpm   97%                                                       

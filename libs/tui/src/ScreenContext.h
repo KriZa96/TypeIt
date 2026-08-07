@@ -29,6 +29,11 @@ namespace typeit::tui {
         /// offering an empty list.
         const std::vector<TextChoice>* texts = nullptr;
         TextLoader load_text;
+
+        /// What the history screens read. Null throughout is a normal state,
+        /// not an error: a layout test should not have to stand up a database,
+        /// and every screen that reads history has an empty state anyway.
+        HistorySource history;
         /// The terminal as last reported. A screen reads it rather than asking
         /// FTXUI, so every layout case is a value in a test.
         TerminalSize size;

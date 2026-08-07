@@ -26,6 +26,8 @@
 
 #include "typeit/app/Capabilities.h"
 #include "typeit/app/Theme.h"
+#include "typeit/app/ports/IHistoryRepository.h"
+#include "typeit/app/services/HistoryService.h"
 #include "typeit/app/services/SessionService.h"
 #include "typeit/core/config/Config.h"
 #include "typeit/core/util/IClock.h"
@@ -47,6 +49,30 @@ namespace typeit::tui {
     /// something the composition root supplied.
     using TextLoader = std::function<core::Result<std::string>(const std::filesystem::path&)>;
 
+    /// Everything the screens that show recorded history read.
+    ///
+    /// Two pointers rather than one because `HistoryService` deliberately does
+    /// not wrap the plain queries (TI-069) — a method that only forwards is a
+    /// method that only forwards — so a screen asks the repository for rows and
+    /// the service for the questions that need arithmetic over them.
+    ///
+    /// All null is a normal state: a layout test should not have to stand up a
+    /// database, and every screen that reads history draws an empty state
+    /// anyway. That state is the one a new user sees, so it is worth having.
+    struct HistorySource {
+        const app::HistoryService* service = nullptr;
+        const app::IHistoryRepository* records = nullptr;
+        /// For "today", which a streak is counted back from. A port rather
+        /// than a call, because a streak that changes at midnight is a thing a
+        /// test has to be able to stand either side of.
+        const core::IWallClock* wall_clock = nullptr;
+        /// Minutes east of UTC. Days are local days — a run at 23:30 and one at
+        /// 00:30 are two days to the person who did them — and `app` may not
+        /// ask the operating system, so the composition root passes the real
+        /// offset and a test passes whichever one it is asking about.
+        app::UtcOffsetMinutes utc_offset = 0;
+    };
+
     /// Everything the application needs from below it. All borrowed; the
     /// composition root owns every one of them and outlives the application.
     struct Dependencies {
@@ -61,6 +87,7 @@ namespace typeit::tui {
         /// file loses nothing.
         std::vector<TextChoice> texts;
         TextLoader load_text;
+        HistorySource history;
 
         /// The text a run types when the catalogue is empty. Phase 6 replaces
         /// this with the library; until then the composition root supplies one.

@@ -92,7 +92,20 @@ namespace typeit::tui {
         [[nodiscard]] std::size_t text_choices() const;
         [[nodiscard]] bool typing_a_path() const;
 
+        /// The last few runs, read once when the menu opens. Never in `render`:
+        /// the sparkline is a picture of the past, and the past does not change
+        /// sixty times a second.
+        struct Recent {
+            std::vector<double> wpm;
+            core::Wpm mean{0.0};
+            core::Wpm best{0.0};
+            core::Accuracy accuracy{0.0};
+        };
+
+        void load_recent();
+
         const ScreenContext* context_;
+        Recent recent_;
         MenuSelection selection_;
         MenuField focused_ = MenuField::Mode;
         std::string message_;

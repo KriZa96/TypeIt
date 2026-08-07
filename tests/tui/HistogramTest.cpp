@@ -63,10 +63,10 @@ namespace typeit::tui {
                 values.push_back(static_cast<double>(at));
             }
 
-            const std::string narrow = testing::render_to_text(histogram(values, theme, {.width = 20, .height = 4, .glyphs = app::GlyphSet::Ascii}),
-                                                               40, 4);
-            const std::string wide = testing::render_to_text(histogram(values, theme, {.width = 60, .height = 4, .glyphs = app::GlyphSet::Ascii}),
-                                                             80, 4);
+            const std::string narrow = testing::render_to_text(
+                    histogram(values, theme, {.width = 20, .height = 4, .glyphs = app::GlyphSet::Ascii}), 40, 4);
+            const std::string wide = testing::render_to_text(
+                    histogram(values, theme, {.width = 60, .height = 4, .glyphs = app::GlyphSet::Ascii}), 80, 4);
 
             // More columns, more buckets: the wide one draws further across.
             EXPECT_LT(narrow.find_last_not_of(" \n"), wide.find_last_not_of(" \n")) << narrow << "\n---\n" << wide;
@@ -75,8 +75,8 @@ namespace typeit::tui {
         TEST(HistogramTest, ASingleDataPointDrawsOneBar) {
             app::Theme theme;
 
-            const std::string drawn = testing::render_to_text(histogram({70.0}, theme, {.width = 20, .height = 3, .glyphs = app::GlyphSet::Ascii}),
-                                                              20, 3);
+            const std::string drawn = testing::render_to_text(
+                    histogram({70.0}, theme, {.width = 20, .height = 3, .glyphs = app::GlyphSet::Ascii}), 20, 3);
 
             // One bucket, full height: the tallest bucket always reaches the
             // top, whatever its absolute count.
@@ -86,7 +86,8 @@ namespace typeit::tui {
         TEST(HistogramTest, EmptyInputDrawsNothing) {
             app::Theme theme;
 
-            const std::string drawn = testing::render_to_text(histogram({}, theme, {.width = 20, .height = 3, .glyphs = app::GlyphSet::Ascii}), 20, 3);
+            const std::string drawn = testing::render_to_text(
+                    histogram({}, theme, {.width = 20, .height = 3, .glyphs = app::GlyphSet::Ascii}), 20, 3);
 
             EXPECT_EQ(drawn.find('#'), std::string::npos) << drawn;
         }
@@ -97,8 +98,8 @@ namespace typeit::tui {
             // reaches the ceiling and the short one does not.
             const std::vector<double> lopsided{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0};
 
-            const std::string drawn =
-                    testing::render_to_text(histogram(lopsided, theme, {.width = 10, .height = 5, .glyphs = app::GlyphSet::Ascii}), 20, 5);
+            const std::string drawn = testing::render_to_text(
+                    histogram(lopsided, theme, {.width = 10, .height = 5, .glyphs = app::GlyphSet::Ascii}), 20, 5);
 
             const std::size_t top = drawn.find('#');
             ASSERT_NE(top, std::string::npos) << drawn;
