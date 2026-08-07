@@ -105,8 +105,7 @@ namespace typeit::tui {
             // them beside each other without saying so is the quiet kind of
             // wrong.
             rows.push_back(ftxui::text("  recorded by " +
-                                       (run.app_version.empty() ? std::string{"an unknown version"}
-                                                                : run.app_version) +
+                                       (run.app_version.empty() ? std::string{"an unknown version"} : run.app_version) +
                                        "; metrics may not be comparable") |
                            ftxui::color(warning.color));
         }
@@ -135,8 +134,8 @@ namespace typeit::tui {
             }
         }
         chart.empty_message = "no per-second samples were recorded for this run";
-        rows.push_back(line_chart(chart, *context_->theme,
-                                  {.width = layout.text_columns, .height = 8, .depth = depth}));
+        rows.push_back(
+                line_chart(chart, *context_->theme, {.width = layout.text_columns, .height = 8, .depth = depth}));
 
         rows.push_back(ftxui::text(""));
         rows.push_back(key_hint_bar({{.action = Action::QuitOrBack, .label = "back"}}, *context_->keymap,

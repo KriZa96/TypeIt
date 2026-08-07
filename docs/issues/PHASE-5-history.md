@@ -229,6 +229,29 @@ and personal best, worst error pairs, and slowest bigrams.
   sparse.
 - Multi-byte graphemes display correctly in the pair list.
 
+**Acceptance**
+- [x] The pair and bigram lists come from what `finish` already computed, not from a second
+      pass: `SessionResult` now carries the `KeyStats` and `ErrorMap` it built in order to
+      write them. A results screen that derived its own would be a second implementation of the
+      metrics with nothing keeping the two in step — and by the time it drew, the session it
+      would have derived them from is gone.
+- [x] Comparisons are **absent rather than wrong** when there is nothing to compare against. A
+      line reading "+0 vs average" on somebody's first run invents a baseline out of the run
+      itself. One session in the history *is* this one, so the comparison needs two.
+- [x] A new personal best is announced on its own line. The first completed run counts as one
+      by definition, which is the point rather than an edge case.
+- [x] An unmeasured bigram is not a slow one. A pair with no latency samples — two keys typed
+      once, with the interval thrown out as a pause — has no mean to be slowest by, so it is
+      left out rather than sorted as zero.
+- [x] Ties break on the key, so two runs with the same mistakes list them in the same order. A
+      list that reshuffled between draws would be unreadable, and `std::map` iteration order is
+      not a promise about ties in the counts.
+- [x] Multi-byte graphemes pass through unchanged — the pair list is the likeliest place for a
+      `ć` to appear, because it is the one people miss, and reading one byte of it is 1.0's
+      original defect.
+- [x] The record-only constructor stays. A run finished before there was any history to compare
+      it against is a normal thing to have, and it is what the parity snapshot draws.
+
 ---
 
 ## TI-106 — Menu recent-runs sparkline

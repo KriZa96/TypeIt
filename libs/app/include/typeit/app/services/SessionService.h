@@ -27,6 +27,8 @@
 
 #include "typeit/app/ports/IHistoryRepository.h"
 #include "typeit/app/records/History.h"
+#include "typeit/core/metrics/ErrorMap.h"
+#include "typeit/core/metrics/KeyStats.h"
 #include "typeit/core/modes/ModeRegistry.h"
 #include "typeit/core/session/Session.h"
 #include "typeit/core/session/TypingRules.h"
@@ -104,6 +106,17 @@ namespace typeit::app {
     struct SessionResult {
         core::SessionId id{0};
         SessionRecord record;
+
+        /// This run's key and bigram totals, and the pairs it got wrong.
+        ///
+        /// Handed back rather than left to the caller to recompute: `finish`
+        /// has already built both to write them, and a results screen that
+        /// derived its own would be a second implementation of the metrics
+        /// with nothing keeping the two in step. They are *this run's*, not
+        /// the lifetime totals — "which keys did I just miss" is a different
+        /// question from "which keys do I miss".
+        core::KeyStats keys;
+        core::ErrorMap errors;
     };
 
     class SessionService {

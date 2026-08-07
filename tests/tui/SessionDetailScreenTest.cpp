@@ -207,8 +207,7 @@ namespace typeit::tui {
             const core::SessionId id = world.save(a_run());
             SessionDetailScreen screen{world.context, id};
 
-            testing::expect_matches_golden("session_detail_80x30",
-                                           testing::render_to_text(screen.render(), 80, 30));
+            testing::expect_matches_golden("session_detail_80x30", testing::render_to_text(screen.render(), 80, 30));
         }
 
     }  // namespace

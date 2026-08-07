@@ -208,9 +208,12 @@ namespace typeit::tui {
             if (!outcome.has_value()) {
                 return;
             }
-            // Read before the pop: the record lives in the screen that is about
-            // to be destroyed.
-            const app::SessionRecord record = run.result().has_value() ? run.result()->record : app::SessionRecord{};
+            // Read before the pop: the result lives in the screen that is
+            // about to be destroyed. Copied whole rather than by record alone,
+            // so the results screen gets the key stats and error pairs `finish`
+            // already computed instead of a second pass over a log it no longer
+            // has access to.
+            const app::SessionResult result = run.result().value_or(app::SessionResult{});
             const bool again = *outcome == SessionOutcome::Restart;
             session = nullptr;
             stack.pop();
@@ -218,7 +221,7 @@ namespace typeit::tui {
             if (again) {
                 start_again();
             } else if (*outcome == SessionOutcome::Finished) {
-                stack.push(std::make_shared<ResultsScreen>(context, record));
+                stack.push(std::make_shared<ResultsScreen>(context, result));
             }
         }
 

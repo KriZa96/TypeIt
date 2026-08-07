@@ -731,11 +731,175 @@ namespace typeit::tui {
             EXPECT_EQ(screen.take_action(), ResultsAction::Menu);
         }
 
+        // --- ResultsScreen enrichment (TI-105) ----------------------------------
+
+        /// A finished run with everything `finish` produces: the record, the
+        /// per-second samples, the pairs got wrong and the bigram latencies.
+        app::SessionResult a_result() {
+            app::SessionResult result;
+            result.id = core::SessionId{1};
+            result.record = a_record();
+            for (std::int64_t second = 0; second < 8; ++second) {
+                result.record.timeline.push_back({.at = core::Millis{second * 1'000},
+                                                  .wpm = core::Wpm{60.0 + static_cast<double>(second)},
+                                                  .keystrokes = 6,
+                                                  .errors = second == 2 ? 1U : 0U});
+            }
+            result.errors.substitutions[{"m", "n"}] = 7;
+            result.errors.substitutions[{"e", "r"}] = 3;
+            result.keys.per_bigram["th"] = {
+                    .attempts = 20, .errors = 0, .total_latency = core::Millis{4'000}, .latency_samples = 20};
+            result.keys.per_bigram["qu"] = {
+                    .attempts = 4, .errors = 0, .total_latency = core::Millis{1'600}, .latency_samples = 4};
+            // Measured nothing, so it is unmeasured rather than instant.
+            result.keys.per_bigram["zz"] = {
+                    .attempts = 2, .errors = 0, .total_latency = core::Millis{0}, .latency_samples = 0};
+            return result;
+        }
+
+        TEST(ResultsScreenTest, TheChartMatchesTheSessionTimeline) {
+            Fixture fixture;
+            ResultsScreen screen{fixture.context, a_result()};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 40);
+
+            EXPECT_NE(drawn.find('*'), std::string::npos) << "the per-second series:\n" << drawn;
+            EXPECT_NE(drawn.find('x'), std::string::npos) << "and the second an error happened in:\n" << drawn;
+        }
+
+        TEST(ResultsScreenTest, WithNoHistoryTheComparisonIsAbsentRatherThanZero) {
+            // A line reading "+0 vs average" on somebody's first run invents a
+            // baseline out of the run itself.
+            Fixture fixture;
+            ResultsScreen screen{fixture.context, a_result()};
+
+            EXPECT_FALSE(screen.comparison().baseline.has_value());
+            EXPECT_EQ(testing::render_to_text(screen.render(), 80, 40).find("vs your average"), std::string::npos);
+        }
+
+        TEST(ResultsScreenTest, WithHistoryTheComparisonIsShownAgainstAverageAndBest) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            // Two earlier runs at 60 and 80, so the average is 70 and the best
+            // is 80 — and this run's 72.5 sits between them.
+            for (const double wpm: {60.0, 80.0}) {
+                app::SessionRecord past = a_record();
+                past.net_wpm = core::Wpm{wpm};
+                EXPECT_TRUE(history.save_run(past, {}, {}));
+            }
+            app::SessionRecord mine = a_record();
+            EXPECT_TRUE(history.save_run(mine, {}, {}));
+            fixture.context.history = HistorySource{.records = &history};
+            ResultsScreen screen{fixture.context, a_result()};
+
+            ASSERT_TRUE(screen.comparison().baseline.has_value());
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 40);
+            EXPECT_NE(drawn.find("vs your average"), std::string::npos) << drawn;
+            EXPECT_NE(drawn.find("vs your best"), std::string::npos) << drawn;
+        }
+
+        TEST(ResultsScreenTest, ANewPersonalBestIsAnnouncedDistinctly) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            app::SessionRecord slower = a_record();
+            slower.net_wpm = core::Wpm{50.0};
+            EXPECT_TRUE(history.save_run(slower, {}, {}));
+            EXPECT_TRUE(history.save_run(a_record(), {}, {}));  // 72.5, the new best.
+            fixture.context.history = HistorySource{.records = &history};
+            ResultsScreen screen{fixture.context, a_result()};
+
+            EXPECT_TRUE(screen.comparison().personal_best);
+            EXPECT_NE(testing::render_to_text(screen.render(), 80, 40).find("personal best"), std::string::npos);
+        }
+
+        TEST(ResultsScreenTest, ARunThatIsNotABestSaysNothingAboutOne) {
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            app::SessionRecord faster = a_record();
+            faster.net_wpm = core::Wpm{200.0};
+            EXPECT_TRUE(history.save_run(faster, {}, {}));
+            EXPECT_TRUE(history.save_run(a_record(), {}, {}));
+            fixture.context.history = HistorySource{.records = &history};
+            ResultsScreen screen{fixture.context, a_result()};
+
+            EXPECT_FALSE(screen.comparison().personal_best);
+            EXPECT_EQ(testing::render_to_text(screen.render(), 80, 40).find("personal best"), std::string::npos);
+        }
+
+        TEST(ResultsScreenTest, TheWorstPairsAndSlowestBigramsAreListedBiggestFirst) {
+            Fixture fixture;
+            ResultsScreen screen{fixture.context, a_result()};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 40);
+
+            EXPECT_NE(drawn.find("missed"), std::string::npos) << drawn;
+            const std::size_t worst = drawn.find("m->n");
+            const std::size_t next = drawn.find("e->r");
+            ASSERT_NE(worst, std::string::npos) << drawn;
+            ASSERT_NE(next, std::string::npos) << drawn;
+            EXPECT_LT(worst, next) << "seven beats three:\n" << drawn;
+
+            EXPECT_NE(drawn.find("slowest"), std::string::npos) << drawn;
+            EXPECT_NE(drawn.find("qu 400ms"), std::string::npos) << drawn;
+            EXPECT_EQ(drawn.find("zz"), std::string::npos) << "unmeasured is not slow:\n" << drawn;
+        }
+
+        TEST(ResultsScreenTest, SparseDataShowsFewerEntriesRatherThanPadding) {
+            Fixture fixture;
+            app::SessionResult sparse = a_result();
+            sparse.errors.substitutions.clear();
+            sparse.errors.substitutions[{"a", "s"}] = 1;
+            ResultsScreen screen{fixture.context, sparse};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 40);
+
+            EXPECT_NE(drawn.find("a->s 1"), std::string::npos) << drawn;
+        }
+
+        TEST(ResultsScreenTest, APerfectRunListsNoMistakesAtAll) {
+            Fixture fixture;
+            app::SessionResult clean = a_result();
+            clean.errors.substitutions.clear();
+            ResultsScreen screen{fixture.context, clean};
+
+            EXPECT_EQ(testing::render_to_text(screen.render(), 80, 40).find("missed"), std::string::npos);
+        }
+
+        TEST(ResultsScreenTest, MultiByteGraphemesSurviveThePairList) {
+            // The one place a `ć` is most likely to appear, because it is the
+            // one people miss — and 1.0's bug was reading one byte of it.
+            Fixture fixture;
+            app::SessionResult accented = a_result();
+            accented.errors.substitutions.clear();
+            accented.errors.substitutions[{"ć", "c"}] = 4;
+            ResultsScreen screen{fixture.context, accented};
+
+            const std::string drawn = testing::render_to_text(screen.render(), 80, 40);
+
+            EXPECT_NE(drawn.find("ć"), std::string::npos) << drawn;
+        }
+
         TEST(ResultsScreenTest, SnapshotAt80x24) {
             Fixture fixture;
             ResultsScreen screen{fixture.context, a_record()};
 
             testing::expect_matches_golden("results_80x24", testing::render_to_text(screen.render(), 80, 24));
+        }
+
+        TEST(ResultsScreenTest, SnapshotOfTheEnrichedScreen) {
+            // The parity snapshot above is the record-only constructor, which
+            // is still what a run started before there was any history to
+            // compare against produces. This is the whole screen.
+            Fixture fixture;
+            testing::FakeHistoryRepository history;
+            app::SessionRecord slower = a_record();
+            slower.net_wpm = core::Wpm{60.0};
+            EXPECT_TRUE(history.save_run(slower, {}, {}));
+            EXPECT_TRUE(history.save_run(a_record(), {}, {}));
+            fixture.context.history = HistorySource{.records = &history};
+            ResultsScreen screen{fixture.context, a_result()};
+
+            testing::expect_matches_golden("results_enriched_80x40", testing::render_to_text(screen.render(), 80, 40));
         }
 
         // --- The purity guard, on every screen -----------------------------------

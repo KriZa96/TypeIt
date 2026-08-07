@@ -144,12 +144,15 @@ namespace typeit::app {
         record.app_version = kVersionString;
         record.timeline = core::timeline(log, target);
 
-        const core::Result<core::SessionId> id =
-                history_->save_run(record, core::key_stats(log, target), core::error_map(log, target));
+        core::KeyStats keys = core::key_stats(log, target);
+        core::ErrorMap errors = core::error_map(log, target);
+
+        const core::Result<core::SessionId> id = history_->save_run(record, keys, errors);
         if (!id) {
             return std::unexpected{id.error()};
         }
-        return SessionResult{.id = *id, .record = std::move(record)};
+        return SessionResult{
+                .id = *id, .record = std::move(record), .keys = std::move(keys), .errors = std::move(errors)};
     }
 
 }  // namespace typeit::app

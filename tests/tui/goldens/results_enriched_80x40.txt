@@ -1,0 +1,40 @@
+Run complete                                                                    
+                                                                                
+  net wpm               72.5                                                    
+  gross wpm               80                                                    
+  raw wpm                 82                                                    
+  accuracy               97%                                                    
+  correctness           100%                                                    
+  consistency             88                                                    
+  characters             300                                                    
+  errors                   9                                                    
+  seconds                 30                                                    
+                                                                                
+  a personal best                                                               
+                                                                                
+  +6.25 wpm vs your average, +0 vs your best                                    
+                                                                                
+     |                                                                 *        
+   65|                                                        *                 
+     |                                              *                           
+   63|                            *        *                                    
+   62|                   x                                                      
+     |*        *                                                                
+     +------------------------------------------------------------------        
+                                                                                
+  missed  m->n 7   e->r 3                                                       
+  slowest qu 400ms   th 200ms                                                   
+                                                                                
+ctrl-r again  ctrl-n new text  escape menu                                      
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
