@@ -40,10 +40,12 @@
 #include "typeit/app/ports/IConfigStore.h"
 #include "typeit/app/services/HistoryService.h"
 #include "typeit/app/services/SessionService.h"
+#include "typeit/app/services/TextLibraryService.h"
 #include "typeit/cli/Cli.h"
 #include "typeit/cli/Reports.h"
 #include "typeit/cli/Script.h"
 #include "typeit/cli/Simulate.h"
+#include "typeit/cli/Texts.h"
 #include "typeit/core/config/Config.h"
 #include "typeit/core/modes/ModeRegistry.h"
 #include "typeit/core/modes/QuoteMode.h"
@@ -57,8 +59,10 @@
 #include "typeit/infra/db/Migrator.h"
 #include "typeit/infra/db/SqliteDatabase.h"
 #include "typeit/infra/db/SqliteHistoryRepository.h"
+#include "typeit/infra/db/SqliteTextLibraryRepository.h"
 #include "typeit/infra/fs/AssetLocator.h"
 #include "typeit/infra/fs/PlatformPaths.h"
+#include "typeit/infra/fs/StdFileSystem.h"
 #include "typeit/infra/term/Capabilities.h"
 #include "typeit/infra/term/StandardInput.h"
 #include "typeit/infra/theme/ThemeLoader.h"
@@ -171,6 +175,36 @@ namespace {
             return std::unexpected{migrated.error()};
         }
         return history;
+    }
+
+    /// Everything the text library needs, opened once.
+    struct Library {
+        typeit::infra::SqliteDatabase database;
+        typeit::infra::SqliteTextLibraryRepository repository;
+        typeit::infra::StdFileSystem files;
+        typeit::infra::SystemClock clock;
+        typeit::app::TextLibraryService service;
+
+        explicit Library(typeit::infra::SqliteDatabase&& opened) :
+            database{std::move(opened)}, repository{database}, service{repository, files, clock} {}
+    };
+
+    Result<std::unique_ptr<Library>> open_library(const std::filesystem::path& data_directory) {
+        if (const Status made = typeit::infra::ensure_directory(data_directory); !made) {
+            return std::unexpected{made.error()};
+        }
+        Result<typeit::infra::SqliteDatabase> database = typeit::infra::SqliteDatabase::open(
+                data_directory / "typeit.db", typeit::infra::SqliteDatabase::OpenMode::CreateIfMissing);
+        if (!database) {
+            return std::unexpected{database.error()};
+        }
+        auto library = std::make_unique<Library>(std::move(*database));
+        if (const Result<typeit::infra::MigrationOutcome> migrated =
+                    typeit::infra::migrate_to_latest(library->database);
+            !migrated) {
+            return std::unexpected{migrated.error()};
+        }
+        return library;
     }
 
     Result<std::string> read_file(const std::filesystem::path& path) {
@@ -321,6 +355,21 @@ namespace {
 #endif
     }
 
+    /// What a run types when the menu has no catalogue to choose from.
+    ///
+    /// `--text-id` wins over a pipe, because naming a text is a more specific
+    /// request than handing one over; the sentence is the last resort, for an
+    /// installation missing its assets.
+    std::string starting_text(const std::string& from_library, const std::string& piped) {
+        if (!from_library.empty()) {
+            return from_library;
+        }
+        if (!piped.empty()) {
+            return piped;
+        }
+        return "the quick brown fox jumps over the lazy dog";
+    }
+
     /// The texts the menu offers: whatever `--text` named, then the three
     /// bundled corpora that are actually there.
     ///
@@ -408,6 +457,30 @@ namespace {
                       << "; using the built-in default\n";
         }
 
+        // `--text-id` types something already in the library, which is what
+        // makes a bookmark worth keeping. `--text` is deliberately different:
+        // it types a file once and imports nothing (GAMEPLAY §5.1), so the two
+        // reach the run by different routes and neither surprises the other.
+        std::string from_library;
+        std::vector<typeit::tui::TextChoice> catalogue;
+        if (options.text_id.has_value()) {
+            const Result<std::unique_ptr<Library>> library = open_library(*directory);
+            if (!library) {
+                return complain(library.error());
+            }
+            const Result<std::optional<typeit::app::TextItem>> item = (*library)->repository.get(*options.text_id);
+            if (!item) {
+                return complain(item.error());
+            }
+            if (!item->has_value()) {
+                std::cerr << "typeit: no text with id " << options.text_id->value << ". Try --list-texts.\n";
+                return kFailed;
+            }
+            from_library = (*item)->content;
+        } else {
+            catalogue = bundled_texts(options, assets.value_or(std::filesystem::path{}));
+        }
+
         const typeit::core::ModeRegistry modes = built_in_modes(config);
         const typeit::infra::SystemClock clock;
         const typeit::app::SessionService sessions{(*history)->repository, modes, clock, clock};
@@ -419,7 +492,7 @@ namespace {
                 .theme = &theme,
                 .clock = &clock,
                 .capabilities = typeit::infra::detect_capabilities(environment),
-                .texts = bundled_texts(options, assets.value_or(std::filesystem::path{})),
+                .texts = std::move(catalogue),
                 .load_text = read_file,
                 .save_text = write_file,
                 // The offset is zero, which means UTC days — the same thing
@@ -431,13 +504,45 @@ namespace {
                                                       .records = &(*history)->repository,
                                                       .wall_clock = &clock,
                                                       .utc_offset = 0},
-                // Only reached when nothing was found to offer, which means an
-                // installation missing its assets. A sentence to type is better
-                // than an empty screen; Phase 6's library replaces all of this.
-                .text = piped.empty() ? "the quick brown fox jumps over the lazy dog" : piped,
+                .text = starting_text(from_library, piped),
         }};
         app.run();
         return kOk;
+    }
+
+    /// `--import`, `--list-texts` and `--remove-text`.
+    int run_text_action(const typeit::cli::CliOptions& options, const typeit::infra::Environment& environment) {
+        const Result<std::filesystem::path> directory = data_directory(options, environment);
+        if (!directory) {
+            return complain(directory.error());
+        }
+        const Result<std::unique_ptr<Library>> library = open_library(*directory);
+        if (!library) {
+            return complain(library.error());
+        }
+
+        Result<std::string> text = typeit::core::fail(typeit::core::ErrorCode::InvalidArgument, "no text action");
+        switch (options.action) {
+            case typeit::cli::Action::Import:
+                text = typeit::cli::import_text((*library)->service, options);
+                break;
+            case typeit::cli::Action::ListTexts:
+                text = typeit::cli::list_texts((*library)->repository, (*library)->service, options);
+                break;
+            case typeit::cli::Action::RemoveText:
+                text = typeit::cli::remove_text((*library)->repository, options);
+                break;
+            default:
+                // Unreachable: `dispatch` only routes the three above here.
+                // Reported rather than asserted, because a switch that grows a
+                // case somewhere else should say so rather than fall through.
+                return complain(text.error());
+        }
+
+        if (!text) {
+            return complain(text.error());
+        }
+        return print(*text);
     }
 
     int not_yet(std::string_view what) {
@@ -463,11 +568,12 @@ namespace {
             case typeit::cli::Action::Run:
                 return run_terminal(options, environment);
             case typeit::cli::Action::Import:
-            case typeit::cli::Action::ImportDirectory:
-            case typeit::cli::Action::ImportUrl:
             case typeit::cli::Action::ListTexts:
             case typeit::cli::Action::RemoveText:
-                return not_yet("the text library");
+                return run_text_action(options, environment);
+            case typeit::cli::Action::ImportDirectory:
+            case typeit::cli::Action::ImportUrl:
+                return not_yet("importing a directory or a URL");
         }
         return kFailed;
     }

@@ -168,8 +168,7 @@ namespace typeit::core {
             // quarters of the stream. The bound is loose on purpose: this is a
             // statistical assertion, and a tight one is a test that fails on a
             // Tuesday.
-            std::unique_ptr<WordPoolProvider> provider =
-                    a_pool("the the the the the the the the the cat dog owl");
+            std::unique_ptr<WordPoolProvider> provider = a_pool("the the the the the the the the the cat dog owl");
             ASSERT_NE(provider, nullptr);
 
             const std::map<std::string, std::size_t> seen = counted(*provider, 1'000);

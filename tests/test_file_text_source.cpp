@@ -17,7 +17,12 @@ void create_temp_file(const std::string& filename, const std::string& content) {
 
 
 TEST(FileTextSourceTest, ReadsFileCorrectlyWithoutNewLine) {
-    std::string temp_filename = "temp_test.txt";
+    // A filename per test. All three shared one, and ctest runs each case in
+    // its own process but the same directory — so two of them raced and the
+    // suite failed at random, roughly once a run. Found while sweeping TI-119;
+    // one line is cheaper than one more red pipeline before TI-097 deletes
+    // this file outright.
+    std::string temp_filename = "temp_test_without_newline.txt";
     std::string expected_content = "Hello world. This is a test file.";
     create_temp_file(temp_filename, expected_content);
 
@@ -29,7 +34,7 @@ TEST(FileTextSourceTest, ReadsFileCorrectlyWithoutNewLine) {
 
 
 TEST(FileTextSourceTest, ReadsFileCorrectlyWithNewLine) {
-    std::string temp_filename = "temp_test.txt";
+    std::string temp_filename = "temp_test_with_newline.txt";
     std::string expected_content = "Hello world.\nThis is a test file.";
     create_temp_file(temp_filename, expected_content);
 
@@ -71,7 +76,7 @@ TEST(FileTextSourceTest, ReadsSingleCharacterFile) {
 
 
 TEST(FileTextSourceTest, IsFileValidTrue) {
-    std::string temp_filename = "temp_test.txt";
+    std::string temp_filename = "temp_valid_true.txt";
     std::string expected_content = "Hello world.\nThis is a test file.";
     create_temp_file(temp_filename, expected_content);
 
@@ -79,14 +84,16 @@ TEST(FileTextSourceTest, IsFileValidTrue) {
 }
 
 TEST(FileTextSourceTest, IsFileValidFalse) {
-    std::string temp_filename = "temp_test_.txt";
+    // A name nothing else writes. This asserts the file is *absent*, and
+    // `IsFileValidEmptyFile` used to create the very file it names.
+    std::string temp_filename = "temp_valid_false_never_created.txt";
 
     EXPECT_FALSE(FileTextSource::is_file_valid(temp_filename));
 }
 
 
 TEST(FileTextSourceTest, IsFileValidEmptyFile) {
-    std::string temp_filename = "temp_test_.txt";
+    std::string temp_filename = "temp_valid_empty.txt";
     std::string expected_content = "    ";
     create_temp_file(temp_filename, expected_content);
 

@@ -35,9 +35,7 @@ namespace typeit::core {
             return text[index];
         }
 
-        [[nodiscard]] bool is_terminator(char letter) {
-            return letter == '.' || letter == '!' || letter == '?';
-        }
+        [[nodiscard]] bool is_terminator(char letter) { return letter == '.' || letter == '!' || letter == '?'; }
 
         /// Quotes and brackets that belong to the sentence they close, so
         /// `He said "run."` keeps its quotation mark instead of starting the
@@ -46,9 +44,7 @@ namespace typeit::core {
             return letter == '"' || letter == '\'' || letter == ')' || letter == ']' || letter == '\xE2';
         }
 
-        [[nodiscard]] bool is_space(char letter) {
-            return std::isspace(static_cast<unsigned char>(letter)) != 0;
-        }
+        [[nodiscard]] bool is_space(char letter) { return std::isspace(static_cast<unsigned char>(letter)) != 0; }
 
         /// The word ending just before `stop`, lowercased, for the abbreviation
         /// check. Letters and interior dots only — `e.g` has to come back
@@ -57,8 +53,7 @@ namespace typeit::core {
             std::size_t start = stop;
             while (start > 0) {
                 const char letter = at(text, start - 1);
-                const bool part_of_word =
-                        (std::isalpha(static_cast<unsigned char>(letter)) != 0) || letter == '.';
+                const bool part_of_word = (std::isalpha(static_cast<unsigned char>(letter)) != 0) || letter == '.';
                 if (!part_of_word) {
                     break;
                 }

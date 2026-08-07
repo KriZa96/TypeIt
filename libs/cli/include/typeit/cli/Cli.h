@@ -76,6 +76,10 @@ namespace typeit::cli {
         /// text and typing one are different intentions, and sharing a field
         /// would let `--text-id 3 --remove-text 4` look coherent.
         std::optional<core::TextId> remove_id;
+        /// `--yes`. Answers a confirmation before it is asked, for a script
+        /// that has nobody to ask. Only removal reads it: nothing else here
+        /// destroys anything.
+        bool assume_yes = false;
         std::optional<std::int64_t> last;
 
         // --- Where to look. Both bypass the platform paths entirely, which is

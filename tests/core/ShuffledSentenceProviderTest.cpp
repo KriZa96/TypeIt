@@ -174,8 +174,7 @@ namespace typeit::core {
         TEST(ShuffledSentenceProviderTest, EachPassIsShuffledAgainRatherThanRepeated) {
             // The same permutation over and over would be memorable after two
             // cycles, which is the thing shuffling was for.
-            const std::unique_ptr<ShuffledSentenceProvider> provider =
-                    a_provider("A. B. C. D. E. F. G. H. I. J.", 7);
+            const std::unique_ptr<ShuffledSentenceProvider> provider = a_provider("A. B. C. D. E. F. G. H. I. J.", 7);
             ASSERT_NE(provider, nullptr);
 
             std::vector<std::string> first_pass;

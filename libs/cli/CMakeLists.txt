@@ -3,7 +3,7 @@
 # Links app, because CliOptions is what the composition root hands to the
 # services. It never links infra or FTXUI: parsing a flag is not a reason to
 # know what a database or a terminal is, and the layer check enforces it.
-add_library(typeit_cli STATIC src/Cli.cpp src/Reports.cpp src/Script.cpp src/Simulate.cpp)
+add_library(typeit_cli STATIC src/Cli.cpp src/Reports.cpp src/Texts.cpp src/Script.cpp src/Simulate.cpp)
 add_library(typeit::cli ALIAS typeit_cli)
 
 target_include_directories(typeit_cli PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")

@@ -115,7 +115,7 @@ namespace typeit::cli {
                 ++described;
             }
 
-            EXPECT_EQ(described, 22U) << "every flag in the table, plus the bare dash";
+            EXPECT_EQ(described, 23U) << "every flag in the table, plus the bare dash";
         }
 
     }  // namespace

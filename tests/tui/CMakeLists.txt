@@ -33,6 +33,12 @@ if(TYPEIT_BUILD_PROBES)
 
     set_tests_properties(tui.isolation.infra_is_unreachable tui.isolation.ftxui_does_not_leak
                          PROPERTIES WILL_FAIL TRUE)
+
+    # Serialised against every other compile probe: they all drive `cmake
+    # --build` on one build directory, and ninja refuses to have two of itself
+    # there at once. See tests/core/CMakeLists.txt for the whole story.
+    set_tests_properties(tui.isolation.control tui.isolation.infra_is_unreachable
+                         tui.isolation.ftxui_does_not_leak PROPERTIES RESOURCE_LOCK build_directory)
 endif()
 
 add_executable(tui_tests ColorQuantizerTest.cpp FrameTickerTest.cpp GlyphSetTest.cpp

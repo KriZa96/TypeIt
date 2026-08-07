@@ -41,6 +41,7 @@ namespace typeit::cli {
             Url,
             ListTexts,
             RemoveText,
+            Yes,
             Stats,
             Export,
             Last,
@@ -157,6 +158,13 @@ namespace typeit::cli {
                        .group = "Library",
                        .placeholder = "<ID>",
                        .description = "remove a text from the library"},
+                Option{.flag = Flag::Yes,
+                       .name = "yes",
+                       .letter = 'y',
+                       .takes_value = false,
+                       .group = "Text library",
+                       .placeholder = "",
+                       .description = "answer yes to a confirmation instead of being asked"},
                 Option{.flag = Flag::Stats,
                        .name = "stats",
                        .letter = '\0',
@@ -480,6 +488,10 @@ namespace typeit::cli {
                     options.last = *last;
                     return {};
                 }
+
+                case Flag::Yes:
+                    options.assume_yes = true;
+                    return {};
 
                 case Flag::Doctor:
                     return claim_action(state, Action::Doctor, option.name);

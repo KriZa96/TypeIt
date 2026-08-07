@@ -52,6 +52,15 @@ if(TYPEIT_BUILD_PROBES)
 
     set_tests_properties(core.isolation.ftxui_is_unreachable core.nodiscard.result_cannot_be_ignored
                          PROPERTIES WILL_FAIL TRUE)
+
+    # Every probe drives `cmake --build` against the *same* build directory, and
+    # ninja does not support two invocations on one directory at once — it warns
+    # "premature end of file" and one of them fails. Under `ctest -j` that made
+    # the probes fail at random, roughly one run in three, always blamed on
+    # whatever had just been edited. The lock is a name, not a file: ctest simply
+    # never runs two tests holding it at the same time.
+    set_tests_properties(core.isolation.control core.isolation.ftxui_is_unreachable
+                         core.nodiscard.result_cannot_be_ignored PROPERTIES RESOURCE_LOCK build_directory)
 endif()
 
 add_executable(core_tests ChunkedProviderTest.cpp ConfigValidationTest.cpp DifficultyScoreTest.cpp ErrorMapTest.cpp FakeClockTest.cpp GraphemeTest.cpp KeyStatsTest.cpp KeystrokeLogTest.cpp LogBuilderTest.cpp ModeInterfaceTest.cpp MetricsAccuracyTest.cpp MetricsConsistencyTest.cpp MetricsRollingTest.cpp MetricsSpeedTest.cpp QuoteModeTest.cpp ResultTest.cpp SegmenterTest.cpp ShuffledSentenceProviderTest.cpp SessionTest.cpp Sha256Test.cpp TextBufferTest.cpp TextNormalizerTest.cpp TimedModeTest.cpp TimelineTest.cpp TypingModelTest.cpp TypingRulesTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp WholeTextProviderTest.cpp WordPoolProviderTest.cpp WidthTest.cpp WordCountModeTest.cpp WrapperTest.cpp ZenModeTest.cpp)

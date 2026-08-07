@@ -22,9 +22,7 @@ namespace typeit::core {
             return text[index];
         }
 
-        [[nodiscard]] bool is_space(char letter) {
-            return std::isspace(static_cast<unsigned char>(letter)) != 0;
-        }
+        [[nodiscard]] bool is_space(char letter) { return std::isspace(static_cast<unsigned char>(letter)) != 0; }
 
         /// Whitespace-separated tokens, kept as written.
         ///

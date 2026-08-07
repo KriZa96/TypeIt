@@ -1,6 +1,6 @@
 # The command line's tests. The parser is pure, so these are values in and
 # values out — no subprocess, no temporary files, no terminal.
-add_executable(cli_tests CliParserTest.cpp ExportCliTest.cpp ScriptParserTest.cpp SimulateTest.cpp VersionWiringTest.cpp)
+add_executable(cli_tests CliParserTest.cpp ExportCliTest.cpp ScriptParserTest.cpp TextCliTest.cpp SimulateTest.cpp VersionWiringTest.cpp)
 
 # typeit_version carries the generated header: the test asserts --version
 # reports it rather than a literal (VERSIONING section 6).

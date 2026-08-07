@@ -64,9 +64,8 @@ namespace typeit::core {
         /// Fails with `EmptyText` when nothing survives tokenising: a pool of
         /// no words is an endless stream of nothing, which hangs a run rather
         /// than reporting anything.
-        [[nodiscard]] static Result<std::unique_ptr<WordPoolProvider>> create(std::string_view text,
-                                                                               std::uint64_t seed,
-                                                                               WordPoolOptions options = {});
+        [[nodiscard]] static Result<std::unique_ptr<WordPoolProvider>> create(std::string_view text, std::uint64_t seed,
+                                                                              WordPoolOptions options = {});
 
         [[nodiscard]] std::string next_chunk() override;
         [[nodiscard]] bool has_more() const override { return true; }

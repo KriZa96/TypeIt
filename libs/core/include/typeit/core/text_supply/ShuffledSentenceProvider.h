@@ -43,7 +43,7 @@ namespace typeit::core {
         /// provider over no sentences is an endless stream of nothing, which
         /// hangs a run rather than reporting anything.
         [[nodiscard]] static Result<std::unique_ptr<ShuffledSentenceProvider>> create(std::string_view text,
-                                                                                       std::uint64_t seed);
+                                                                                      std::uint64_t seed);
 
         [[nodiscard]] std::string next_chunk() override;
         [[nodiscard]] bool has_more() const override { return true; }

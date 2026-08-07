@@ -36,6 +36,22 @@ if(TYPEIT_BUILD_TESTS)
     add_test(NAME cli.unknown_flag_is_refused COMMAND typeit_binary --nonsense)
     set_tests_properties(cli.unknown_flag_is_refused PROPERTIES WILL_FAIL TRUE)
 
+    # The text library, over the real binary and a scratch database. What these
+    # add over `TextCliTest` is the exit status, which is the half a script
+    # reads and the half a unit test cannot see.
+    set(text_work "${CMAKE_CURRENT_BINARY_DIR}/text-work")
+    add_test(NAME cli.texts_empty_library
+             COMMAND typeit_binary --data-dir "${text_work}/empty" --list-texts)
+    set_tests_properties(cli.texts_empty_library PROPERTIES PASS_REGULAR_EXPRESSION "No texts yet")
+
+    add_test(NAME cli.texts_remove_needs_confirmation
+             COMMAND typeit_binary --data-dir "${text_work}/empty" --remove-text 1)
+    set_tests_properties(cli.texts_remove_needs_confirmation PROPERTIES WILL_FAIL TRUE)
+
+    add_test(NAME cli.texts_unknown_id_is_refused
+             COMMAND typeit_binary --data-dir "${text_work}/empty" --text-id 999 --simulate /nonexistent)
+    set_tests_properties(cli.texts_unknown_id_is_refused PROPERTIES WILL_FAIL TRUE)
+
     add_test(NAME cli.end_to_end
              COMMAND "${CMAKE_COMMAND}" "-DTYPEIT=$<TARGET_FILE:typeit_binary>"
                      "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/e2e-work" -P

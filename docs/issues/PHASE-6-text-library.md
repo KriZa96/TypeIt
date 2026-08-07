@@ -310,6 +310,29 @@ manual, race against endless Rust-manual vocabulary.
 - `--remove-text` confirms unless `--yes` is given.
 - `--list-texts` output is stable and machine-parseable.
 
+**Acceptance**
+- [x] `--import`, `--list-texts` and `--remove-text` are implemented and reach the library; the
+      composition root answered all three with "not built yet" before this.
+- [x] `--text` and `--text-id` are **different routes on purpose**, and the code says so:
+      `--text` types a file once and imports nothing (GAMEPLAY §5.1), `--text-id` types
+      something already in the library, which is what makes a bookmark worth keeping.
+- [x] `--text-id` with an unknown id names the id and points at `--list-texts`, rather than
+      starting a run over an empty string.
+- [x] `--remove-text` **refuses without `--yes`** rather than prompting. A prompt on stdin is
+      one a pipe cannot answer, and stdin here may well be a piped text — so the confirmation
+      is a flag, and saying which flag is the whole message. `--yes` is new; the help-line count
+      test had it pinned at 22 and now says 23.
+- [x] Removal reports what else went: the tags and the bookmark, and that past sessions are
+      kept and simply no longer name a text. "Removed" alone leaves somebody wondering about
+      the runs they typed from it.
+- [x] The listing is tab-separated with one header line, because `--list-texts | awk` is how
+      somebody finds the id to pass to `--text-id`. Titles are flattened to one line first: a
+      title can contain anything, and a listing piped into `cut` cannot.
+- [x] A failure to read one text's progress is a dash, not the end of the listing — the other
+      texts are still worth showing.
+- [x] Exit codes are pinned by ctest cases over the real binary, which is the half a script
+      reads and the half a unit test cannot see.
+
 ---
 
 ## Phase exit criteria
