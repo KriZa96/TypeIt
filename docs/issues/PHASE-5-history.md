@@ -25,6 +25,19 @@ Compact single-line trend using `▁▂▃▄▅▆▇█`, with an ASCII fallba
 - ASCII fallback emits no byte above 0x7F.
 - Snapshot for a known series.
 
+**Acceptance**
+- [x] Every degenerate series has a documented answer rather than an accident, and the answer
+      is in the header beside the function: empty draws **nothing** (not a row of the lowest
+      level, which would read as a run of zeroes); all-equal draws the **middle** level (not
+      the floor, which would say a flat week was a bad one); negatives are clamped rather than
+      rejected, because losing a month of history over one bad point is the worse failure.
+- [x] Downsampling averages equal buckets rather than sampling every nth. A stride that landed
+      on the troughs would draw a flat line over a clear trend, and there is a test that a
+      rising series still reads as rising after being squeezed into ten cells.
+- [x] Lives in `Charts.cpp` with the histogram and the line chart rather than in a file of its
+      own. None of the three holds anything between frames, so each is a function over its
+      data, and three headers that always change together are three places to forget one.
+
 ---
 
 ## TI-100 — `LineChart` widget
@@ -42,6 +55,21 @@ Axis-labelled chart for per-second WPM, with error markers overlaid.
 - Very narrow widths degrade gracefully rather than overflowing.
 - Snapshots at 80 and 120 columns.
 
+**Acceptance**
+- [x] Tick selection is `axis_ticks`, a free function over two doubles, and the test asserts on
+      the vector rather than on the picture. Steps are 1, 2 or 5 times a power of ten: a step
+      of 3.7 is evenly spaced and unreadable, and "readable" is the requirement.
+- [x] A flat series gets one tick at the value it held, not an empty gutter — an axis with no
+      numbers on it reads as a rendering bug rather than as a steady run.
+- [x] Error markers sit **on** the line, in the series' own row, rather than in a strip along
+      the bottom. A strip is a second chart sharing an axis, and matching its peaks to the
+      line by eye is exactly the work the marker was meant to save.
+- [x] Each row is drawn as one element per run of identical marks, not one per row, so the
+      pacer overlay and the error markers keep their own colours. At `Mono` the glyph carries
+      it, which is why they are different glyphs and not only different colours.
+- [x] A width narrower than the label gutter drops the labels and keeps the plot, and nothing
+      is written outside the box — asserted by measuring the longest rendered line.
+
 ---
 
 ## TI-101 — `Histogram` widget
@@ -56,6 +84,16 @@ Distribution of WPM across runs.
 - A single data point renders one bar.
 - Empty input renders empty.
 - Bar heights scale to the tallest bucket.
+
+**Acceptance**
+- [x] Bucketing is asserted on `bucket_counts`, which returns a vector, rather than by reading
+      block characters back out of a picture. Buckets are half-open upwards with the top one
+      closed, so a boundary value lands in exactly one bucket and the maximum is not silently
+      dropped off the end — both are tests.
+- [x] The bucket count is derived from the width rather than asked for. A histogram with more
+      buckets than columns cannot draw them, and one with far fewer wastes the box it was
+      given.
+- [x] Every value identical is one bucket rather than a division by zero.
 
 ---
 
@@ -74,6 +112,20 @@ thousands of keystrokes into one glance that says which fingers to work on.
 - Works at all four colour depths; in `Mono` the intensity is encoded by glyph density.
 - Non-letter keys (punctuation, space) are included.
 - Snapshot for a known stat set.
+
+**Acceptance**
+- [x] "No data" and "no errors" are drawn differently, and it is the test this widget exists
+      for. A key never pressed and a key never missed are opposite facts; colouring both of
+      them clean would send somebody off to practise everything except what they get wrong.
+      `error_rate` returns `std::optional<double>` rather than a sentinel, because every
+      sentinel here is a real value — zero is the *best possible* rate.
+- [x] Five bands rather than a continuous scale. A typist acts on "this key is bad", not on the
+      third decimal of its rate, and five colours are five decisions.
+- [x] The intensity glyph is drawn at every depth, not only at `Mono`. A reader who cannot
+      distinguish the colours is in the same position as a terminal that has none, and the ramp
+      costs one character either way. Monotonicity is asserted over both glyph sets.
+- [x] Digits and punctuation are in the layout, not only letters — a typist who misses every
+      comma learns nothing from a picture without one, and the stats have the data regardless.
 
 ---
 
