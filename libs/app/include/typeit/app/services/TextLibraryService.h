@@ -12,9 +12,12 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 
+#include "typeit/app/ingest/ExtractorRegistry.h"
+#include "typeit/app/ingest/PlainText.h"
 #include "typeit/app/ports/IFileSystem.h"
 #include "typeit/app/ports/ITextLibraryRepository.h"
 #include "typeit/app/records/TextLibrary.h"
@@ -58,7 +61,18 @@ namespace typeit::app {
         /// owns them.
         TextLibraryService(ITextLibraryRepository& library, IFileSystem& files, core::IWallClock& clock,
                            core::NormalizeOptions normalization = {}) :
-            library_{&library}, files_{&files}, clock_{&clock}, normalization_{normalization} {}
+            library_{&library}, files_{&files}, clock_{&clock}, normalization_{normalization} {
+            // The built-in extractors, registered here rather than by the
+            // composition root: a service that could be handed an empty
+            // registry would be one that fails to import a plain text file,
+            // which is not a state worth being able to construct. TX-002
+            // onwards add to this list.
+            static_cast<void>(extractors_.add(std::make_shared<PlainTextExtractor>()));
+        }
+
+        /// The extractors this service will use. Exposed so a test can say what
+        /// is registered rather than infer it from what imports.
+        [[nodiscard]] const ExtractorRegistry& extractors() const noexcept { return extractors_; }
 
         /// Reads, imports, and titles the text after the file unless `title`
         /// says otherwise.
@@ -103,6 +117,7 @@ namespace typeit::app {
         [[nodiscard]] const core::NormalizeOptions& normalization() const noexcept { return normalization_; }
 
     private:
+        ExtractorRegistry extractors_;
         ITextLibraryRepository* library_;
         IFileSystem* files_;
         core::IWallClock* clock_;

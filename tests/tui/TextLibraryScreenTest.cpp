@@ -108,7 +108,8 @@ namespace typeit::tui {
             // overflow the column or slice a character in half.
             World world;
             world.files.add_file("cjk.txt", "the quick brown fox jumps over the lazy dog");
-            ASSERT_TRUE(world.service.import_file("cjk.txt", std::string{"日本語日本語日本語日本語日本語日本語日本語"}));
+            ASSERT_TRUE(
+                    world.service.import_file("cjk.txt", std::string{"日本語日本語日本語日本語日本語日本語日本語"}));
             TextLibraryScreen screen{world.context};
 
             const std::string drawn = testing::render_to_text(screen.render(), 80, 24);
@@ -408,8 +409,7 @@ namespace typeit::tui {
             ASSERT_TRUE(world.service.import_file("notes.txt", std::string{"Personal notes"}));
             TextLibraryScreen screen{world.context};
 
-            testing::expect_matches_golden("text_library_80x24",
-                                           testing::render_to_text(screen.render(), 80, 24));
+            testing::expect_matches_golden("text_library_80x24", testing::render_to_text(screen.render(), 80, 24));
         }
 
     }  // namespace

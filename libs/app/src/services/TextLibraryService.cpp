@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "typeit/app/ingest/PlainText.h"
 #include "typeit/app/records/TextLibrary.h"
 #include "typeit/core/text/Difficulty.h"
 #include "typeit/core/text/TextBuffer.h"
@@ -47,16 +48,30 @@ namespace typeit::app {
 
     core::Result<ImportOutcome> TextLibraryService::import_file(const std::filesystem::path& path,
                                                                 std::optional<std::string> title) {
-        // A missing file and a directory come back as different codes from the
-        // port, and both are passed through rather than flattened into "could
-        // not import": the person who typed the path needs to know which.
-        core::Result<std::string> contents = files_->read_text(path);
-        if (!contents) {
-            return std::unexpected{contents.error()};
+        // Fetch, then extract, then the shared tail (TX-001, ADR-013). The
+        // stages are new; the behaviour is not — a missing file and a directory
+        // still come back as the different codes the port has always given,
+        // because the fetcher reads through that same port.
+        const FileFetcher fetcher{*files_};
+        core::Result<FetchedContent> fetched = fetcher.fetch(path.string());
+        if (!fetched) {
+            return std::unexpected{fetched.error()};
         }
 
-        return import_text(std::move(*contents), TextSource::File, path.string(),
-                           title.has_value() ? std::move(title) : std::optional<std::string>{path.stem().string()});
+        const ITextExtractor* const extractor = extractors_.find(fetched->detected_mime);
+        if (extractor == nullptr) {
+            // Named, because "cannot import this" without saying what it looked
+            // like leaves somebody guessing at their own file.
+            return core::fail(core::ErrorCode::FileUnreadable, "nothing here can read " + fetched->detected_mime);
+        }
+
+        core::Result<ExtractedText> extracted = extractor->extract(*fetched);
+        if (!extracted) {
+            return std::unexpected{extracted.error()};
+        }
+
+        return import_text(std::move(extracted->text), TextSource::File, path.string(),
+                           title.has_value() ? std::move(title) : std::optional<std::string>{fetched->suggested_title});
     }
 
     namespace {

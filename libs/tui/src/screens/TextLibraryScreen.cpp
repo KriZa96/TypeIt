@@ -15,8 +15,8 @@
 #include "Glyphs.h"
 #include "Keymap.h"
 #include "typeit/app/Json.h"
-#include "typeit/core/text/TextBuffer.h"
 #include "typeit/core/text/Grapheme.h"
+#include "typeit/core/text/TextBuffer.h"
 
 namespace typeit::tui {
     namespace {
@@ -135,7 +135,8 @@ namespace typeit::tui {
             return;
         }
         const auto last = static_cast<std::int64_t>(rows_.size() - 1);
-        selected_ = static_cast<std::size_t>(std::clamp(static_cast<std::int64_t>(selected_) + by, std::int64_t{0}, last));
+        selected_ =
+                static_cast<std::size_t>(std::clamp(static_cast<std::int64_t>(selected_) + by, std::int64_t{0}, last));
 
         const std::size_t page = context_->size.rows > kChromeRows ? context_->size.rows - kChromeRows : kMinimumRows;
         if (selected_ < first_row_) {
@@ -167,8 +168,8 @@ namespace typeit::tui {
             return;
         }
         if (const core::Result<app::ImportOutcome> imported = service->import_file(typed_); imported) {
-            message_ = imported->already_present ? "that text was already in the library"
-                                                 : "imported \"" + typed_ + "\"";
+            message_ =
+                    imported->already_present ? "that text was already in the library" : "imported \"" + typed_ + "\"";
         } else {
             message_ = core::to_string(imported.error());
         }
@@ -208,8 +209,8 @@ namespace typeit::tui {
             return;
         }
         const core::Status removed = records->remove(rows_.at(selected_).summary.id);
-        message_ = removed ? "deleted, with its tags and bookmark; past runs are kept"
-                           : core::to_string(removed.error());
+        message_ =
+                removed ? "deleted, with its tags and bookmark; past runs are kept" : core::to_string(removed.error());
     }
 
     void TextLibraryScreen::commit() {
@@ -333,8 +334,7 @@ namespace typeit::tui {
             return ftxui::text(std::string{said}) | ftxui::color(muted.color);
         }
 
-        const std::size_t page =
-                context_->size.rows > kChromeRows ? context_->size.rows - kChromeRows : kMinimumRows;
+        const std::size_t page = context_->size.rows > kChromeRows ? context_->size.rows - kChromeRows : kMinimumRows;
         const std::size_t last = std::min(rows_.size(), first_row_ + page);
 
         std::vector<ftxui::Element> lines;
@@ -357,8 +357,7 @@ namespace typeit::tui {
 
     ftxui::Element TextLibraryScreen::prompt_row(const Styling& accent, const Styling& muted) const {
         if (mode_ == LibraryMode::Browsing) {
-            return message_.empty() ? ftxui::text("")
-                                    : ftxui::text("  " + message_) | ftxui::color(muted.color);
+            return message_.empty() ? ftxui::text("") : ftxui::text("  " + message_) | ftxui::color(muted.color);
         }
         return ftxui::hbox({
                 ftxui::text("  " + std::string{prompt_for(mode_)} + "  ") | ftxui::color(muted.color),
@@ -379,8 +378,7 @@ namespace typeit::tui {
         rows.push_back(ftxui::text(""));
         rows.push_back(list_rows(accent, muted));
         rows.push_back(ftxui::text(""));
-        rows.push_back(ftxui::text("  i import   p paste   t tag   d delete   / search") |
-                       ftxui::color(muted.color));
+        rows.push_back(ftxui::text("  i import   p paste   t tag   d delete   / search") | ftxui::color(muted.color));
         rows.push_back(prompt_row(accent, muted));
         rows.push_back(ftxui::text(""));
         rows.push_back(key_hint_bar({{.action = Action::QuitOrBack, .label = "back"}}, *context_->keymap,

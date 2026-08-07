@@ -45,8 +45,35 @@ with an `ExtractorRegistry` resolving by MIME type. Behaviour is unchanged; the 
   are the proof.
 
 **Acceptance**
-- [ ] No behaviour change; the Phase 6 suite is green without edits.
-- [ ] Adding a format now requires touching exactly one new file plus a registration.
+- [x] No behaviour change; the Phase 6 suite is green **without edits** — and it earned its
+      keep. The first cut of the registry let a `.md` file resolve to `text/markdown`, which no
+      extractor claimed, so a file that imported yesterday was refused. `PlainTextExtractor`
+      claims markdown, code and subtitles until TX-002 and TX-004 take them, and the registry's
+      no-two-claims rule will say so loudly if either forgets.
+- [x] Adding a format now requires one new file plus one registration.
+- [x] **Two extractors claiming one type is a startup error, not last-wins.** A silent
+      overwrite lets the build order decide which one runs, and the symptom is an EPUB
+      extracted as a ZIP on one machine and correctly on another — a bug nobody reproduces. A
+      rejected registration claims *none* of its types, because half-applied is a registry
+      nobody can reason about.
+- [x] Magic bytes beat a misleading extension. A `.txt` that is really a ZIP is a download
+      named badly or an EPUB somebody renamed; believing the name hands a ZIP to the plain-text
+      extractor, which reports invalid UTF-8 and sends the user hunting for a corrupt character
+      in a file that is not text at all. A user override beats both — they can see the file and
+      this cannot.
+- [x] Detection survives a zero-byte file, a one-byte file and a file of pure NULs: each is
+      shorter than most signatures, and a comparison reading past the end would be undefined
+      rather than merely wrong.
+- [x] Only formats this project can name are detected. A general-purpose sniffer would be a
+      second `file(1)` to maintain, and every type it knew that no extractor handled would be a
+      more confident way of failing.
+- [x] No signature and no extension is `text/plain`, because that is usually somebody's notes
+      and refusing it would refuse the commonest thing anybody imports.
+- [x] A charset parameter is matched on the type alone: an extractor handling `text/plain` but
+      not `text/plain;charset=utf-8` would fail on exactly the files somebody bothered to label.
+- [x] The service registers the built-in extractors itself. A service that could be handed an
+      empty registry would be one that fails to import a plain text file, which is not a state
+      worth being able to construct.
 
 ---
 
