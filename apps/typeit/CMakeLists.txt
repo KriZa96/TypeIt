@@ -5,7 +5,7 @@
 add_executable(typeit_binary main.cpp)
 set_target_properties(typeit_binary PROPERTIES OUTPUT_NAME typeit)
 
-target_link_libraries(typeit_binary PRIVATE typeit::cli typeit::infra typeit::app typeit::core)
+target_link_libraries(typeit_binary PRIVATE typeit::cli typeit::tui typeit::infra typeit::app typeit::core)
 
 typeit_set_warnings(typeit_binary)
 typeit_enable_coverage(typeit_binary)

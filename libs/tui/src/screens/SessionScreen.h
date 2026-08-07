@@ -79,7 +79,6 @@ namespace typeit::tui {
 
         const ScreenContext* context_;
         const app::SessionService* service_;
-        const core::IClock* clock_;
         app::ActiveRun run_;
         std::shared_ptr<TypingArea> area_;
 

@@ -62,7 +62,7 @@ namespace typeit::tui {
 
     SessionScreen::SessionScreen(const ScreenContext& context, const app::SessionService& service, app::ActiveRun run,
                                  const core::IClock& clock) :
-        context_{&context}, service_{&service}, clock_{&clock}, run_{std::move(run)},
+        context_{&context}, service_{&service}, run_{std::move(run)},
         countdown_left_{context.config->general.countdown_s}, started_ticking_{clock.now()} {
         TypingAreaOptions options;
         const Layout layout = context.layout();

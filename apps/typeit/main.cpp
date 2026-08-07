@@ -10,8 +10,7 @@
 // deliberately — anything worth a test belongs one layer down, where a test
 // can reach it without spawning a process.
 //
-// The terminal application is Phase 4. Until then the actions that need a
-// screen say so plainly rather than doing nothing.
+// The actions that are not built yet say so plainly rather than doing nothing.
 
 #include <csignal>
 #include <cstddef>
@@ -26,6 +25,18 @@
 #include <string_view>
 #include <vector>
 
+// `isatty` is the one thing here with no portable spelling: POSIX puts it in
+// <unistd.h>, the MSVC runtime puts `_isatty` in <io.h>. Included explicitly
+// rather than relied on transitively, because "it compiled on my libstdc++" is
+// how a header goes missing on the other compiler.
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
+#include "typeit/app/Theme.h"
+#include "typeit/app/ports/IConfigStore.h"
 #include "typeit/app/services/HistoryService.h"
 #include "typeit/app/services/SessionService.h"
 #include "typeit/cli/Cli.h"
@@ -41,12 +52,16 @@
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/infra/Doctor.h"
+#include "typeit/infra/config/TomlConfigStore.h"
 #include "typeit/infra/db/Migrator.h"
 #include "typeit/infra/db/SqliteDatabase.h"
 #include "typeit/infra/db/SqliteHistoryRepository.h"
 #include "typeit/infra/fs/AssetLocator.h"
 #include "typeit/infra/fs/PlatformPaths.h"
+#include "typeit/infra/term/Capabilities.h"
+#include "typeit/infra/theme/ThemeLoader.h"
 #include "typeit/infra/time/SystemClock.h"
+#include "typeit/tui/TerminalApp.h"
 
 namespace {
 
@@ -226,6 +241,93 @@ namespace {
         return print(*output + "\n");
     }
 
+    /// Whether there is a terminal to draw on.
+    ///
+    /// Without one FTXUI's loop waits for input that will never arrive, so
+    /// `typeit < /dev/null` hangs rather than ending — which is worse than
+    /// saying plainly that this mode needs a terminal. Everything that does
+    /// not need one (`--simulate`, `--stats`, `--export`, `--doctor`) works
+    /// redirected, which is the whole point of Phase 3.
+    bool has_a_terminal() {
+#ifdef _WIN32
+        return _isatty(_fileno(stdin)) != 0 && _isatty(_fileno(stdout)) != 0;
+#else
+        return isatty(STDIN_FILENO) != 0 && isatty(STDOUT_FILENO) != 0;
+#endif
+    }
+
+    /// The terminal application: everything constructed, then handed over.
+    int run_terminal(const typeit::cli::CliOptions& options, const typeit::infra::Environment& environment) {
+        if (!has_a_terminal()) {
+            std::cerr << "typeit: this needs a terminal. Try --simulate, --stats or --export.\n";
+            return kFailed;
+        }
+
+        const Result<std::filesystem::path> directory = data_directory(options, environment);
+        if (!directory) {
+            return complain(directory.error());
+        }
+        const Result<std::unique_ptr<History>> history = open_history(*directory);
+        if (!history) {
+            return complain(history.error());
+        }
+
+        // A configuration file that will not parse is reported and the defaults
+        // are used — a broken config is not a reason to be unusable
+        // (ARCHITECTURE section 5.1).
+        typeit::core::Config config;
+        const Result<typeit::infra::Paths> paths = typeit::infra::resolve_paths(environment);
+        if (paths) {
+            typeit::infra::TomlConfigStore store{paths->config / "config.toml"};
+            if (const Result<typeit::app::LoadedConfig> loaded = store.load(); loaded) {
+                config = loaded->config;
+                for (const std::string& warning: loaded->warnings) {
+                    std::cerr << "typeit: config: " << warning << '\n';
+                }
+            } else {
+                std::cerr << "typeit: config: " << typeit::core::to_string(loaded.error()) << '\n';
+            }
+        }
+
+        // The theme, falling back to the built-in default with a word about it
+        // rather than refusing to start over a colour.
+        typeit::app::Theme theme;
+        const Result<std::filesystem::path> assets = typeit::infra::locate_assets(typeit::infra::AssetSearch{
+                .environment = environment,
+                .executable = typeit::infra::current_executable().value_or(std::filesystem::path{}),
+                .working_directory = std::filesystem::current_path(),
+                .install_prefix = typeit::infra::configured_install_prefix(),
+        });
+        if (const Result<typeit::infra::LoadedTheme> loaded = typeit::infra::find_theme(
+                    config.appearance.theme, paths ? paths->config / "themes" : std::filesystem::path{},
+                    assets.value_or(std::filesystem::path{}) / "themes");
+            loaded) {
+            theme = loaded->theme;
+        } else {
+            std::cerr << "typeit: theme: " << typeit::core::to_string(loaded.error())
+                      << "; using the built-in default\n";
+        }
+
+        const typeit::core::ModeRegistry modes = built_in_modes(config);
+        const typeit::infra::SystemClock clock;
+        const typeit::app::SessionService sessions{(*history)->repository, modes, clock, clock};
+
+        typeit::tui::TerminalApp app{typeit::tui::Dependencies{
+                .sessions = &sessions,
+                .config = &config,
+                .theme = &theme,
+                .clock = &clock,
+                .capabilities = typeit::infra::detect_capabilities(environment),
+                // Phase 6's library replaces this. Until then a run types what
+                // `--text` gave it, or the sentence every typing test starts
+                // with.
+                .text = options.text_path.has_value() ? read_file(*options.text_path).value_or(std::string{})
+                                                      : "the quick brown fox jumps over the lazy dog",
+        }};
+        app.run();
+        return kOk;
+    }
+
     int not_yet(std::string_view what) {
         std::cerr << "typeit: " << what << " is not built yet.\n";
         return kFailed;
@@ -247,7 +349,7 @@ namespace {
             case typeit::cli::Action::Simulate:
                 return run_simulate(options, environment);
             case typeit::cli::Action::Run:
-                return not_yet("the terminal application");
+                return run_terminal(options, environment);
             case typeit::cli::Action::Import:
             case typeit::cli::Action::ImportDirectory:
             case typeit::cli::Action::ImportUrl:

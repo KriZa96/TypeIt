@@ -33,6 +33,12 @@ APP_MINIMUM=85
 # on. The number is a floor, not a target — it measures 84% today.
 INFRA_MINIMUM=75
 
+# Phase 4's exit criterion. Low because the event loop itself is not entered by
+# any test — FTXUI's loop reads the terminal, and a test that starts it hangs a
+# pipeline the day stdin behaves differently. Everything either side of the loop
+# is reachable, which is why it measures 85% today rather than 60%.
+TUI_MINIMUM=60
+
 require() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo "coverage.sh needs $1" >&2
@@ -120,6 +126,13 @@ gate() {
     printf '%-28s %6s%%  (%s/%s lines, minimum %s%%)\n' "infra" "${percent}" "${covered}" "${total}" \
         "${INFRA_MINIMUM}"
     if awk -v value="${percent}" -v minimum="${INFRA_MINIMUM}" 'BEGIN { exit !(value < minimum) }'; then
+        echo "  below the gate" >&2
+        failed=1
+    fi
+
+    read -r percent covered total < <(percent_for libs/tui/src)
+    printf '%-28s %6s%%  (%s/%s lines, minimum %s%%)\n' "tui" "${percent}" "${covered}" "${total}" "${TUI_MINIMUM}"
+    if awk -v value="${percent}" -v minimum="${TUI_MINIMUM}" 'BEGIN { exit !(value < minimum) }'; then
         echo "  below the gate" >&2
         failed=1
     fi

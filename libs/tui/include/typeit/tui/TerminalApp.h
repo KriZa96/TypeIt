@@ -19,12 +19,33 @@
 #define TYPEIT_TUI_TERMINALAPP_H
 
 #include <memory>
+#include <string>
+
+#include "typeit/app/Capabilities.h"
+#include "typeit/app/Theme.h"
+#include "typeit/app/services/SessionService.h"
+#include "typeit/core/config/Config.h"
+#include "typeit/core/util/IClock.h"
 
 namespace typeit::tui {
 
+    /// Everything the application needs from below it. All borrowed; the
+    /// composition root owns every one of them and outlives the application.
+    struct Dependencies {
+        const app::SessionService* sessions = nullptr;
+        const core::Config* config = nullptr;
+        const app::Theme* theme = nullptr;
+        const core::IClock* clock = nullptr;
+        app::Capabilities capabilities;
+        /// The text a run types. Phase 6 replaces this with the library; until
+        /// then the composition root supplies one.
+        std::string text;
+    };
+
     class TerminalApp {
     public:
-        TerminalApp();
+        /// Builds the screen stack and starts on the menu.
+        explicit TerminalApp(Dependencies dependencies);
 
         /// Tears the screen down and restores the terminal. Defined in the
         /// translation unit that knows what it is destroying, which is what

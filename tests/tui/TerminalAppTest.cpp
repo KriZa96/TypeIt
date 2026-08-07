@@ -8,16 +8,49 @@
 
 #include <gtest/gtest.h>
 
+#include "typeit/app/Theme.h"
+#include "typeit/app/services/SessionService.h"
+#include "typeit/core/config/Config.h"
+#include "typeit/core/modes/ModeRegistry.h"
+#include "typeit/core/modes/QuoteMode.h"
+#include "typeit/testing/FakeClock.h"
+#include "typeit/testing/Fakes.h"
 #include "typeit/tui/TerminalApp.h"
 
 namespace typeit::tui {
     namespace {
 
+        /// Everything the application borrows, owned for one test. The
+        /// application starts on the menu, so constructing one builds the whole
+        /// screen stack — which is most of what these tests are checking.
+        struct World {
+            testing::FakeClock clock{core::Millis{0}};
+            testing::FakeHistoryRepository history;
+            core::ModeRegistry modes;
+            core::Config config;
+            app::Theme theme;
+            app::SessionService sessions{history, modes, clock, clock};
+
+            World() {
+                modes.register_mode("quote", [] { return std::make_unique<core::QuoteMode>(); });
+            }
+
+            [[nodiscard]] Dependencies dependencies() {
+                return Dependencies{.sessions = &sessions,
+                                    .config = &config,
+                                    .theme = &theme,
+                                    .clock = &clock,
+                                    .capabilities = {},
+                                    .text = "hi there"};
+            }
+        };
+
         TEST(TerminalAppTest, ConstructsAndDestructsCleanly) {
             // Constructing takes the terminal over and destructing hands it
             // back. Under ASan this is also the leak check: FTXUI's screen
             // holds an installed signal handler and a restored terminal mode.
-            const TerminalApp app;
+            World world;
+            const TerminalApp app{world.dependencies()};
 
             EXPECT_FALSE(app.is_quitting());
         }
@@ -27,7 +60,8 @@ namespace typeit::tui {
             // never again, so nothing ever proved a second one was possible.
             // A restart pops and pushes, which means it has to be.
             for (int i = 0; i < 10; ++i) {
-                const TerminalApp app;
+                World world;
+                const TerminalApp app{world.dependencies()};
                 EXPECT_FALSE(app.is_quitting());
             }
         }
@@ -36,7 +70,8 @@ namespace typeit::tui {
             // "Stop" arriving before "start" is not a special case for tests:
             // entering the loop to leave it again would still take the terminal
             // over and hand it back, which is a visible flicker for no reason.
-            TerminalApp app;
+            World world;
+            TerminalApp app{world.dependencies()};
 
             app.quit();
             EXPECT_TRUE(app.is_quitting());
@@ -46,7 +81,8 @@ namespace typeit::tui {
         }
 
         TEST(TerminalAppTest, QuittingTwiceIsQuittingOnce) {
-            TerminalApp app;
+            World world;
+            TerminalApp app{world.dependencies()};
 
             app.quit();
             app.quit();
@@ -57,8 +93,10 @@ namespace typeit::tui {
         TEST(TerminalAppTest, TwoApplicationsDoNotShareState) {
             // The regression guard for the global screen: quitting one must not
             // quit the other.
-            TerminalApp first;
-            const TerminalApp second;
+            World one;
+            World two;
+            TerminalApp first{one.dependencies()};
+            const TerminalApp second{two.dependencies()};
 
             first.quit();
 
