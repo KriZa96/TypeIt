@@ -60,6 +60,7 @@
 #include "typeit/infra/fs/AssetLocator.h"
 #include "typeit/infra/fs/PlatformPaths.h"
 #include "typeit/infra/term/Capabilities.h"
+#include "typeit/infra/term/StandardInput.h"
 #include "typeit/infra/theme/ThemeLoader.h"
 #include "typeit/infra/time/SystemClock.h"
 #include "typeit/tui/TerminalApp.h"
@@ -329,6 +330,12 @@ namespace {
     std::vector<typeit::tui::TextChoice> bundled_texts(const typeit::cli::CliOptions& options,
                                                        const std::filesystem::path& assets) {
         std::vector<typeit::tui::TextChoice> texts;
+        if (options.text_from_stdin) {
+            // Nothing on disk to offer: what was piped in is the text, and it
+            // is handed over as `Dependencies::text` rather than as a path
+            // nobody could open twice.
+            return texts;
+        }
         if (options.text_path.has_value()) {
             const std::filesystem::path given{*options.text_path};
             texts.push_back({.name = given.stem().string(), .path = given});
@@ -345,6 +352,26 @@ namespace {
 
     /// The terminal application: everything constructed, then handed over.
     int run_terminal(const typeit::cli::CliOptions& options, const typeit::infra::Environment& environment) {
+        // The pipe first, and the keyboard back afterwards.
+        //
+        // The process's standard input *is* the pipe, so once it has been
+        // drained there is no keyboard: FTXUI would attach to stdin, find a
+        // pipe at end of file, and start a screen nobody can type into. Both
+        // steps happen before `has_a_terminal()`, which would otherwise refuse
+        // the run for the pipe it was given on purpose.
+        std::string piped;
+        if (options.text_from_stdin) {
+            const Result<std::string> text = typeit::infra::read_stream(std::cin);
+            if (!text) {
+                return complain(text.error());
+            }
+            piped = *text;
+            if (const Status reattached = typeit::infra::reattach_input(typeit::infra::controlling_terminal());
+                !reattached) {
+                return complain(reattached.error());
+            }
+        }
+
         if (!has_a_terminal()) {
             std::cerr << "typeit: this needs a terminal. Try --simulate, --stats or --export.\n";
             return kFailed;
@@ -407,7 +434,7 @@ namespace {
                 // Only reached when nothing was found to offer, which means an
                 // installation missing its assets. A sentence to type is better
                 // than an empty screen; Phase 6's library replaces all of this.
-                .text = "the quick brown fox jumps over the lazy dog",
+                .text = piped.empty() ? "the quick brown fox jumps over the lazy dog" : piped,
         }};
         app.run();
         return kOk;

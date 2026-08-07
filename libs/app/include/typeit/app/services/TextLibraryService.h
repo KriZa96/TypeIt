@@ -32,6 +32,19 @@ namespace typeit::app {
         bool already_present = false;
     };
 
+    /// How far through a long text somebody is (GAMEPLAY §2.3).
+    ///
+    /// `fraction` is exact at both ends rather than close enough: a book
+    /// reported as 99.7% finished is a book somebody types one more chunk of to
+    /// find nothing there, and one reported as 0.3% before they have started is
+    /// a book that lies about the work already done.
+    struct TextProgress {
+        core::GraphemeIndex offset{0};
+        std::size_t total = 0;
+        double fraction = 0.0;
+        bool finished = false;
+    };
+
     class TextLibraryService {
     public:
         /// Four megabytes, which is a longer book than anybody will type and
@@ -62,6 +75,25 @@ namespace typeit::app {
         /// Records how far through a text somebody got, stamped with the
         /// clock's time rather than the caller's idea of it.
         [[nodiscard]] core::Status bookmark(core::TextId id, core::GraphemeIndex offset);
+
+        /// Moves the bookmark on by what was **actually typed**, not by the
+        /// chunk that was offered.
+        ///
+        /// A run abandoned half way through a chunk has read half a chunk, and
+        /// advancing by the whole one would skip text nobody saw. Clamped to
+        /// the end of the text: a caller that over-counts should not produce a
+        /// bookmark pointing past the last grapheme.
+        [[nodiscard]] core::Status advance(core::TextId id, std::size_t graphemes_completed);
+
+        /// Back to the beginning, for a text somebody has finished or wants to
+        /// start again.
+        [[nodiscard]] core::Status reset_progress(core::TextId id);
+
+        /// Where somebody is in a text, and how much of it is left.
+        ///
+        /// A text with no bookmark is at zero rather than an error: not having
+        /// started is the normal state of most of a library.
+        [[nodiscard]] core::Result<TextProgress> progress(core::TextId id) const;
 
         /// What normalisation the next import will apply. Changing it does not
         /// re-import anything: the raw content is kept alongside the normalised

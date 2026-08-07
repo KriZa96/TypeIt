@@ -25,6 +25,28 @@ every mode, and the UI to manage it.
 - A missing file, a directory, and a permission-denied file each produce distinct errors.
 - A file with no extension, and one with a `.md`/`.rs`/`.txt` extension, all import.
 
+**Acceptance**
+- [x] Most of this was already true from TI-070; what was missing was everything about *bytes*.
+- [x] A UTF-8 byte-order mark is **stripped**, not typed. It is valid UTF-8, which is exactly
+      the problem: it decodes to U+FEFF and becomes a grapheme at the head of the text that the
+      typist has to type and cannot see. Every file Notepad saves has one, so rejecting it
+      would be rejecting most of Windows. It goes before the hash, so one article saved by two
+      editors is one text.
+- [x] A UTF-16 or UTF-32 file is rejected **by name**. "Invalid UTF-8 at byte 0" is true and
+      useless: it sends somebody hunting for one bad character when the whole file is in
+      another encoding, which is a different fix entirely. A genuinely corrupt character still
+      reports its offset — naming encodings must not swallow the useful case, and there is a
+      test that it does not.
+- [x] The marks are spelled with explicit lengths. A `const char*` literal stops at its first
+      NUL, so `"\x00\x00\xFE\xFF"` is the *empty* string and `starts_with` on it is true of
+      everything: the first draft rejected every plain UTF-8 file as UTF-32BE, and the first
+      test run said so.
+- [x] The extension is never consulted. A typing test over source code is the point of the
+      feature, and a whitelist is a list somebody's file is missing from.
+- [x] A missing file, a directory and a permission failure are three different errors, because
+      they are three different fixes. The permission case is armed on the port rather than
+      arranged with `chmod`, which only fails for a user who is not root.
+
 ---
 
 ## TI-111 — Import from stdin
@@ -42,7 +64,27 @@ every mode, and the UI to manage it.
   Linux, `CONIN$` on Windows) — otherwise the app starts with no keyboard.
 
 **Acceptance**
-- [ ] The terminal-reattachment case is explicitly tested; it is the non-obvious failure here.
+- [x] The terminal-reattachment case is explicitly tested; it is the non-obvious failure here.
+      The process's standard input *is* the pipe, so once it has been drained there is no
+      keyboard: FTXUI attaches to stdin, finds a pipe at end of file, and the program starts
+      with a screen nobody can type into. `reattach_input` points `stdin` back at the device
+      before the loop begins.
+- [x] It is tested **without needing a terminal**, by reattaching to a file the test wrote and
+      reading a byte back. A test that could only use the real one would pass or fail on how CI
+      happens to run it, which is the same as not testing it. A device that is not there is a
+      reported error rather than a crash — a service, a build step or a container without a tty
+      is a normal thing to be.
+- [x] Reading and reattaching are separate functions, so the reading half is testable without a
+      pipe and the reattaching half without a terminal. One "read stdin and fix it up" would be
+      testable with neither.
+- [x] Binary comes through whole rather than partly consumed. Whether bytes are text is the
+      importer's question and it already answers it with an offset; stopping at the first bad
+      byte here would hand over a truncated file that looks fine.
+- [x] An empty stream is empty, not an error: `rdbuf()` sets `failbit` when there was nothing to
+      insert. `badbit` *is* reported — half an article silently imported as a whole one is the
+      failure nobody notices.
+- [x] Verified end to end as well: `printf 'piped text here' | typeit -` types that text, and
+      `ctrl-q` still quits.
 
 ---
 
@@ -75,6 +117,23 @@ SHA-256 over normalised content.
 - Re-import reports "already in library" and returns the existing id.
 - The hash matches a reference SHA-256 implementation for known inputs.
 
+**Acceptance**
+- [x] Already built and already tested — this issue is a checklist over work TI-070 did, and
+      the honest answer is to say where each item lives rather than write a second file that
+      asserts the same things in different words.
+- [x] Identical content from different files is one entry:
+      `TextLibraryServiceTest.TheSameContentTwiceIsOneText`, which also asserts that the second
+      import reports `already_present` and hands back the first id.
+- [x] Content differing only in normalised-away detail deduplicates:
+      `NormalisationIsWhatDecidesWhetherTwoFilesAreTheSame`, plus TI-110's
+      `ImportFileTest.ADosFileAndAUnixFileAreOneText` and `TheSameTextWithAndWithoutAMarkIsOneText`
+      — the mark case is the one that was missing, and it is the reason a BOM is stripped
+      *before* the hash rather than after.
+- [x] Content differing meaningfully does not: `TheSameFileWithChangedContentIsANewText`.
+- [x] The hash matches a reference implementation: `Sha256Test.TheFipsVectors` and
+      `TheMillionAVector`, which are the published vectors rather than a second implementation
+      to disagree with.
+
 ---
 
 ## TI-114 — Tagging and search
@@ -86,6 +145,20 @@ SHA-256 over normalised content.
 - Search matches title and tags, case-insensitively, including non-ASCII.
 - Multiple tag filters combine with AND (documented).
 - No matches renders an empty state.
+
+**Acceptance**
+- [x] Search now looks at the **tags as well as the title**, which it did not. Somebody who
+      tagged a text `rust` and called it something else types "rust" and expects to find it.
+- [x] The search finds and the tag filter narrows: an OR across title and tags, ANDed with the
+      tags asked for. Both halves have a test, and the combination has its own.
+- [x] Every tag asked for, not any: `ListFiltersByEveryTagAskedFor`. Tagging twice is
+      idempotent (`TaggingTwiceIsSomebodyClickingTwice`), and untagging removes only that one.
+- [x] Case folding is **ASCII-only**, because `LIKE` is SQLite's: a search for `Č` will not
+      match `č`, and fixing that needs ICU. An exact non-ASCII match does work and is asserted,
+      so the limitation is a known shape rather than a surprise. Recorded here rather than
+      quietly left for somebody to find.
+- [x] No matches is an empty list, not an error. The empty *state* is the screen's job and
+      belongs to TI-118.
 
 ---
 
@@ -103,6 +176,27 @@ Type a book across many sessions and resume where you stopped.
 - Progress percentage is exact at 0%, mid, and 100%.
 - Re-importing a changed text resets the bookmark rather than resuming at a now-meaningless
   offset — silently resuming into shifted content would be worse than starting over.
+
+**Acceptance**
+- [x] The bookmark advances by **what was actually typed**, not by the chunk that was offered.
+      A run abandoned half way through a chunk has read half a chunk, and advancing by the
+      whole one would skip text nobody saw — the one failure that would make this feature worse
+      than not having it.
+- [x] Over-counting is clamped to the end rather than stored past it, so no reader of a
+      bookmark has to defend against an offset pointing beyond the last grapheme.
+- [x] The percentage is **exact** at both ends: 0.0 before starting and 1.0 at the end, not
+      0.998. A book reported as 99.7% finished is a book somebody types one more chunk of to
+      find nothing there.
+- [x] A text nobody has started is at zero rather than an error — not having started is the
+      normal state of most of a library, and a listing should not special-case it. A text
+      nobody imported *is* an error: a confident zero there reads as "not started", and is not.
+- [x] An empty text counts as finished rather than dividing by zero. There is nothing left to
+      type either way, and 0/0 is not a percentage.
+- [x] Re-importing changed content starts at zero, because deduplication is by content and
+      changed content is a *different text* — so resuming is not merely avoided, it is
+      impossible. The old bookmark stays with the version it was made against, which is
+      asserted alongside. Re-importing the *same* text keeps its place, or re-adding a book
+      would silently throw away a month of evenings.
 
 ---
 

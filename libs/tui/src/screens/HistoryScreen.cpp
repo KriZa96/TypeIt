@@ -298,6 +298,64 @@ namespace typeit::tui {
 
     }  // namespace
 
+    ftxui::Element HistoryScreen::summary_rows(const Styling& accent, const Styling& muted) const {
+        return ftxui::vbox({
+                ftxui::hbox({
+                        ftxui::text("  " + runs_text(data_.totals.sessions)) | ftxui::color(accent.color),
+                        ftxui::text(" · " + duration_text(data_.totals.total_time) + " typed") |
+                                ftxui::color(muted.color),
+                        ftxui::text(" · mean " + whole(data_.totals.mean_net_wpm.value) + " wpm") |
+                                ftxui::color(muted.color),
+                        ftxui::text(" · streak " + std::to_string(data_.streak.current) + " (best " +
+                                    std::to_string(data_.streak.longest) + ")") |
+                                ftxui::color(muted.color),
+                }),
+                ftxui::hbox({
+                        ftxui::text("  today    ") | ftxui::color(muted.color),
+                        ftxui::text(runs_text(data_.today.runs) + ", " + duration_text(data_.today.typed)) |
+                                ftxui::color(accent.color),
+                        // Said either way. "Goal met" alone leaves somebody
+                        // wondering whether the line failed to draw or the day
+                        // did.
+                        ftxui::text(data_.today.met ? "  goal met" : "  goal not met yet") |
+                                ftxui::color(data_.today.met ? accent.color : muted.color),
+                }),
+                bests_line(data_.bests, muted, accent),
+        });
+    }
+
+    ftxui::Element HistoryScreen::session_rows(const Styling& accent, const Styling& muted) const {
+        std::vector<ftxui::Element> rows{ftxui::text("  Recent") | ftxui::color(muted.color)};
+        const std::size_t last = std::min(data_.sessions.size(), first_row_ + page_size());
+        for (std::size_t at = first_row_; at < last; ++at) {
+            const app::SessionRow& row = data_.sessions.at(at);
+            const bool here = at == selected_ && focused_ == HistoryField::Sessions;
+            std::string line = "  ";
+            line += here ? "> " : "  ";
+            line += fixed_width(row.mode, 6) + "  ";
+            line += fixed_width(whole(row.net_wpm.value), 3) + " wpm  ";
+            line += fixed_width(whole(row.accuracy.value * 100.0) + "%", 4);
+            line += row.completed ? "" : "  (abandoned)";
+            rows.push_back(ftxui::text(line) | ftxui::color(here ? accent.color : muted.color));
+        }
+        return ftxui::vbox(std::move(rows));
+    }
+
+    ftxui::Element HistoryScreen::export_rows(const Styling& accent, const Styling& muted) const {
+        std::vector<ftxui::Element> rows{ftxui::text("")};
+        if (exporting_) {
+            rows.push_back(ftxui::hbox({
+                    ftxui::text("  export to ") | ftxui::color(muted.color),
+                    ftxui::text(export_path_ + "_") | ftxui::color(accent.color),
+                    ftxui::text("   (.json for JSON, anything else CSV)") | ftxui::color(muted.color),
+            }));
+        }
+        if (!export_message_.empty()) {
+            rows.push_back(ftxui::text("  " + export_message_) | ftxui::color(muted.color));
+        }
+        return rows.empty() ? ftxui::text("") : ftxui::vbox(std::move(rows));
+    }
+
     ftxui::Element HistoryScreen::render() {
         const app::ColorDepth depth = context_->capabilities.color;
         const Styling accent = style_for(*context_->theme, app::ThemeColor::Accent, depth);
@@ -333,26 +391,7 @@ namespace typeit::tui {
                                        .height = roomy() ? kChartRows - 1 : kShortChartRows - 1,
                                        .depth = depth}));
             rows.push_back(ftxui::text(""));
-
-            rows.push_back(ftxui::hbox({
-                    ftxui::text("  " + runs_text(data_.totals.sessions)) | ftxui::color(accent.color),
-                    ftxui::text(" · " + duration_text(data_.totals.total_time) + " typed") | ftxui::color(muted.color),
-                    ftxui::text(" · mean " + whole(data_.totals.mean_net_wpm.value) + " wpm") |
-                            ftxui::color(muted.color),
-                    ftxui::text(" · streak " + std::to_string(data_.streak.current) + " (best " +
-                                std::to_string(data_.streak.longest) + ")") |
-                            ftxui::color(muted.color),
-            }));
-            rows.push_back(ftxui::hbox({
-                    ftxui::text("  today    ") | ftxui::color(muted.color),
-                    ftxui::text(runs_text(data_.today.runs) + ", " + duration_text(data_.today.typed)) |
-                            ftxui::color(accent.color),
-                    // Said either way. "Goal met" alone leaves somebody
-                    // wondering whether the line failed to draw or the day did.
-                    ftxui::text(data_.today.met ? "  goal met" : "  goal not met yet") |
-                            ftxui::color(data_.today.met ? accent.color : muted.color),
-            }));
-            rows.push_back(bests_line(data_.bests, muted, accent));
+            rows.push_back(summary_rows(accent, muted));
             rows.push_back(ftxui::text(""));
 
             if (roomy()) {
@@ -361,34 +400,14 @@ namespace typeit::tui {
                                        {.glyphs = context_->capabilities.glyphs, .depth = depth}));
                 rows.push_back(ftxui::text(""));
             }
-
-            rows.push_back(ftxui::text("  Recent") | ftxui::color(muted.color));
-            const std::size_t last = std::min(data_.sessions.size(), first_row_ + page_size());
-            for (std::size_t at = first_row_; at < last; ++at) {
-                const app::SessionRow& row = data_.sessions.at(at);
-                const bool here = at == selected_ && focused_ == HistoryField::Sessions;
-                std::string line = "  ";
-                line += here ? "> " : "  ";
-                line += fixed_width(row.mode, 6) + "  ";
-                line += fixed_width(whole(row.net_wpm.value), 3) + " wpm  ";
-                line += fixed_width(whole(row.accuracy.value * 100.0) + "%", 4);
-                line += row.completed ? "" : "  (abandoned)";
-                rows.push_back(ftxui::text(line) | ftxui::color(here ? accent.color : muted.color));
-            }
+            rows.push_back(session_rows(accent, muted));
         }
 
         if (exporting_ || !export_message_.empty()) {
-            rows.push_back(ftxui::text(""));
-        }
-        if (exporting_) {
-            rows.push_back(ftxui::hbox({
-                    ftxui::text("  export to ") | ftxui::color(muted.color),
-                    ftxui::text(export_path_ + "_") | ftxui::color(accent.color),
-                    ftxui::text("   (.json for JSON, anything else CSV)") | ftxui::color(muted.color),
-            }));
-        }
-        if (!export_message_.empty()) {
-            rows.push_back(ftxui::text("  " + export_message_) | ftxui::color(muted.color));
+            // Only when there is something to say. An empty element here is
+            // still a row, and a blank line that appears for no reason is a
+            // layout that shifts under the reader.
+            rows.push_back(export_rows(accent, muted));
         }
 
         for (const std::string& problem: data_.problems) {
@@ -403,67 +422,66 @@ namespace typeit::tui {
         return ftxui::vbox(std::move(rows));
     }
 
-    bool HistoryScreen::on_event(ftxui::Event event) {
-        if (exporting_) {
-            // The prompt owns the keyboard while it is open, so a path
-            // containing a `j` does not cycle a filter behind it.
-            if (event == ftxui::Event::Return) {
-                write_export();
-                return true;
+    bool HistoryScreen::handle_export_prompt(const ftxui::Event& event) {
+        // The prompt owns the keyboard while it is open, so a path containing a
+        // `j` does not cycle a filter behind it. Every event is swallowed for
+        // the same reason.
+        if (event == ftxui::Event::Return) {
+            write_export();
+        } else if (event == ftxui::Event::Escape) {
+            exporting_ = false;
+            export_message_.clear();
+        } else if (event == ftxui::Event::Backspace) {
+            if (!export_path_.empty()) {
+                export_path_.pop_back();
             }
-            if (event == ftxui::Event::Escape) {
-                exporting_ = false;
-                export_message_.clear();
-                return true;
-            }
-            if (event == ftxui::Event::Backspace) {
-                if (!export_path_.empty()) {
-                    export_path_.pop_back();
-                }
-                return true;
-            }
-            if (event.is_character() && event.character().size() == 1) {
-                export_path_ += event.character().front();
-                return true;
-            }
+        } else if (event.is_character() && event.character().size() == 1) {
+            export_path_ += event.character().front();
+        }
+        return true;
+    }
+
+    bool HistoryScreen::handle_session_list(const ftxui::Event& event) {
+        if (event == ftxui::Event::Return && !data_.sessions.empty()) {
+            opened_ = data_.sessions.at(selected_).id;
             return true;
         }
+        if (event == ftxui::Event::ArrowDown) {
+            move_selection(1);
+            return true;
+        }
+        if (event == ftxui::Event::ArrowUp) {
+            move_selection(-1);
+            return true;
+        }
+        if (event == ftxui::Event::PageDown) {
+            move_selection(static_cast<std::int64_t>(page_size()));
+            return true;
+        }
+        if (event == ftxui::Event::PageUp) {
+            move_selection(-static_cast<std::int64_t>(page_size()));
+            return true;
+        }
+        return false;
+    }
 
+    bool HistoryScreen::on_event(ftxui::Event event) {
+        if (exporting_) {
+            return handle_export_prompt(event);
+        }
         if (context_->keymap->action_for(event) == Action::Export) {
             exporting_ = true;
             export_message_.clear();
             return true;
         }
-
         if (event == ftxui::Event::Tab) {
             focused_ = focused_ == HistoryField::Sessions
                                ? HistoryField::Mode
                                : static_cast<HistoryField>(static_cast<std::uint8_t>(focused_) + 1);
             return true;
         }
-        if (event == ftxui::Event::Return && focused_ == HistoryField::Sessions && !data_.sessions.empty()) {
-            opened_ = data_.sessions.at(selected_).id;
-            return true;
-        }
-
         if (focused_ == HistoryField::Sessions) {
-            if (event == ftxui::Event::ArrowDown) {
-                move_selection(1);
-                return true;
-            }
-            if (event == ftxui::Event::ArrowUp) {
-                move_selection(-1);
-                return true;
-            }
-            if (event == ftxui::Event::PageDown) {
-                move_selection(static_cast<std::int64_t>(page_size()));
-                return true;
-            }
-            if (event == ftxui::Event::PageUp) {
-                move_selection(-static_cast<std::int64_t>(page_size()));
-                return true;
-            }
-            return false;
+            return handle_session_list(event);
         }
 
         if (event != ftxui::Event::ArrowLeft && event != ftxui::Event::ArrowRight) {

@@ -181,13 +181,22 @@ namespace typeit::infra {
         // should not carry a hundred megabytes nobody is reading yet.
         //
         // The tag test counts distinct matches rather than testing membership,
-        // so a text must carry *every* tag asked for. LIKE is SQLite's, which
-        // means ASCII-only case folding — a search for "Č" will not match "č",
-        // and fixing that needs ICU.
+        // so a text must carry *every* tag asked for.
+        //
+        // The *search* looks at the title and at the tags, because somebody who
+        // tagged a text "rust" and called it something else will type "rust"
+        // and expect to find it. It is an OR across the two and an AND with the
+        // tag filter: the filter narrows, the search finds.
+        //
+        // LIKE is SQLite's, which means ASCII-only case folding — a search for
+        // "Č" will not match "č", and fixing that needs ICU. An exact non-ASCII
+        // match does work, which is most of what anybody types.
         Result<Statement> statement = database_->prepare(
                 "SELECT t.id, t.title, t.source, t.origin, t.grapheme_count, t.word_count, t.difficulty,"
                 " t.created_at FROM text_item t"
-                " WHERE (?1 = '' OR t.title LIKE '%' || ?1 || '%')"
+                " WHERE (?1 = '' OR t.title LIKE '%' || ?1 || '%'"
+                "         OR EXISTS (SELECT 1 FROM text_tag s WHERE s.text_id = t.id"
+                "                    AND s.tag LIKE '%' || ?1 || '%'))"
                 "   AND (?2 = 0 OR (SELECT COUNT(DISTINCT g.tag) FROM text_tag g"
                 "                   WHERE g.text_id = t.id AND g.tag IN (SELECT value FROM json_each(?3))) = ?2)"
                 " ORDER BY t.created_at DESC, t.id DESC LIMIT ?4");

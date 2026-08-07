@@ -226,6 +226,61 @@ namespace typeit::infra {
             EXPECT_EQ(summaries->front().title, "The Rust Book") << "and case-insensitively, for ASCII";
         }
 
+        TEST_F(LibraryTest, ListSearchesTheTagsAsWellAsTheTitle) {
+            // Somebody who tagged a text "rust" and called it something else
+            // will type "rust" and expect to find it.
+            const core::TextId tagged_text = add(a_text("Chapter One", "hash-one"));
+            add(a_text("Chapter Two", "hash-two"));
+            ASSERT_TRUE(repository_->tag(tagged_text, "rust"));
+
+            const Result<std::vector<app::TextSummary>> summaries = repository_->list(searching("rust"));
+
+            ASSERT_TRUE(summaries) << (summaries ? "" : summaries.error().context);
+            ASSERT_EQ(summaries->size(), 1U);
+            EXPECT_EQ(summaries->front().id, tagged_text);
+        }
+
+        TEST_F(LibraryTest, ASearchAndATagFilterNarrowTogether) {
+            // The search finds and the filter narrows: an OR across title and
+            // tags, ANDed with the tags asked for.
+            const core::TextId wanted = add(a_text("Rust Book", "hash-a"));
+            const core::TextId other = add(a_text("Rust Notes", "hash-b"));
+            ASSERT_TRUE(repository_->tag(wanted, "long"));
+            ASSERT_TRUE(repository_->tag(other, "short"));
+
+            app::TextFilter filter;
+            filter.search = "rust";
+            filter.tags = {"long"};
+            const Result<std::vector<app::TextSummary>> summaries = repository_->list(filter);
+
+            ASSERT_TRUE(summaries);
+            ASSERT_EQ(summaries->size(), 1U);
+            EXPECT_EQ(summaries->front().id, wanted);
+        }
+
+        TEST_F(LibraryTest, ANonAsciiTitleIsFoundByAnExactSearch) {
+            // `LIKE` is SQLite's, so case folding is ASCII-only: "Č" will not
+            // match "č" and fixing that needs ICU. An exact match does work,
+            // which is most of what anybody types — asserted so the limitation
+            // is a known shape rather than a surprise.
+            add(a_text("Čitanka", "hash-cir"));
+
+            const Result<std::vector<app::TextSummary>> exact = repository_->list(searching("Čitanka"));
+
+            ASSERT_TRUE(exact);
+            ASSERT_EQ(exact->size(), 1U);
+            EXPECT_EQ(exact->front().title, "Čitanka");
+        }
+
+        TEST_F(LibraryTest, ASearchThatMatchesNothingIsEmptyRatherThanAnError) {
+            add(a_text("Moby Dick", "hash-moby"));
+
+            const Result<std::vector<app::TextSummary>> summaries = repository_->list(searching("nothing here"));
+
+            ASSERT_TRUE(summaries);
+            EXPECT_TRUE(summaries->empty());
+        }
+
         TEST_F(LibraryTest, ListFiltersByEveryTagAskedFor) {
             const core::TextId both = add(a_text("Both", "hash-both"));
             const core::TextId one = add(a_text("One", "hash-one"));

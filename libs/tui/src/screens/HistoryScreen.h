@@ -23,6 +23,7 @@
 #include <string_view>
 #include <vector>
 
+#include "ColorQuantizer.h"
 #include "IScreen.h"
 #include "ScreenContext.h"
 #include "typeit/app/records/History.h"
@@ -110,6 +111,15 @@ namespace typeit::tui {
         /// Writes the history to `export_path_`, and says what happened either
         /// way — a silent export is indistinguishable from a broken one.
         void write_export();
+        /// The three blocks `render` is made of, so it stays readable as they
+        /// grow. Each draws from `data_` and touches nothing.
+        [[nodiscard]] ftxui::Element summary_rows(const Styling& accent, const Styling& muted) const;
+        [[nodiscard]] ftxui::Element session_rows(const Styling& accent, const Styling& muted) const;
+        [[nodiscard]] ftxui::Element export_rows(const Styling& accent, const Styling& muted) const;
+
+        [[nodiscard]] bool handle_export_prompt(const ftxui::Event& event);
+        [[nodiscard]] bool handle_session_list(const ftxui::Event& event);
+
         void cycle_mode(bool forward);
         void cycle_range(bool forward);
         void move_selection(std::int64_t by);

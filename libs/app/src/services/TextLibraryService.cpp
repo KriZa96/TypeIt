@@ -59,6 +59,56 @@ namespace typeit::app {
                            title.has_value() ? std::move(title) : std::optional<std::string>{path.stem().string()});
     }
 
+    namespace {
+
+        /// The byte-order marks that mean "this is not UTF-8", and what to call
+        /// them.
+        ///
+        /// Checked before validation so the message says `UTF-16LE` rather than
+        /// "invalid UTF-8 at byte 0". The second is true and useless: it sends
+        /// somebody hunting for one corrupt character when the whole file is in
+        /// another encoding, which is a different fix entirely.
+        ///
+        /// UTF-32LE first, because its mark starts with UTF-16LE's.
+        [[nodiscard]] std::string_view foreign_encoding(std::string_view content) {
+            // Spelled with explicit lengths. A `const char*` literal stops at
+            // its first NUL, so `"\x00\x00\xFE\xFF"` is the *empty* string and
+            // `starts_with` on it is true of everything — which is how the
+            // first draft of this rejected every plain UTF-8 file as UTF-32BE.
+            constexpr std::string_view kUtf32Le{"\xFF\xFE\x00\x00", 4};
+            constexpr std::string_view kUtf32Be{"\x00\x00\xFE\xFF", 4};
+            constexpr std::string_view kUtf16Le{"\xFF\xFE", 2};
+            constexpr std::string_view kUtf16Be{"\xFE\xFF", 2};
+
+            if (content.starts_with(kUtf32Le)) {
+                return "UTF-32LE";
+            }
+            if (content.starts_with(kUtf32Be)) {
+                return "UTF-32BE";
+            }
+            if (content.starts_with(kUtf16Le)) {
+                return "UTF-16LE";
+            }
+            if (content.starts_with(kUtf16Be)) {
+                return "UTF-16BE";
+            }
+            return {};
+        }
+
+        /// A UTF-8 byte-order mark, gone.
+        ///
+        /// It is valid UTF-8, which is exactly the problem: it decodes to
+        /// U+FEFF and becomes a grapheme at the head of the text that the
+        /// typist has to type and cannot see. Stripped rather than rejected —
+        /// a file saved by Notepad is a normal file, and refusing it would be
+        /// refusing most of Windows.
+        [[nodiscard]] std::string_view without_utf8_bom(std::string_view content) {
+            constexpr std::string_view kBom{"\xEF\xBB\xBF", 3};
+            return content.starts_with(kBom) ? content.substr(kBom.size()) : content;
+        }
+
+    }  // namespace
+
     core::Result<ImportOutcome> TextLibraryService::import_text(std::string content, TextSource source,
                                                                 std::optional<std::string> origin,
                                                                 std::optional<std::string> title) {
@@ -70,10 +120,19 @@ namespace typeit::app {
                                       " bytes exceeds the " + std::to_string(kMaxImportBytes) + " byte limit");
         }
 
+        if (const std::string_view encoding = foreign_encoding(content); !encoding.empty()) {
+            return core::fail(core::ErrorCode::InvalidUtf8, origin.value_or("<text>") + ": this file is " +
+                                                                    std::string{encoding} +
+                                                                    ", not UTF-8; convert it first");
+        }
+
         // Normalising first: it is what validates the UTF-8, with the byte
         // offset, and everything downstream — the hash, the count, the score —
-        // has to see the same bytes the typist will.
-        core::Result<std::string> normalized = core::normalize(content, normalization_);
+        // has to see the same bytes the typist will. The BOM goes before that,
+        // so two copies of one text — one saved with a mark and one without —
+        // hash the same and import once.
+        const std::string_view body = without_utf8_bom(content);
+        core::Result<std::string> normalized = core::normalize(body, normalization_);
         if (!normalized) {
             return std::unexpected{normalized.error()};
         }
@@ -127,6 +186,47 @@ namespace typeit::app {
         }
         return ImportOutcome{.id = *id, .already_present = false};
     }
+
+    core::Result<TextProgress> TextLibraryService::progress(core::TextId id) const {
+        const core::Result<std::optional<TextItem>> text = library_->get(id);
+        if (!text) {
+            return std::unexpected{text.error()};
+        }
+        if (!text->has_value()) {
+            return core::fail(core::ErrorCode::FileNotFound, "no text with id " + std::to_string(id.value));
+        }
+
+        const core::Result<std::optional<Bookmark>> mark = library_->bookmark(id);
+        if (!mark) {
+            return std::unexpected{mark.error()};
+        }
+
+        TextProgress out;
+        out.total = (*text)->grapheme_count;
+        // No bookmark is offset zero, not an error: not having started is the
+        // normal state of most of a library.
+        out.offset = mark->has_value() ? (*mark)->offset : core::GraphemeIndex{0};
+        out.offset = core::GraphemeIndex{std::min(out.offset.value, out.total)};
+        // An empty text counts as finished rather than dividing by zero. There
+        // is nothing left to type either way, and 0/0 is not a percentage.
+        out.finished = out.total == 0 || out.offset.value >= out.total;
+        out.fraction = out.total == 0 ? 1.0 : static_cast<double>(out.offset.value) / static_cast<double>(out.total);
+        return out;
+    }
+
+    core::Status TextLibraryService::advance(core::TextId id, std::size_t graphemes_completed) {
+        const core::Result<TextProgress> current = progress(id);
+        if (!current) {
+            return std::unexpected{current.error()};
+        }
+        // Clamped: a caller that over-counts must not leave a bookmark pointing
+        // past the last grapheme, which every reader of it would then have to
+        // defend against.
+        const std::size_t moved = std::min(current->offset.value + graphemes_completed, current->total);
+        return bookmark(id, core::GraphemeIndex{moved});
+    }
+
+    core::Status TextLibraryService::reset_progress(core::TextId id) { return bookmark(id, core::GraphemeIndex{0}); }
 
     core::Status TextLibraryService::bookmark(core::TextId id, core::GraphemeIndex offset) {
         Bookmark mark;
