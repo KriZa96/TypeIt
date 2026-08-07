@@ -23,14 +23,17 @@ namespace typeit::app {
 
         class HistoryServiceTest : public ::testing::Test {
         protected:
-            /// A run `days_ago` days back, at `hour` local-UTC o'clock.
-            void a_run(std::int64_t days_ago, double net_wpm, std::int64_t hour = 12) {
+            /// A run `days_ago` days back, at `hour` local-UTC o'clock, for
+            /// `seconds`. The duration matters to the goal tests and to
+            /// nothing else, so it is last and defaulted.
+            void a_run(std::int64_t days_ago, double net_wpm, std::int64_t hour = 12, std::int64_t seconds = 30) {
                 SessionRecord record;
                 record.mode = "timed";
                 record.mode_param = R"({"seconds":30})";
                 record.completed = true;
                 record.started_at = core::Millis{kDayZero.value - (days_ago * kMillisPerDay) + (hour * kMillisPerHour)};
-                record.duration = core::Millis{30'000};
+                record.duration = core::Millis{seconds * 1'000};
+                record.ended_at = record.started_at + record.duration;
                 record.net_wpm = core::Wpm{net_wpm};
                 record.gross_wpm = core::Wpm{net_wpm + 2.0};
                 record.accuracy = core::Accuracy{0.98};
@@ -201,6 +204,158 @@ namespace typeit::app {
             ASSERT_TRUE(east);
             EXPECT_EQ(utc->current, 2U);
             EXPECT_EQ(east->longest, 2U) << "the same two days, one time zone over";
+        }
+
+        // ---- daily goals (TI-107) -------------------------------------------
+
+        TEST_F(HistoryServiceTest, TheGoalIsMetByTimeAlone) {
+            // Ten minutes in one sitting, and only one run: the time bar
+            // clears it on its own.
+            a_run(0, 60.0, 12, /*seconds=*/600);
+
+            const core::Result<GoalProgress> today =
+                    service_.today({}, kDayZero, 0, DailyGoal{.time = core::Millis{600'000}, .runs = 5});
+
+            ASSERT_TRUE(today);
+            EXPECT_EQ(today->runs, 1U);
+            EXPECT_EQ(today->typed, core::Millis{600'000});
+            EXPECT_TRUE(today->met) << "either bar clears the day";
+        }
+
+        TEST_F(HistoryServiceTest, TheGoalIsMetByRunCountAlone) {
+            // Five short runs, nowhere near ten minutes. The count bar clears
+            // it, which is the whole reason there are two.
+            for (std::int64_t at = 0; at < 5; ++at) {
+                a_run(0, 60.0, 9 + at, /*seconds=*/30);
+            }
+
+            const core::Result<GoalProgress> today =
+                    service_.today({}, kDayZero, 0, DailyGoal{.time = core::Millis{600'000}, .runs = 5});
+
+            ASSERT_TRUE(today);
+            EXPECT_EQ(today->runs, 5U);
+            EXPECT_TRUE(today->met);
+        }
+
+        TEST_F(HistoryServiceTest, NeitherBarClearedIsNotMet) {
+            a_run(0, 60.0, 12, /*seconds=*/30);
+
+            const core::Result<GoalProgress> today =
+                    service_.today({}, kDayZero, 0, DailyGoal{.time = core::Millis{600'000}, .runs = 5});
+
+            ASSERT_TRUE(today);
+            EXPECT_FALSE(today->met);
+            EXPECT_EQ(today->runs, 1U) << "and it says how far off";
+        }
+
+        TEST_F(HistoryServiceTest, ADayWithNoRunsIsZeroRatherThanAnError) {
+            const core::Result<GoalProgress> today = service_.today({}, kDayZero, 0, DailyGoal::any());
+
+            ASSERT_TRUE(today);
+            EXPECT_EQ(today->runs, 0U);
+            EXPECT_FALSE(today->met);
+        }
+
+        TEST_F(HistoryServiceTest, WithNoGoalSetAnyRunIsADay) {
+            // Somebody who has turned the goal off still has a streak.
+            a_run(0, 60.0, 12, /*seconds=*/1);
+
+            const core::Result<GoalProgress> today =
+                    service_.today({}, kDayZero, 0, DailyGoal{.time = core::Millis{0}, .runs = 0});
+
+            ASSERT_TRUE(today);
+            EXPECT_TRUE(today->met);
+        }
+
+        TEST_F(HistoryServiceTest, TheStreakCountsDaysThatMetTheGoalRatherThanDaysWithARun) {
+            // GAMEPLAY §7.4: consecutive days *with the goal met*. Two days of
+            // real practice with a token day between them is not a streak of
+            // three, and calling it one makes the number worthless.
+            const DailyGoal goal{.time = core::Millis{600'000}, .runs = 5};
+            a_run(2, 60.0, 12, /*seconds=*/600);
+            a_run(1, 60.0, 12, /*seconds=*/30);
+            a_run(0, 60.0, 12, /*seconds=*/600);
+
+            const core::Result<Streak> streak = service_.streak({}, kDayZero, 0, goal);
+
+            ASSERT_TRUE(streak);
+            EXPECT_EQ(streak->current, 1U) << "today, and the day before it fell short";
+            EXPECT_EQ(streak->longest, 1U);
+        }
+
+        TEST_F(HistoryServiceTest, TheSameHistoryIsAThreeDayStreakWithNoGoal) {
+            // The other half of the assertion above: the days are consecutive,
+            // and it is only the goal that breaks the run.
+            a_run(2, 60.0, 12, /*seconds=*/600);
+            a_run(1, 60.0, 12, /*seconds=*/30);
+            a_run(0, 60.0, 12, /*seconds=*/600);
+
+            const core::Result<Streak> streak = service_.streak({}, kDayZero, 0, DailyGoal::any());
+
+            ASSERT_TRUE(streak);
+            EXPECT_EQ(streak->current, 3U);
+        }
+
+        // ---- the day boundary ------------------------------------------------
+
+        TEST_F(HistoryServiceTest, ARunThatCrossesMidnightBelongsToTheDayItStartedIn) {
+            // Documented rule: a run beginning at 23:58 and ending at 00:04 is
+            // attributed to the day the typist sat down. The alternative
+            // attributes it to a day they may never have been awake for.
+            SessionRecord midnight;
+            midnight.mode = "timed";
+            midnight.completed = true;
+            // 23:58 on the day before kDayZero, running six minutes.
+            midnight.started_at = core::Millis{kDayZero.value - kMillisPerDay + (23 * kMillisPerHour) + 3'480'000};
+            midnight.duration = core::Millis{360'000};
+            midnight.ended_at = midnight.started_at + midnight.duration;
+            midnight.net_wpm = core::Wpm{60.0};
+            ASSERT_TRUE(history_.save(midnight));
+
+            const core::Result<GoalProgress> yesterday =
+                    service_.today({}, core::Millis{kDayZero.value - kMillisPerDay}, 0, DailyGoal::any());
+            const core::Result<GoalProgress> today = service_.today({}, kDayZero, 0, DailyGoal::any());
+
+            ASSERT_TRUE(yesterday);
+            ASSERT_TRUE(today);
+            EXPECT_EQ(yesterday->runs, 1U) << "the day it started in";
+            EXPECT_EQ(today->runs, 0U) << "not the day it finished in";
+        }
+
+        TEST_F(HistoryServiceTest, ADaylightSavingShiftDoesNotBreakAStreak) {
+            // The clocks going back lengthens one local day to 25 hours; going
+            // forward shortens another to 23. Days are counted from an offset
+            // the caller supplies, so the shift is a change of offset — and
+            // two runs a calendar day apart must stay a two-day streak
+            // whichever side of the transition they are read from.
+            //
+            // Central European Time: +60 in winter, +120 in summer.
+            a_run(1, 60.0, /*hour=*/12);
+            a_run(0, 60.0, /*hour=*/12);
+
+            const core::Result<Streak> winter = service_.streak({}, kDayZero, 60, DailyGoal::any());
+            const core::Result<Streak> summer = service_.streak({}, kDayZero, 120, DailyGoal::any());
+
+            ASSERT_TRUE(winter);
+            ASSERT_TRUE(summer);
+            EXPECT_EQ(winter->current, 2U);
+            EXPECT_EQ(summer->current, 2U) << "an hour of offset is not a missed day";
+        }
+
+        TEST_F(HistoryServiceTest, ARunNearMidnightMovesDayWhenTheOffsetDoes) {
+            // The other side of the same coin: a run at 23:30 UTC is *today*
+            // in UTC and *tomorrow* one hour east, and the day it lands in has
+            // to follow the offset rather than being fixed at import.
+            a_run(0, 60.0, /*hour=*/23);
+
+            const core::Result<GoalProgress> utc = service_.today({}, kDayZero, 0, DailyGoal::any());
+            const core::Result<GoalProgress> east =
+                    service_.today({}, core::Millis{kDayZero.value + kMillisPerDay}, 60, DailyGoal::any());
+
+            ASSERT_TRUE(utc);
+            ASSERT_TRUE(east);
+            EXPECT_EQ(utc->runs, 1U) << "23:00 UTC is today in UTC";
+            EXPECT_EQ(east->runs, 1U) << "and tomorrow an hour east";
         }
 
         // ---- filters --------------------------------------------------------

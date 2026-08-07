@@ -78,7 +78,7 @@ namespace typeit::cli {
 
     core::Result<std::string> stats_summary(const app::HistoryService& history,
                                             const app::IHistoryRepository& repository, const CliOptions& options,
-                                            core::Millis today, app::UtcOffsetMinutes offset) {
+                                            core::Millis today, app::UtcOffsetMinutes offset, app::DailyGoal goal) {
         const app::HistoryFilter filter = filter_from(options);
 
         const core::Result<app::Aggregates> totals = repository.aggregates(filter);
@@ -92,7 +92,7 @@ namespace typeit::cli {
             return std::string{"No sessions yet. Finish a run and it will show up here.\n"};
         }
 
-        const core::Result<app::Streak> streak = history.streak(filter, today, offset);
+        const core::Result<app::Streak> streak = history.streak(filter, today, offset, goal);
         if (!streak) {
             return std::unexpected{streak.error()};
         }

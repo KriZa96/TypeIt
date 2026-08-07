@@ -65,6 +65,7 @@ namespace typeit::tui {
         std::vector<app::TrendPoint> trend;
         std::vector<app::PersonalBest> bests;
         std::vector<app::SessionRow> sessions;
+        app::GoalProgress today;
         core::KeyStats keys;
         /// What went wrong, if anything. Shown in place of the part that failed
         /// rather than instead of the screen.

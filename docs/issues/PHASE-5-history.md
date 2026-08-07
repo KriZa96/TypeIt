@@ -291,6 +291,34 @@ recording history is to see it without asking.
 - A session started before midnight and finished after it is attributed per the documented
   rule.
 
+**Acceptance**
+- [x] The streak now counts days that **met the goal**, not days with a run — which is what
+      GAMEPLAY §7.4 says and what the implementation did not do. Two days of real practice with
+      a token thirty-second day between them was being reported as a streak of three, and a
+      number that counts turning up is a number worth nothing.
+- [x] **Either bar clears the day.** Ten minutes of practice and five quick runs are both a day
+      somebody showed up; requiring both would make the streak a chore rather than a record.
+      Both are tested alone, and so is neither.
+- [x] Zero on both bars means any run counts, for somebody who has turned the goal off.
+      `DailyGoal::any()` is the same thing spelled for a caller with no configuration in
+      hand — a test, or a build without one — so nobody gets a zero by accident.
+- [x] The rule for a run that crosses midnight is **the day it started in**, documented on
+      `streak` and tested. The alternative attributes a run to a day its typist may never have
+      been awake for, and `started_at` is the field the list is ordered by regardless.
+- [x] A DST shift does not break a streak. Days are counted from an offset the caller supplies,
+      so a transition is a change of offset; two runs a calendar day apart stay a two-day
+      streak read from either side of it. The companion test is the other half: a run at 23:00
+      UTC is today in UTC and tomorrow an hour east, and the day it lands in follows the offset
+      rather than being fixed at import.
+- [x] `[goals]` in `config.toml`, with `daily_minutes` and `daily_runs`, so the goal is
+      configurable as GAMEPLAY asks.
+- [x] `--stats` and the history screen read the **same** goal. Config loading moved to one
+      helper in the composition root for exactly that reason: two paths that each loaded their
+      own would eventually disagree about what a streak means, and the two numbers sit side by
+      side in a bug report.
+- [x] Today's progress is shown either way — "goal met" alone leaves somebody wondering whether
+      the line failed to draw or the day did.
+
 ---
 
 ## TI-108 — Export from the UI

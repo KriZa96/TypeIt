@@ -203,6 +203,9 @@ namespace typeit::infra {
             loader.field<std::int64_t>("history.retention_days",
                                        [](Config& c) -> auto& { return c.history.retention_days; });
 
+            loader.field<std::int64_t>("goals.daily_minutes", [](Config& c) -> auto& { return c.goals.daily_minutes; });
+            loader.field<std::int64_t>("goals.daily_runs", [](Config& c) -> auto& { return c.goals.daily_runs; });
+
             loader.field<bool>("network.enabled", [](Config& c) -> auto& { return c.network.enabled; });
             loader.field<bool>("network.allow_http", [](Config& c) -> auto& { return c.network.allow_http; });
             loader.field<bool>("network.allow_private_addresses",
@@ -382,6 +385,10 @@ namespace typeit::infra {
         out << "keep_keystroke_logs = " << boolean(config.history.keep_keystroke_logs)
             << "        # enables exact replay; grows the database\n";
         out << "retention_days      = " << config.history.retention_days << "            # 0 = keep everything\n\n";
+
+        out << "[goals]\n";
+        out << "daily_minutes = " << config.goals.daily_minutes << "            # either bar clears the day\n";
+        out << "daily_runs    = " << config.goals.daily_runs << "             # 0 on both = any run counts\n\n";
 
         out << "[network]\n";
         out << "enabled      = " << boolean(config.network.enabled) << "\n";

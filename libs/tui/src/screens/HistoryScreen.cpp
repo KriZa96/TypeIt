@@ -53,6 +53,10 @@ namespace typeit::tui {
 
         std::string whole(double value) { return std::to_string(static_cast<std::int64_t>(value)); }
 
+        /// "1 run", "2 runs". Worth the three lines: a history screen is read
+        /// often enough that "1 runs" becomes the thing somebody notices.
+        std::string runs_text(std::size_t count) { return std::to_string(count) + (count == 1 ? " run" : " runs"); }
+
     }  // namespace
 
     std::string_view to_string(DateRange range) {
@@ -132,12 +136,26 @@ namespace typeit::tui {
                 note(trend.error());
             }
             if (source.wall_clock != nullptr) {
+                // The configured goal, so the streak on screen means the same
+                // thing as the one in `--stats` and as GAMEPLAY §7.4 says.
+                const app::DailyGoal goal{
+                        .time = core::Millis{context_->config->goals.daily_minutes * kMillisPerMinute},
+                        .runs = static_cast<std::size_t>(std::max<std::int64_t>(0, context_->config->goals.daily_runs)),
+                };
+                const core::Millis now = source.wall_clock->unix_now();
                 if (const core::Result<app::Streak> streak =
-                            source.service->streak(filter_, source.wall_clock->unix_now(), source.utc_offset);
+                            source.service->streak(filter_, now, source.utc_offset, goal);
                     streak) {
                     data_.streak = *streak;
                 } else {
                     note(streak.error());
+                }
+                if (const core::Result<app::GoalProgress> today =
+                            source.service->today(filter_, now, source.utc_offset, goal);
+                    today) {
+                    data_.today = *today;
+                } else {
+                    note(today.error());
                 }
             }
         }
@@ -272,6 +290,15 @@ namespace typeit::tui {
                     ftxui::text(" · streak " + std::to_string(data_.streak.current) + " (best " +
                                 std::to_string(data_.streak.longest) + ")") |
                             ftxui::color(muted.color),
+            }));
+            rows.push_back(ftxui::hbox({
+                    ftxui::text("  today    ") | ftxui::color(muted.color),
+                    ftxui::text(runs_text(data_.today.runs) + ", " + duration_text(data_.today.typed)) |
+                            ftxui::color(accent.color),
+                    // Said either way. "Goal met" alone leaves somebody
+                    // wondering whether the line failed to draw or the day did.
+                    ftxui::text(data_.today.met ? "  goal met" : "  goal not met yet") |
+                            ftxui::color(data_.today.met ? accent.color : muted.color),
             }));
             rows.push_back(bests_line(data_.bests, muted, accent));
             rows.push_back(ftxui::text(""));

@@ -79,6 +79,18 @@ namespace typeit::core {
         std::int64_t retention_days = 0;
     };
 
+    /// What counts as a day's typing done (GAMEPLAY section 7.4).
+    ///
+    /// **Either bar clears it.** Ten minutes of practice and five quick runs
+    /// are both a day somebody showed up, and requiring both would make the
+    /// streak a chore rather than a record of showing up. Zero on a field
+    /// disables that bar; zero on both means any run at all counts, which is
+    /// what somebody who does not want a goal wants.
+    struct GoalsConfig {
+        std::int64_t daily_minutes = 10;
+        std::int64_t daily_runs = 5;
+    };
+
     struct NetworkConfig {
         bool enabled = false;
         bool allow_http = false;
@@ -109,6 +121,7 @@ namespace typeit::core {
         TextConfig text;
         RaceConfig race;
         HistoryConfig history;
+        GoalsConfig goals;
         NetworkConfig network;
         ImportConfig import_;
         /// Action name to key spelling. Whether a spelling is a key the

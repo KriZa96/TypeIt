@@ -46,10 +46,14 @@ namespace typeit::cli {
     ///
     /// An empty history gets a sentence, not a table of zeros: somebody who
     /// has never typed does not need to be told their mean accuracy is 0%.
+    /// The goal a streak is counted against (GAMEPLAY section 7.4). Defaulted
+    /// to "any run counts" so a caller with no configuration in hand — a test,
+    /// or a build without one — still gets a number rather than a zero.
     [[nodiscard]] core::Result<std::string> stats_summary(const app::HistoryService& history,
                                                           const app::IHistoryRepository& repository,
                                                           const CliOptions& options, core::Millis today,
-                                                          app::UtcOffsetMinutes offset = 0);
+                                                          app::UtcOffsetMinutes offset = 0,
+                                                          app::DailyGoal goal = app::DailyGoal::any());
 
 }  // namespace typeit::cli
 

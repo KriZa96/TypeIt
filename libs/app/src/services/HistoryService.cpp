@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -93,21 +94,63 @@ namespace typeit::app {
         return points;
     }
 
-    core::Result<Streak> HistoryService::streak(const HistoryFilter& filter, core::Millis today,
-                                                UtcOffsetMinutes offset) const {
+    namespace {
+
+        /// One day's typing, keyed by local day number.
+        struct DayTotal {
+            core::Millis typed{0};
+            std::size_t runs = 0;
+        };
+
+        std::map<std::int64_t, DayTotal> totals_by_day(const std::vector<SessionRow>& rows, UtcOffsetMinutes offset) {
+            std::map<std::int64_t, DayTotal> days;
+            for (const SessionRow& row: rows) {
+                // Attributed to the day it *started* in — see the header for
+                // why, and for the midnight case that makes it a choice.
+                DayTotal& day = days[local_day(row.started_at, offset)];
+                day.typed += row.duration;
+                ++day.runs;
+            }
+            return days;
+        }
+
+    }  // namespace
+
+    core::Result<GoalProgress> HistoryService::today(const HistoryFilter& filter, core::Millis now,
+                                                     UtcOffsetMinutes offset, DailyGoal goal) const {
         const core::Result<std::vector<SessionRow>> rows = history_->query(filter);
         if (!rows) {
             return std::unexpected{rows.error()};
         }
 
-        std::vector<std::int64_t> days;
-        days.reserve(rows->size());
-        for (const SessionRow& row: *rows) {
-            days.push_back(local_day(row.started_at, offset));
+        const std::map<std::int64_t, DayTotal> days = totals_by_day(*rows, offset);
+        const auto found = days.find(local_day(now, offset));
+        if (found == days.end()) {
+            return GoalProgress{};
         }
-        std::ranges::sort(days);
-        const auto duplicates = std::ranges::unique(days);
-        days.erase(duplicates.begin(), duplicates.end());
+        return GoalProgress{.typed = found->second.typed,
+                            .runs = found->second.runs,
+                            .met = goal.met(found->second.typed, found->second.runs)};
+    }
+
+    core::Result<Streak> HistoryService::streak(const HistoryFilter& filter, core::Millis today,
+                                                UtcOffsetMinutes offset, DailyGoal goal) const {
+        const core::Result<std::vector<SessionRow>> rows = history_->query(filter);
+        if (!rows) {
+            return std::unexpected{rows.error()};
+        }
+
+        // Only the days that cleared the goal. A day somebody typed for one
+        // second is a day they turned up, but the streak is about the goal
+        // (GAMEPLAY §7.4) — and with no goal set, turning up is the goal.
+        std::vector<std::int64_t> days;
+        for (const auto& [day, total]: totals_by_day(*rows, offset)) {
+            if (goal.met(total.typed, total.runs)) {
+                days.push_back(day);
+            }
+        }
+        // Already sorted and unique: `std::map` is ordered and one entry per
+        // day is what it is keyed on.
         if (days.empty()) {
             return Streak{};
         }

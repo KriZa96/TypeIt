@@ -12,6 +12,7 @@
 //
 // The actions that are not built yet say so plainly rather than doing nothing.
 
+#include <algorithm>
 #include <csignal>
 #include <cstddef>
 #include <cstdlib>
@@ -85,6 +86,40 @@ namespace {
         // `typeit --export json | head -1` should not report that it exported
         // everything.
         return std::cout.good() ? kOk : kFailed;
+    }
+
+    /// The settings, or the defaults with a word about why.
+    ///
+    /// A configuration file that will not parse is reported and the defaults
+    /// are used — a broken config is not a reason to be unusable
+    /// (ARCHITECTURE section 5.1). Shared by every action that needs settings,
+    /// so `--stats` and the terminal cannot disagree about what the daily goal
+    /// is and therefore about what a streak means.
+    typeit::core::Config load_config(const typeit::infra::Environment& environment) {
+        typeit::core::Config config;
+        const Result<typeit::infra::Paths> paths = typeit::infra::resolve_paths(environment);
+        if (!paths) {
+            return config;
+        }
+        typeit::infra::TomlConfigStore store{paths->config / "config.toml"};
+        if (const Result<typeit::app::LoadedConfig> loaded = store.load(); loaded) {
+            config = loaded->config;
+            for (const std::string& warning: loaded->warnings) {
+                std::cerr << "typeit: config: " << warning << '\n';
+            }
+        } else {
+            std::cerr << "typeit: config: " << typeit::core::to_string(loaded.error()) << '\n';
+        }
+        return config;
+    }
+
+    /// The daily goal as the service wants it (GAMEPLAY section 7.4).
+    typeit::app::DailyGoal goal_from(const typeit::core::Config& config) {
+        constexpr std::int64_t kMillisPerMinute = 60'000;
+        return typeit::app::DailyGoal{
+                .time = typeit::core::Millis{config.goals.daily_minutes * kMillisPerMinute},
+                .runs = static_cast<std::size_t>(std::max<std::int64_t>(0, config.goals.daily_runs)),
+        };
     }
 
     /// The modes a run can be started in, each closed over the configured
@@ -184,10 +219,13 @@ namespace {
         }
 
         const typeit::app::HistoryService service{(*history)->repository};
-        const Result<std::string> text = options.action == typeit::cli::Action::Stats
-                                                 ? typeit::cli::stats_summary(service, (*history)->repository, options,
-                                                                              typeit::infra::unix_now())
-                                                 : typeit::cli::export_history(service, options);
+        // The same goal the terminal uses, so the streak in `--stats` and the
+        // streak on the history screen cannot disagree.
+        const Result<std::string> text =
+                options.action == typeit::cli::Action::Stats
+                        ? typeit::cli::stats_summary(service, (*history)->repository, options,
+                                                     typeit::infra::unix_now(), 0, goal_from(load_config(environment)))
+                        : typeit::cli::export_history(service, options);
         if (!text) {
             return complain(text.error());
         }
@@ -300,22 +338,8 @@ namespace {
             return complain(history.error());
         }
 
-        // A configuration file that will not parse is reported and the defaults
-        // are used — a broken config is not a reason to be unusable
-        // (ARCHITECTURE section 5.1).
-        typeit::core::Config config;
+        typeit::core::Config config = load_config(environment);
         const Result<typeit::infra::Paths> paths = typeit::infra::resolve_paths(environment);
-        if (paths) {
-            typeit::infra::TomlConfigStore store{paths->config / "config.toml"};
-            if (const Result<typeit::app::LoadedConfig> loaded = store.load(); loaded) {
-                config = loaded->config;
-                for (const std::string& warning: loaded->warnings) {
-                    std::cerr << "typeit: config: " << warning << '\n';
-                }
-            } else {
-                std::cerr << "typeit: config: " << typeit::core::to_string(loaded.error()) << '\n';
-            }
-        }
 
         // The theme, falling back to the built-in default with a word about it
         // rather than refusing to start over a colour.

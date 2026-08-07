@@ -6,9 +6,9 @@ History  mode all  range all time
      |                                 *                                        
    65|                *                                                         
      |*                                                                         
-     +------------------------------------------------------------------        
                                                                                 
-  5 runs · 0h 2m typed · mean 68 wpm · streak 5 (best 5)                        
+  5 runs · 0h 2m typed · mean 68 wpm · streak 0 (best 0)                        
+  today    1 run, 0h 0m  goal not met yet                                       
   bests   timed accuracy 0.97   timed net_wpm 76                                
                                                                                 
   Errors by key                                                                 

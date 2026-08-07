@@ -93,6 +93,9 @@ namespace typeit::tui {
 
         TEST(HistoryScreenTest, TotalsAndStreakMatchTheServiceForAKnownHistory) {
             World world;
+            // No goal, so every day with a run counts — which is what a reader
+            // of "three days in a row" expects this to be measuring.
+            world.config.goals = {.daily_minutes = 0, .daily_runs = 0};
             world.record("timed", 60.0, 2);
             world.record("timed", 70.0, 1);
             world.record("timed", 80.0, 0);
@@ -102,6 +105,35 @@ namespace typeit::tui {
             EXPECT_DOUBLE_EQ(screen.data().totals.mean_net_wpm.value, 70.0);
             EXPECT_EQ(screen.data().streak.current, 3U) << "three days in a row";
             EXPECT_EQ(screen.data().streak.longest, 3U);
+        }
+
+        TEST(HistoryScreenTest, TheStreakOnScreenRespectsTheConfiguredGoal) {
+            // GAMEPLAY §7.4: consecutive days *with the goal met*. Three
+            // thirty-second runs are three days somebody turned up and no days
+            // they practised, and the screen must not call that a streak of
+            // three when the configuration says ten minutes.
+            World world;
+            world.config.goals = {.daily_minutes = 10, .daily_runs = 5};
+            world.record("timed", 60.0, 2);
+            world.record("timed", 70.0, 1);
+            world.record("timed", 80.0, 0);
+            HistoryScreen screen{world.context};
+
+            EXPECT_EQ(screen.data().streak.current, 0U);
+            EXPECT_EQ(screen.data().today.runs, 1U) << "and today is still counted";
+            EXPECT_FALSE(screen.data().today.met);
+        }
+
+        TEST(HistoryScreenTest, TodaysProgressIsShownEitherWay) {
+            // "Goal met" alone leaves somebody wondering whether the line
+            // failed to draw or the day did.
+            World world;
+            world.config.goals = {.daily_minutes = 0, .daily_runs = 1};
+            world.record("timed", 80.0, 0);
+            HistoryScreen screen{world.context};
+
+            EXPECT_TRUE(screen.data().today.met);
+            EXPECT_NE(testing::render_to_text(screen.render(), 80, 30).find("goal met"), std::string::npos);
         }
 
         TEST(HistoryScreenTest, TheModeFilterChangesWhatIsShown) {
