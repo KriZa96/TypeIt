@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <string>
@@ -24,10 +25,22 @@ namespace typeit::tui {
         constexpr std::int64_t kMillisPerDay = 86'400'000;
         constexpr std::int64_t kMillisPerMinute = 60'000;
 
-        /// How many session rows the list gets. The rest of the screen — trend,
-        /// totals, bests, heatmap — is a fixed height, so this is what is left.
-        constexpr std::size_t kChromeRows = 18;
+        /// Everything above the session list, counted rather than guessed:
+        /// title, blank, chart, blank, totals, today, bests, blank, the
+        /// heatmap's caption and its four rows, blank, "Recent" — and below it
+        /// a blank and the hint bar. A `kChromeRows` that was smaller than the
+        /// truth promised rows the screen never drew and pushed the hint bar
+        /// off the bottom of an 80x24 terminal.
+        constexpr std::size_t kChartRows = 7;
+        constexpr std::size_t kShortChartRows = 5;
+        constexpr std::size_t kHeatmapRows = 6;
+        constexpr std::size_t kChromeRows = 10;
         constexpr std::size_t kMinimumRows = 1;
+
+        /// Below this the heatmap goes and the chart shrinks. A keyboard
+        /// diagram is the least urgent thing here, and losing the key hints
+        /// and half the list to keep it is the wrong trade.
+        constexpr std::size_t kRoomForEverything = 30;
 
         /// How many records fit on the one line they get. More than this and
         /// the line wraps, which is worse than a shorter list.
@@ -164,9 +177,12 @@ namespace typeit::tui {
         first_row_ = 0;
     }
 
+    bool HistoryScreen::roomy() const { return context_->size.rows >= kRoomForEverything; }
+
     std::size_t HistoryScreen::page_size() const {
+        const std::size_t chrome = kChromeRows + (roomy() ? kChartRows + kHeatmapRows : kShortChartRows);
         const std::size_t rows = context_->size.rows;
-        return rows > kChromeRows ? rows - kChromeRows : kMinimumRows;
+        return rows > chrome ? rows - chrome : kMinimumRows;
     }
 
     void HistoryScreen::cycle_mode(bool forward) {
@@ -217,6 +233,40 @@ namespace typeit::tui {
         } else if (selected_ >= first_row_ + page) {
             first_row_ = selected_ - page + 1;
         }
+    }
+
+    void HistoryScreen::write_export() {
+        const HistorySource& source = context_->history;
+        if (source.service == nullptr || !context_->save_text) {
+            export_message_ = "exporting is not available in this build";
+            return;
+        }
+        if (export_path_.empty()) {
+            export_message_ = "type a path to write to";
+            return;
+        }
+
+        // The extension chooses the format. Predictable, and it means the two
+        // exports are reachable without a second control nobody would find.
+        const std::filesystem::path path{export_path_};
+        const bool json = path.extension() == ".json";
+        // The *same* filter the screen is showing, so what lands in the file is
+        // what the user was looking at rather than the whole history.
+        const core::Result<std::string> text =
+                json ? source.service->to_json(filter_) : source.service->to_csv(filter_);
+        if (!text) {
+            export_message_ = core::to_string(text.error());
+            return;
+        }
+
+        if (const core::Status written = context_->save_text(path, *text); !written) {
+            // Named, not swallowed: an unwritable path is the common failure
+            // and the one a silent export hides completely.
+            export_message_ = core::to_string(written.error());
+            return;
+        }
+        export_message_ = "wrote " + std::to_string(data_.sessions.size()) + " runs to " + export_path_;
+        exporting_ = false;
     }
 
     std::optional<core::SessionId> HistoryScreen::take_opened() {
@@ -278,12 +328,14 @@ namespace typeit::tui {
                 chart.series.push_back({.x = static_cast<double>(at), .y = data_.trend.at(at).mean_net_wpm.value});
             }
             chart.empty_message = "not enough days to plot a trend yet";
-            rows.push_back(
-                    line_chart(chart, *context_->theme, {.width = layout.text_columns, .height = 6, .depth = depth}));
+            rows.push_back(line_chart(chart, *context_->theme,
+                                      {.width = layout.text_columns,
+                                       .height = roomy() ? kChartRows - 1 : kShortChartRows - 1,
+                                       .depth = depth}));
             rows.push_back(ftxui::text(""));
 
             rows.push_back(ftxui::hbox({
-                    ftxui::text("  " + std::to_string(data_.totals.sessions) + " runs") | ftxui::color(accent.color),
+                    ftxui::text("  " + runs_text(data_.totals.sessions)) | ftxui::color(accent.color),
                     ftxui::text(" · " + duration_text(data_.totals.total_time) + " typed") | ftxui::color(muted.color),
                     ftxui::text(" · mean " + whole(data_.totals.mean_net_wpm.value) + " wpm") |
                             ftxui::color(muted.color),
@@ -303,10 +355,12 @@ namespace typeit::tui {
             rows.push_back(bests_line(data_.bests, muted, accent));
             rows.push_back(ftxui::text(""));
 
-            rows.push_back(ftxui::text("  Errors by key") | ftxui::color(muted.color));
-            rows.push_back(
-                    heatmap(data_.keys, *context_->theme, {.glyphs = context_->capabilities.glyphs, .depth = depth}));
-            rows.push_back(ftxui::text(""));
+            if (roomy()) {
+                rows.push_back(ftxui::text("  Errors by key") | ftxui::color(muted.color));
+                rows.push_back(heatmap(data_.keys, *context_->theme,
+                                       {.glyphs = context_->capabilities.glyphs, .depth = depth}));
+                rows.push_back(ftxui::text(""));
+            }
 
             rows.push_back(ftxui::text("  Recent") | ftxui::color(muted.color));
             const std::size_t last = std::min(data_.sessions.size(), first_row_ + page_size());
@@ -323,18 +377,64 @@ namespace typeit::tui {
             }
         }
 
+        if (exporting_ || !export_message_.empty()) {
+            rows.push_back(ftxui::text(""));
+        }
+        if (exporting_) {
+            rows.push_back(ftxui::hbox({
+                    ftxui::text("  export to ") | ftxui::color(muted.color),
+                    ftxui::text(export_path_ + "_") | ftxui::color(accent.color),
+                    ftxui::text("   (.json for JSON, anything else CSV)") | ftxui::color(muted.color),
+            }));
+        }
+        if (!export_message_.empty()) {
+            rows.push_back(ftxui::text("  " + export_message_) | ftxui::color(muted.color));
+        }
+
         for (const std::string& problem: data_.problems) {
             // In place of the part that failed, never instead of the screen.
             rows.push_back(ftxui::text("  " + problem) | ftxui::color(error.color));
         }
 
         rows.push_back(ftxui::text(""));
-        rows.push_back(key_hint_bar({{.action = Action::QuitOrBack, .label = "back"}}, *context_->keymap,
-                                    *context_->theme, depth));
+        rows.push_back(key_hint_bar(
+                {{.action = Action::Export, .label = "export"}, {.action = Action::QuitOrBack, .label = "back"}},
+                *context_->keymap, *context_->theme, depth));
         return ftxui::vbox(std::move(rows));
     }
 
     bool HistoryScreen::on_event(ftxui::Event event) {
+        if (exporting_) {
+            // The prompt owns the keyboard while it is open, so a path
+            // containing a `j` does not cycle a filter behind it.
+            if (event == ftxui::Event::Return) {
+                write_export();
+                return true;
+            }
+            if (event == ftxui::Event::Escape) {
+                exporting_ = false;
+                export_message_.clear();
+                return true;
+            }
+            if (event == ftxui::Event::Backspace) {
+                if (!export_path_.empty()) {
+                    export_path_.pop_back();
+                }
+                return true;
+            }
+            if (event.is_character() && event.character().size() == 1) {
+                export_path_ += event.character().front();
+                return true;
+            }
+            return true;
+        }
+
+        if (context_->keymap->action_for(event) == Action::Export) {
+            exporting_ = true;
+            export_message_.clear();
+            return true;
+        }
+
         if (event == ftxui::Event::Tab) {
             focused_ = focused_ == HistoryField::Sessions
                                ? HistoryField::Mode

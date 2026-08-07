@@ -7,10 +7,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <ftxui/component/event.hpp>
 #include <gtest/gtest.h>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Snapshot.h"
@@ -40,7 +43,24 @@ namespace typeit::tui {
             app::HistoryService service{history};
             ScreenContext context;
 
+            /// Where an export lands, and what it was given. A closure rather
+            /// than a real file: what is under test is what the screen asks
+            /// for, and a temporary directory would only make that slower to
+            /// say. The failing case is armed by setting `refuse`.
+            std::filesystem::path written_to;
+            std::string written;
+            bool refuse = false;
+
             World() {
+                context.save_text = [this](const std::filesystem::path& path,
+                                           const std::string& contents) -> core::Status {
+                    if (refuse) {
+                        return core::fail(core::ErrorCode::FileUnreadable, path.string() + ": cannot write");
+                    }
+                    written_to = path;
+                    written = contents;
+                    return {};
+                };
                 context.theme = &theme;
                 context.keymap = &keymap;
                 context.config = &config;
@@ -272,6 +292,140 @@ namespace typeit::tui {
             static_cast<void>(testing::render_to_text(screen.render(), 80, 24));
 
             EXPECT_EQ(world.history.queries, after_load) << "drawing asked the database nothing";
+        }
+
+        // --- export (TI-108) ----------------------------------------------------
+
+        /// Opens the export prompt and types `path` into it.
+        void type_export_path(HistoryScreen& screen, std::string_view path) {
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Special(std::string(1, '\x05'))));  // ctrl-e
+            ASSERT_TRUE(screen.exporting());
+            for (const char letter: path) {
+                ASSERT_TRUE(screen.on_event(ftxui::Event::Character(letter)));
+            }
+        }
+
+        TEST(HistoryScreenTest, ExportWritesToTheChosenPathAndSaysSo) {
+            World world;
+            world.record("timed", 60.0, 1);
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "/tmp/typeit-history.csv");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+
+            EXPECT_EQ(world.written_to, std::filesystem::path{"/tmp/typeit-history.csv"});
+            EXPECT_FALSE(world.written.empty());
+            EXPECT_NE(screen.export_message().find("wrote"), std::string::npos) << screen.export_message();
+            EXPECT_FALSE(screen.exporting()) << "and the prompt closes";
+        }
+
+        TEST(HistoryScreenTest, AnUnwritablePathIsReportedRatherThanSilentlyFailing) {
+            World world;
+            world.record("timed", 60.0, 1);
+            world.refuse = true;
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "/nowhere/at/all.csv");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+
+            EXPECT_NE(screen.export_message().find("cannot write"), std::string::npos) << screen.export_message();
+            EXPECT_NE(testing::render_to_text(screen.render(), 80, 30).find("cannot write"), std::string::npos);
+        }
+
+        TEST(HistoryScreenTest, ExportedContentMatchesTheCliExportByteForByte) {
+            // The same service, the same filter, the same bytes. A second
+            // formatter here would drift from the CLI's within a release.
+            World world;
+            world.record("timed", 60.0, 1);
+            world.record("quote", 90.0, 0);
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "history.csv");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+            const core::Result<std::string> from_cli = world.service.to_csv(screen.filter());
+
+            ASSERT_TRUE(from_cli);
+            EXPECT_EQ(world.written, *from_cli);
+        }
+
+        TEST(HistoryScreenTest, TheExtensionChoosesTheFormat) {
+            World world;
+            world.record("timed", 60.0, 1);
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "history.json");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+            const core::Result<std::string> from_cli = world.service.to_json(screen.filter());
+
+            ASSERT_TRUE(from_cli);
+            EXPECT_EQ(world.written, *from_cli);
+            EXPECT_TRUE(world.written.starts_with("[")) << world.written.substr(0, 40);
+        }
+
+        TEST(HistoryScreenTest, TheExportFilterIsTheOneOnScreen) {
+            // What lands in the file is what the user was looking at, not the
+            // whole history — a filtered view that exported everything would
+            // be a quiet surprise in somebody's spreadsheet.
+            World world;
+            world.record("timed", 60.0, 1);
+            world.record("quote", 90.0, 0);
+            HistoryScreen screen{world.context};
+            ASSERT_TRUE(screen.on_event(ftxui::Event::ArrowRight));  // Pick a mode.
+            ASSERT_EQ(screen.data().sessions.size(), 1U);
+
+            type_export_path(screen, "history.csv");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+
+            // Header plus one row, and no more.
+            EXPECT_EQ(std::ranges::count(world.written, '\n'), 2) << world.written;
+        }
+
+        TEST(HistoryScreenTest, AnEmptyPathIsRefusedWithAMessage) {
+            World world;
+            world.record("timed", 60.0, 1);
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+
+            EXPECT_TRUE(world.written.empty());
+            EXPECT_FALSE(screen.export_message().empty());
+            EXPECT_TRUE(screen.exporting()) << "and the prompt stays open to be corrected";
+        }
+
+        TEST(HistoryScreenTest, EscapeCancelsTheExportPrompt) {
+            World world;
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "history.csv");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Escape));
+
+            EXPECT_FALSE(screen.exporting());
+            EXPECT_TRUE(world.written.empty());
+        }
+
+        TEST(HistoryScreenTest, ThePromptOwnsTheKeyboardWhileItIsOpen) {
+            // A path containing a letter must not cycle a filter behind it.
+            World world;
+            world.record("timed", 60.0, 1);
+            HistoryScreen screen{world.context};
+            const std::optional<std::string> before = screen.filter().mode;
+
+            type_export_path(screen, "a-path");
+
+            EXPECT_EQ(screen.filter().mode, before);
+            EXPECT_EQ(screen.export_path(), "a-path");
+        }
+
+        TEST(HistoryScreenTest, WithNoWriterExportingSaysSoRatherThanDoingNothing) {
+            World world;
+            world.context.save_text = {};
+            HistoryScreen screen{world.context};
+
+            type_export_path(screen, "history.csv");
+            ASSERT_TRUE(screen.on_event(ftxui::Event::Return));
+
+            EXPECT_NE(screen.export_message().find("not available"), std::string::npos) << screen.export_message();
         }
 
         TEST(HistoryScreenTest, SnapshotAt80x24) {

@@ -41,11 +41,14 @@ namespace typeit::tui {
         TextLibrary,
         Settings,
         Help,
+        /// Write the history out. Offered on the history screen and nowhere
+        /// else, because it is the only screen that knows what to write.
+        Export,
     };
 
-    inline constexpr std::array<Action, 9> kAllActions{
+    inline constexpr std::array<Action, 10> kAllActions{
             Action::QuitOrBack, Action::ForceQuit,   Action::Restart,  Action::NewText, Action::Menu,
-            Action::History,    Action::TextLibrary, Action::Settings, Action::Help,
+            Action::History,    Action::TextLibrary, Action::Settings, Action::Help,    Action::Export,
     };
 
     /// The name the configuration file uses under `[keys]`.

@@ -60,97 +60,84 @@ namespace typeit::app {
 
     core::Result<std::vector<TrendPoint>> HistoryService::trend(const HistoryFilter& filter, TrendBucket bucket,
                                                                 UtcOffsetMinutes offset) const {
-        const core::Result<std::vector<SessionRow>> rows = history_->query(filter);
-        if (!rows) {
-            return std::unexpected{rows.error()};
+        // Days come back already summed, oldest first, and there are at most
+        // 366 of them a year however many runs are behind them (TI-109).
+        const core::Result<std::vector<DayBucket>> days = history_->daily_totals(filter, offset);
+        if (!days) {
+            return std::unexpected{days.error()};
         }
 
-        // Accumulated by bucket, then sorted: the repository answers newest
-        // first and a trend line reads oldest first.
-        std::vector<std::pair<std::int64_t, TrendPoint>> buckets;
-        for (const SessionRow& row: *rows) {
-            const std::int64_t day = local_day(row.started_at, offset);
-            const std::int64_t key = bucket == TrendBucket::Week ? local_week(day) : day;
-
-            const auto found = std::ranges::find(buckets, key, &std::pair<std::int64_t, TrendPoint>::first);
-            TrendPoint& point = found != buckets.end() ? found->second : buckets.emplace_back(key, TrendPoint{}).second;
-            point.start = midnight_of(key, offset);
-            ++point.sessions;
-            point.mean_net_wpm = core::Wpm{point.mean_net_wpm.value + row.net_wpm.value};
-            point.mean_accuracy = core::Accuracy{point.mean_accuracy.value + row.accuracy.value};
-            point.total_time += row.duration;
-        }
-
-        std::ranges::sort(buckets, {}, &std::pair<std::int64_t, TrendPoint>::first);
-
+        // Weeks are folded here rather than in a second query: the input is
+        // already one row a day, so this is arithmetic over a bounded list and
+        // not a second pass over the history.
         std::vector<TrendPoint> points;
-        points.reserve(buckets.size());
-        for (auto& [key, point]: buckets) {
-            const auto count = static_cast<double>(point.sessions);
-            point.mean_net_wpm = core::Wpm{point.mean_net_wpm.value / count};
-            point.mean_accuracy = core::Accuracy{point.mean_accuracy.value / count};
-            points.push_back(point);
+        std::vector<std::int64_t> keys;
+        std::vector<double> wpm_weighted;
+        std::vector<double> accuracy_weighted;
+
+        for (const DayBucket& day: *days) {
+            const std::int64_t key = bucket == TrendBucket::Week ? local_week(day.day) : day.day;
+
+            const auto found = std::ranges::find(keys, key);
+            if (found == keys.end()) {
+                keys.push_back(key);
+                points.push_back(TrendPoint{.start = midnight_of(key, offset)});
+                wpm_weighted.push_back(0.0);
+                accuracy_weighted.push_back(0.0);
+            }
+            const auto at = static_cast<std::size_t>(std::ranges::find(keys, key) - keys.begin());
+
+            // Weighted by how many runs each day held: a week with one run on
+            // Monday and twenty on Friday is not the mean of two day-averages.
+            const auto count = static_cast<double>(day.sessions);
+            points.at(at).sessions += day.sessions;
+            points.at(at).total_time += day.total_time;
+            wpm_weighted.at(at) += day.mean_net_wpm.value * count;
+            accuracy_weighted.at(at) += day.mean_accuracy.value * count;
+        }
+
+        for (std::size_t at = 0; at < points.size(); ++at) {
+            const auto count = static_cast<double>(points.at(at).sessions);
+            points.at(at).mean_net_wpm = core::Wpm{wpm_weighted.at(at) / count};
+            points.at(at).mean_accuracy = core::Accuracy{accuracy_weighted.at(at) / count};
         }
         return points;
     }
 
-    namespace {
-
-        /// One day's typing, keyed by local day number.
-        struct DayTotal {
-            core::Millis typed{0};
-            std::size_t runs = 0;
-        };
-
-        std::map<std::int64_t, DayTotal> totals_by_day(const std::vector<SessionRow>& rows, UtcOffsetMinutes offset) {
-            std::map<std::int64_t, DayTotal> days;
-            for (const SessionRow& row: rows) {
-                // Attributed to the day it *started* in — see the header for
-                // why, and for the midnight case that makes it a choice.
-                DayTotal& day = days[local_day(row.started_at, offset)];
-                day.typed += row.duration;
-                ++day.runs;
-            }
-            return days;
-        }
-
-    }  // namespace
-
     core::Result<GoalProgress> HistoryService::today(const HistoryFilter& filter, core::Millis now,
                                                      UtcOffsetMinutes offset, DailyGoal goal) const {
-        const core::Result<std::vector<SessionRow>> rows = history_->query(filter);
-        if (!rows) {
-            return std::unexpected{rows.error()};
+        const core::Result<std::vector<DayBucket>> days = history_->daily_totals(filter, offset);
+        if (!days) {
+            return std::unexpected{days.error()};
         }
 
-        const std::map<std::int64_t, DayTotal> days = totals_by_day(*rows, offset);
-        const auto found = days.find(local_day(now, offset));
-        if (found == days.end()) {
-            return GoalProgress{};
+        const std::int64_t wanted = local_day(now, offset);
+        for (const DayBucket& day: *days) {
+            if (day.day == wanted) {
+                return GoalProgress{
+                        .typed = day.total_time, .runs = day.sessions, .met = goal.met(day.total_time, day.sessions)};
+            }
         }
-        return GoalProgress{.typed = found->second.typed,
-                            .runs = found->second.runs,
-                            .met = goal.met(found->second.typed, found->second.runs)};
+        return GoalProgress{};
     }
 
     core::Result<Streak> HistoryService::streak(const HistoryFilter& filter, core::Millis today,
                                                 UtcOffsetMinutes offset, DailyGoal goal) const {
-        const core::Result<std::vector<SessionRow>> rows = history_->query(filter);
-        if (!rows) {
-            return std::unexpected{rows.error()};
+        const core::Result<std::vector<DayBucket>> buckets = history_->daily_totals(filter, offset);
+        if (!buckets) {
+            return std::unexpected{buckets.error()};
         }
 
         // Only the days that cleared the goal. A day somebody typed for one
         // second is a day they turned up, but the streak is about the goal
         // (GAMEPLAY §7.4) — and with no goal set, turning up is the goal.
+        // Already sorted and one row per day: that is what `daily_totals` is.
         std::vector<std::int64_t> days;
-        for (const auto& [day, total]: totals_by_day(*rows, offset)) {
-            if (goal.met(total.typed, total.runs)) {
-                days.push_back(day);
+        for (const DayBucket& bucket: *buckets) {
+            if (goal.met(bucket.total_time, bucket.sessions)) {
+                days.push_back(bucket.day);
             }
         }
-        // Already sorted and unique: `std::map` is ordered and one entry per
-        // day is what it is keyed on.
         if (days.empty()) {
             return Streak{};
         }

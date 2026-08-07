@@ -63,6 +63,7 @@ namespace typeit::tui {
             context.capabilities = dependencies.capabilities;
             context.texts = &dependencies.texts;
             context.load_text = dependencies.load_text;
+            context.save_text = dependencies.save_text;
             context.history = dependencies.history;
             context.size = TerminalSize{.columns = 80, .rows = 24};
         }

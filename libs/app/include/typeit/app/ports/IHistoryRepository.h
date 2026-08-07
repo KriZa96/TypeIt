@@ -68,6 +68,21 @@ namespace typeit::app {
         /// normal thing to draw.
         [[nodiscard]] virtual core::Result<Aggregates> aggregates(const HistoryFilter& filter) const = 0;
 
+        /// The matching runs summed per local day, oldest first.
+        ///
+        /// A port method rather than client-side grouping because it is an
+        /// aggregate over the whole history and that belongs in SQL (TI-109).
+        /// Loading every row to add them up here makes the memory a history
+        /// screen needs grow with how much somebody has typed, which is exactly
+        /// backwards: the answer is at most 366 buckets a year however many
+        /// runs are behind it.
+        ///
+        /// Days that nobody typed on are **not** emitted. A gap is a gap, and
+        /// filling it with zero-WPM days would say somebody typed badly on a
+        /// day they did not type at all.
+        [[nodiscard]] virtual core::Result<std::vector<DayBucket>> daily_totals(const HistoryFilter& filter,
+                                                                                UtcOffsetMinutes offset) const = 0;
+
         [[nodiscard]] virtual core::Result<std::vector<PersonalBest>> personal_bests() const = 0;
 
         /// Adds this run's counts to the lifetime totals. Merging, not

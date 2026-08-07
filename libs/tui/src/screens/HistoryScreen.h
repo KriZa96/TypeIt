@@ -96,8 +96,20 @@ namespace typeit::tui {
         /// paging keys, and worth reading in a test rather than inferring.
         [[nodiscard]] std::size_t page_size() const;
 
+        /// Whether the export prompt is open, and what has been typed into it.
+        [[nodiscard]] bool exporting() const noexcept { return exporting_; }
+        [[nodiscard]] const std::string& export_path() const noexcept { return export_path_; }
+        /// What the last export said, success or failure. Empty until one has
+        /// been tried.
+        [[nodiscard]] const std::string& export_message() const noexcept { return export_message_; }
+
     private:
+        /// Whether the terminal has room for the heatmap and the full chart.
+        [[nodiscard]] bool roomy() const;
         void reload();
+        /// Writes the history to `export_path_`, and says what happened either
+        /// way — a silent export is indistinguishable from a broken one.
+        void write_export();
         void cycle_mode(bool forward);
         void cycle_range(bool forward);
         void move_selection(std::int64_t by);
@@ -112,6 +124,10 @@ namespace typeit::tui {
         /// its first screenful forever.
         std::size_t first_row_ = 0;
         std::optional<core::SessionId> opened_;
+
+        bool exporting_ = false;
+        std::string export_path_;
+        std::string export_message_;
     };
 
 }  // namespace typeit::tui

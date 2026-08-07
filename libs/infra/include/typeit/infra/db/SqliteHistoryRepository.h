@@ -37,6 +37,19 @@ namespace typeit::infra {
 
         [[nodiscard]] core::Result<app::Aggregates> aggregates(const app::HistoryFilter& filter) const override;
 
+        [[nodiscard]] core::Result<std::vector<app::DayBucket>> daily_totals(
+                const app::HistoryFilter& filter, app::UtcOffsetMinutes offset) const override;
+
+        /// The statement `daily_totals` runs, verbatim.
+        ///
+        /// Named so the performance test can ask SQLite to explain **this**
+        /// query rather than a paraphrase of it. A test that plans a
+        /// hand-copied simplification proves something about the copy: the
+        /// first draft of `HistoryPerfTest` did exactly that, reported a table
+        /// scan the real query does not do, and would have gone on passing
+        /// after the real one regressed.
+        [[nodiscard]] static std::string_view daily_totals_sql() noexcept;
+
         [[nodiscard]] core::Result<std::vector<app::PersonalBest>> personal_bests() const override;
 
         [[nodiscard]] core::Status merge_key_stats(const core::KeyStats& stats) override;

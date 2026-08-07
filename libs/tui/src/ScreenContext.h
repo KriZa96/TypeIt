@@ -29,6 +29,7 @@ namespace typeit::tui {
         /// offering an empty list.
         const std::vector<TextChoice>* texts = nullptr;
         TextLoader load_text;
+        TextWriter save_text;
 
         /// What the history screens read. Null throughout is a normal state,
         /// not an error: a layout test should not have to stand up a database,

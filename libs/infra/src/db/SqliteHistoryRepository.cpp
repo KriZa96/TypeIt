@@ -413,6 +413,57 @@ namespace typeit::infra {
         };
     }
 
+    std::string_view SqliteHistoryRepository::daily_totals_sql() noexcept {
+        return "SELECT CAST(FLOOR((started_at + ?6) / 86400000.0) AS INTEGER) AS day,"
+               " COUNT(*), AVG(net_wpm), AVG(accuracy), SUM(duration_ms)"
+               " FROM session"
+               " WHERE (?1 = '' OR mode = ?1)"
+               "   AND (?2 = 0 OR started_at >= ?2)"
+               "   AND (?3 = 0 OR started_at < ?3)"
+               "   AND (?4 = 0 OR completed = 1)"
+               " GROUP BY day ORDER BY day LIMIT ?5";
+    }
+
+    Result<std::vector<app::DayBucket>> SqliteHistoryRepository::daily_totals(const app::HistoryFilter& filter,
+                                                                              app::UtcOffsetMinutes offset) const {
+        // Grouped by the database, not by loading every row and adding them up
+        // in C++ (TI-109). A year is at most 366 rows out of here however many
+        // runs are behind them, so the memory a history screen needs stops
+        // growing with how much somebody has typed.
+        //
+        // FLOOR on a real division rather than integer division: SQLite
+        // truncates towards zero, which would put New Year's Eve 1969 in 1970.
+        // Nobody has a session from 1969, and a boundary that is wrong only for
+        // impossible input is still a boundary somebody has to reason about.
+        Result<Statement> statement = database_->prepare(daily_totals_sql());
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+
+        bind_filter(*statement, bind_values(filter));
+        statement->bind(5, limit_of(filter));
+        statement->bind(6, static_cast<std::int64_t>(offset) * 60'000);
+
+        std::vector<app::DayBucket> buckets;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            buckets.push_back(app::DayBucket{
+                    .day = statement->column_int(0),
+                    .sessions = static_cast<std::size_t>(statement->column_int(1)),
+                    .mean_net_wpm = core::Wpm{statement->column_double(2)},
+                    .mean_accuracy = core::Accuracy{statement->column_double(3)},
+                    .total_time = core::Millis{statement->column_int(4)},
+            });
+        }
+        return buckets;
+    }
+
     Result<std::vector<app::PersonalBest>> SqliteHistoryRepository::personal_bests() const {
         Result<Statement> statement = database_->prepare(
                 "SELECT mode, param, metric, session_id, value, achieved_at FROM personal_best"

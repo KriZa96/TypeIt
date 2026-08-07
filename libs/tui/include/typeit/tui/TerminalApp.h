@@ -49,6 +49,11 @@ namespace typeit::tui {
     /// something the composition root supplied.
     using TextLoader = std::function<core::Result<std::string>(const std::filesystem::path&)>;
 
+    /// Writes one. The counterpart of `TextLoader`, and a parameter for the
+    /// same reason: this is the only way anything in `tui` puts a file on a
+    /// disk, and it does it through something the composition root supplied.
+    using TextWriter = std::function<core::Status(const std::filesystem::path&, const std::string&)>;
+
     /// Everything the screens that show recorded history read.
     ///
     /// Two pointers rather than one because `HistoryService` deliberately does
@@ -87,6 +92,9 @@ namespace typeit::tui {
         /// file loses nothing.
         std::vector<TextChoice> texts;
         TextLoader load_text;
+        /// Absent means exporting is not offered. A build with nowhere to write
+        /// should not show a key that does nothing.
+        TextWriter save_text;
         HistorySource history;
 
         /// The text a run types when the catalogue is empty. Phase 6 replaces

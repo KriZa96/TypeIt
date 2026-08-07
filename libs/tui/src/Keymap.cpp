@@ -19,7 +19,7 @@ namespace typeit::tui {
 
         using core::ErrorCode;
 
-        constexpr std::array<std::pair<std::string_view, Action>, 9> kActionNames{{
+        constexpr std::array<std::pair<std::string_view, Action>, 10> kActionNames{{
                 {"quit_or_back", Action::QuitOrBack},
                 {"force_quit", Action::ForceQuit},
                 {"restart", Action::Restart},
@@ -29,6 +29,7 @@ namespace typeit::tui {
                 {"text_library", Action::TextLibrary},
                 {"settings", Action::Settings},
                 {"help", Action::Help},
+                {"export", Action::Export},
         }};
 
         /// The named keys a binding may use, beside a single character. `f1`
@@ -262,6 +263,8 @@ namespace typeit::tui {
                 return Binding{.key = "f2", .ctrl = false, .alt = false};
             case Action::Help:
                 return Binding{.key = "f1", .ctrl = false, .alt = false};
+            case Action::Export:
+                return Binding{.key = "e", .ctrl = true, .alt = false};
         }
         return Binding{.key = "escape", .ctrl = false, .alt = false};
     }

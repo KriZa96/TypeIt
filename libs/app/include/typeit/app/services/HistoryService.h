@@ -75,15 +75,6 @@ namespace typeit::app {
         std::size_t longest = 0;
     };
 
-    /// Minutes east of UTC. Days are local days: a run at 23:30 and a run at
-    /// 00:30 are two days to the person who did them, whatever UTC thinks.
-    ///
-    /// It is a parameter rather than something read from the machine because
-    /// `app` has no business calling the operating system — the composition
-    /// root passes the real offset, and a test passes whichever one it is
-    /// asking about.
-    using UtcOffsetMinutes = std::int32_t;
-
     class HistoryService {
     public:
         explicit HistoryService(IHistoryRepository& history) : history_{&history} {}

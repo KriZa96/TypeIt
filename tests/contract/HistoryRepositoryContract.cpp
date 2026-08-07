@@ -197,6 +197,98 @@ namespace typeit {
             EXPECT_EQ(read.error().context, "9999") << "and it says which id";
         }
 
+        TYPED_TEST(HistoryRepositoryContract, DailyTotalsGroupRunsByLocalDay) {
+            // Two runs on one day and one on the next, summed by the database
+            // rather than by loading every row and adding them up (TI-109).
+            app::SessionRecord morning = TestFixture::a_run();
+            morning.started_at = kNoon;
+            morning.duration = core::Millis{30'000};
+            morning.net_wpm = core::Wpm{60.0};
+            app::SessionRecord evening = morning;
+            evening.started_at = kNoon + core::Millis{6 * 3'600'000};
+            evening.net_wpm = core::Wpm{80.0};
+            app::SessionRecord tomorrow = morning;
+            tomorrow.started_at = kNoon + core::Millis{86'400'000};
+
+            ASSERT_TRUE(this->repository().save(morning));
+            ASSERT_TRUE(this->repository().save(evening));
+            ASSERT_TRUE(this->repository().save(tomorrow));
+
+            const core::Result<std::vector<app::DayBucket>> days = this->repository().daily_totals({}, 0);
+
+            ASSERT_TRUE(days) << (days ? "" : days.error().context);
+            ASSERT_EQ(days->size(), 2U);
+            EXPECT_EQ(days->at(0).day + 1, days->at(1).day) << "oldest first, and consecutive";
+            EXPECT_EQ(days->at(0).sessions, 2U);
+            EXPECT_DOUBLE_EQ(days->at(0).mean_net_wpm.value, 70.0) << "the mean of the two";
+            EXPECT_EQ(days->at(0).total_time, core::Millis{60'000});
+            EXPECT_EQ(days->at(1).sessions, 1U);
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, DailyTotalsFollowTheOffset) {
+            // 23:30 UTC is today in UTC and tomorrow an hour east. The day a
+            // run lands in has to follow the offset rather than being fixed
+            // when it was saved.
+            //
+            // `kNoon` is midnight UTC despite its name, so this is 23:30 on the
+            // same day rather than half past eleven in the morning — which is
+            // what the first draft of this test asserted about, and what makes
+            // it a test of nothing.
+            app::SessionRecord late = TestFixture::a_run();
+            late.started_at = core::Millis{kNoon.value + (23 * 3'600'000) + 1'800'000};
+            ASSERT_TRUE(this->repository().save(late));
+
+            const core::Result<std::vector<app::DayBucket>> utc = this->repository().daily_totals({}, 0);
+            const core::Result<std::vector<app::DayBucket>> east = this->repository().daily_totals({}, 60);
+
+            ASSERT_TRUE(utc);
+            ASSERT_TRUE(east);
+            ASSERT_EQ(utc->size(), 1U);
+            ASSERT_EQ(east->size(), 1U);
+            EXPECT_EQ(east->front().day, utc->front().day + 1) << "an hour east is the next day";
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, DailyTotalsEmitNoBucketForADayNobodyTypedOn) {
+            // A gap is a gap. Filling it with a zero-WPM day would say somebody
+            // typed badly on a day they did not type at all.
+            app::SessionRecord first = TestFixture::a_run();
+            first.started_at = kNoon;
+            app::SessionRecord third = TestFixture::a_run();
+            third.started_at = kNoon + core::Millis{2 * 86'400'000};
+            ASSERT_TRUE(this->repository().save(first));
+            ASSERT_TRUE(this->repository().save(third));
+
+            const core::Result<std::vector<app::DayBucket>> days = this->repository().daily_totals({}, 0);
+
+            ASSERT_TRUE(days);
+            EXPECT_EQ(days->size(), 2U) << "two days typed, not three";
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, DailyTotalsRespectTheFilter) {
+            app::SessionRecord timed = TestFixture::a_run();
+            timed.started_at = kNoon;
+            app::SessionRecord quote = timed;
+            quote.mode = "quote";
+            quote.started_at = kNoon + core::Millis{86'400'000};
+            ASSERT_TRUE(this->repository().save(timed));
+            ASSERT_TRUE(this->repository().save(quote));
+
+            app::HistoryFilter filter;
+            filter.mode = "quote";
+            const core::Result<std::vector<app::DayBucket>> days = this->repository().daily_totals(filter, 0);
+
+            ASSERT_TRUE(days);
+            ASSERT_EQ(days->size(), 1U);
+            EXPECT_EQ(days->front().sessions, 1U);
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, DailyTotalsOverAnEmptyHistoryAreEmpty) {
+            const core::Result<std::vector<app::DayBucket>> days = this->repository().daily_totals({}, 0);
+
+            ASSERT_TRUE(days) << "empty, never a crash and never NaN";
+            EXPECT_TRUE(days->empty());
+        }
+
         TYPED_TEST(HistoryRepositoryContract, IdsAreDistinct) {
             const core::Result<core::SessionId> first = this->repository().save(TestFixture::a_run());
             const core::Result<core::SessionId> second = this->repository().save(TestFixture::a_run());

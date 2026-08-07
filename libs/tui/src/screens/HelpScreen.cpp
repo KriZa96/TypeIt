@@ -31,6 +31,8 @@ namespace typeit::tui {
                     // promising one: leaving mid-run saves it as abandoned,
                     // which is not a destructive thing to need protecting from.
                     return "the menu (a run in progress is saved)";
+                case Action::Export:
+                    return "export the history (on the history screen)";
                 case Action::History:
                     return "history";
                 case Action::TextLibrary:

@@ -152,6 +152,45 @@ namespace typeit::testing {
             return totals;
         }
 
+        [[nodiscard]] core::Result<std::vector<app::DayBucket>> daily_totals(
+                const app::HistoryFilter& filter, app::UtcOffsetMinutes offset) const override {
+            TYPEIT_FAIL_IF_ARMED()
+
+            // Grouped the same way the SQL does, so the contract suite compares
+            // like with like — including the floor, which matters only for
+            // dates nobody has and is still the documented rule.
+            std::map<std::int64_t, app::DayBucket> days;
+            std::map<std::int64_t, double> wpm_sum;
+            std::map<std::int64_t, double> accuracy_sum;
+            for (std::size_t at = 0; at < rows.size(); ++at) {
+                if (!matches(rows[at], filter)) {
+                    continue;
+                }
+                const std::int64_t local = rows[at].started_at.value + (static_cast<std::int64_t>(offset) * 60'000);
+                const std::int64_t day = local >= 0 ? local / 86'400'000 : ((local + 1) / 86'400'000) - 1;
+
+                app::DayBucket& bucket = days[day];
+                bucket.day = day;
+                ++bucket.sessions;
+                bucket.total_time += records[at].duration;
+                wpm_sum[day] += records[at].net_wpm.value;
+                accuracy_sum[day] += records[at].accuracy.value;
+            }
+
+            std::vector<app::DayBucket> out;
+            out.reserve(days.size());
+            for (auto& [day, bucket]: days) {
+                const auto count = static_cast<double>(bucket.sessions);
+                bucket.mean_net_wpm = core::Wpm{wpm_sum[day] / count};
+                bucket.mean_accuracy = core::Accuracy{accuracy_sum[day] / count};
+                out.push_back(bucket);
+            }
+            if (filter.limit != 0 && out.size() > filter.limit) {
+                out.resize(filter.limit);
+            }
+            return out;
+        }
+
         [[nodiscard]] core::Result<std::vector<app::PersonalBest>> personal_bests() const override {
             TYPEIT_FAIL_IF_ARMED()
 

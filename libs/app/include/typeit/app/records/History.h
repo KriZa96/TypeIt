@@ -101,6 +101,30 @@ namespace typeit::app {
         bool completed_only = true;
     };
 
+    /// Minutes east of UTC. Days are local days: a run at 23:30 and a run at
+    /// 00:30 are two days to the person who did them, whatever UTC thinks.
+    ///
+    /// A parameter rather than something read from the machine because neither
+    /// `app` nor `infra` has any business calling the operating system — the
+    /// composition root passes the real offset, and a test passes whichever
+    /// one it is asking about.
+    using UtcOffsetMinutes = std::int32_t;
+
+    /// One local day's runs, already summed. The unit the trend, the streak and
+    /// the daily goal are all counted in.
+    ///
+    /// Aggregated by the database rather than by loading rows and adding them
+    /// up here: a year of history is at most 366 of these, where the rows
+    /// behind them are however many runs somebody has done (TI-109).
+    struct DayBucket {
+        /// Days since 1 January 1970, in the caller's local time.
+        std::int64_t day = 0;
+        std::size_t sessions = 0;
+        core::Wpm mean_net_wpm{0.0};
+        core::Accuracy mean_accuracy{0.0};
+        core::Millis total_time{0};
+    };
+
     /// Zeros rather than NaN over an empty range: a new user's history screen
     /// is a normal thing to draw.
     struct Aggregates {

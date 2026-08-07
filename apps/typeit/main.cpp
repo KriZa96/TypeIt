@@ -182,6 +182,27 @@ namespace {
         return contents.str();
     }
 
+    /// Writes a whole file, creating the directory it lives in.
+    ///
+    /// Reported rather than thrown: an unwritable path is something the user
+    /// typed, not a broken program, and they are the one who can fix it.
+    Status write_file(const std::filesystem::path& path, const std::string& contents) {
+        std::error_code failed;
+        if (path.has_parent_path()) {
+            std::filesystem::create_directories(path.parent_path(), failed);
+        }
+        std::ofstream file{path, std::ios::binary | std::ios::trunc};
+        if (!file) {
+            return typeit::core::fail(typeit::core::ErrorCode::FileUnreadable, path.string() + ": cannot write");
+        }
+        file << contents;
+        file.flush();
+        if (!file) {
+            return typeit::core::fail(typeit::core::ErrorCode::FileUnreadable, path.string() + ": write failed");
+        }
+        return {};
+    }
+
     /// Where the data lives: `--data-dir` if it was given, the platform's
     /// answer otherwise.
     Result<std::filesystem::path> data_directory(const typeit::cli::CliOptions& options,
@@ -373,6 +394,7 @@ namespace {
                 .capabilities = typeit::infra::detect_capabilities(environment),
                 .texts = bundled_texts(options, assets.value_or(std::filesystem::path{})),
                 .load_text = read_file,
+                .save_text = write_file,
                 // The offset is zero, which means UTC days — the same thing
                 // `--stats` does today. Local days are TI-107's job, along with
                 // the DST transition they have to survive; guessing at a
