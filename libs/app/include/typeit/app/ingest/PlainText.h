@@ -8,10 +8,10 @@
 #define TYPEIT_APP_INGEST_PLAINTEXT_H
 
 #include <array>
-#include <utility>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "typeit/app/ingest/Ingestion.h"
 #include "typeit/app/ports/IFileSystem.h"
@@ -60,7 +60,7 @@ namespace typeit::app {
 
     /// Text that is already text.
     ///
-    /// Claims source code and subtitles as well as `text/plain`: until TX-002
+    /// Claims source code and subtitles as well as `text/plain`: until TX-003
     /// and TX-004 give them extractors of their own, passing them through
     /// unchanged is exactly what Phase 6 did and is better than refusing them.
     class PlainTextExtractor final : public ITextExtractor {

@@ -63,8 +63,18 @@ report() {
     # two different lines and gcovr refuses to merge them, which stops the whole
     # report. CI's gcc 14 does not, so without this the script works in CI and
     # fails on a current toolchain — the worse of the two places to be broken.
+    # The build directory is passed as gcovr's *search path*, and this matters
+    # more than it looks. Without it gcovr walks the whole repository for gcov
+    # data and finds every other build tree too -- including build/coverage,
+    # this script's own default from before the presets existed, whose stale
+    # .gcda files still described libs/tui/src/WindowsConsole.cpp months after
+    # that file was renamed. The report was a blend of the run you just made and
+    # every run anybody had ever made, which is a number that only ever moves in
+    # the reassuring direction. --root keeps the paths in the report relative to
+    # the repository so the filter below still means what it says.
     gcovr \
         --root . \
+        "${BUILD_DIR}" \
         --filter 'libs/' \
         --exclude '.*_deps.*' \
         --gcov-ignore-parse-errors \

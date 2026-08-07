@@ -4,8 +4,8 @@
 #include <array>
 #include <cctype>
 #include <cstddef>
-#include <span>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -50,7 +50,8 @@ namespace typeit::app {
                     {.magic = "html", .mime = "text/html"},
                     {.magic = "htm", .mime = "text/html"},
                     {.magic = "epub", .mime = "application/epub+zip"},
-                    {.magic = "docx", .mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+                    {.magic = "docx",
+                     .mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
                     {.magic = "pdf", .mime = "application/pdf"},
                     {.magic = "srt", .mime = "text/x-subrip"},
                     {.magic = "vtt", .mime = "text/vtt"},
@@ -83,7 +84,8 @@ namespace typeit::app {
             // a `std::byte` and a `char` are the same byte spelled twice, and
             // `char` may be signed.
             return std::ranges::equal(
-                    bytes.first(magic.size()), magic, {}, [](std::byte byte) { return std::to_integer<unsigned char>(byte); },
+                    bytes.first(magic.size()), magic, {},
+                    [](std::byte byte) { return std::to_integer<unsigned char>(byte); },
                     [](char letter) { return static_cast<unsigned char>(letter); });
         }
 

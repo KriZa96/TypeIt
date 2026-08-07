@@ -92,8 +92,13 @@ public:
 };
 ```
 
-Extractors register with an `ExtractorRegistry` keyed by MIME type; resolution is content
-sniffing first, then extension, then a user override. An unknown format falls through to the
+Extractors register with an `ExtractorRegistry` keyed by MIME type; resolution is a user
+override first, then content sniffing, then the extension. That is descending order of trust,
+not a fallback chain: an override is somebody looking at the file and saying what it is, which
+beats a signature, which beats a name anybody can mistype. Two extractors claiming one type is
+a startup error rather than last-wins, because a silent overwrite lets the link order decide
+which one runs and the symptom is an EPUB extracted as a ZIP on one machine and correctly on
+another. An unknown format falls through to the
 external-converter hook (§7) before it is refused.
 
 ### Built-in extractors

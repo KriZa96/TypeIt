@@ -5,10 +5,10 @@
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
-#include <utility>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "typeit/app/ingest/ExtractorRegistry.h"
@@ -215,15 +215,16 @@ namespace typeit::app {
         }
 
         TEST(PlainTextExtractorTest, ItStillClaimsTheTypesPhase6ImportedAsText) {
-            // Markdown, code and subtitles pass through until TX-002 and TX-004
-            // give them extractors. Leaving them off would make the refactor
-            // refuse a `.md` file that imported yesterday.
+            // Code and subtitles pass through until TX-003 and TX-004 give them
+            // extractors. Leaving them off would refuse a `.srt` file that
+            // imported yesterday. TX-002 took markdown off this list.
             const PlainTextExtractor extractor;
             const std::span<const std::string_view> types = extractor.mime_types();
 
-            for (const std::string_view expected: {"text/plain", "text/markdown", "text/x-code", "text/x-subrip"}) {
+            for (const std::string_view expected: {"text/plain", "text/x-code", "text/x-subrip"}) {
                 EXPECT_NE(std::ranges::find(types, expected), types.end()) << expected;
             }
+            EXPECT_EQ(std::ranges::find(types, "text/markdown"), types.end()) << "which MarkdownExtractor claims";
         }
 
     }  // namespace

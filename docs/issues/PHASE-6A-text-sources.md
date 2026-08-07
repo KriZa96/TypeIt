@@ -95,6 +95,33 @@ with an `ExtractorRegistry` resolving by MIME type. Behaviour is unchanged; the 
 - HTML embedded in Markdown is stripped in strip mode.
 - `preserve_markup = true` returns the source unchanged.
 
+**Acceptance**
+- [x] Every case above passes, and the question each one asks is the same: *did somebody write
+      this, or did a renderer need it?* Link text was written and the URL beside it was not. A
+      heading's words were written and its hashes were not.
+- [x] **A fenced block is copied byte for byte.** It is the one part of a Markdown file that is
+      already what somebody wants to type, and every space in it is load-bearing — stripping
+      markup inside it would produce code that does not compile.
+- [x] Markup inside an inline code span is code, not markup. The asterisks in `` `a * b` `` are
+      multiplication, and this is the commonest way a stripper corrupts a technical document.
+- [x] An image goes entirely rather than leaving its alt text behind: alt text describes a
+      picture to somebody who cannot see it, and typing "photograph of a lighthouse"
+      mid-paragraph is a non sequitur.
+- [x] An unresolved reference degrades to its text — a typo in a label costs the reader a link,
+      not a sentence — while brackets that define nothing stay brackets, because `[sic]` and
+      `[1]` are things people write in prose.
+- [x] `a < b` survives. Treating every `<` as a tag would eat the rest of the line whenever a
+      document does arithmetic.
+- [x] Unterminated front matter is a thematic break rather than a document that is entirely
+      metadata; otherwise a file opening with a horizontal rule is swallowed whole.
+- [x] Sections cover the text without gaps, including the prose before the first heading: a
+      bookmark measured in offsets has to land inside a section wherever it lands.
+- [x] Every unbalanced construct — `[unclosed`, `` `unclosed ``, `<unclosed`, a trailing
+      backslash — is scanned without reading past the end, which would be undefined rather than
+      merely wrong.
+- [x] `text/markdown` moved off `PlainTextExtractor`. The registry's no-two-claims rule is what
+      makes that a compile-and-run failure rather than a silent race between two extractors.
+
 ---
 
 ## TX-003 — Code extractor

@@ -17,6 +17,7 @@
 #include <string>
 
 #include "typeit/app/ingest/ExtractorRegistry.h"
+#include "typeit/app/ingest/Markdown.h"
 #include "typeit/app/ingest/PlainText.h"
 #include "typeit/app/ports/IFileSystem.h"
 #include "typeit/app/ports/ITextLibraryRepository.h"
@@ -68,6 +69,7 @@ namespace typeit::app {
             // which is not a state worth being able to construct. TX-002
             // onwards add to this list.
             static_cast<void>(extractors_.add(std::make_shared<PlainTextExtractor>()));
+            static_cast<void>(extractors_.add(std::make_shared<MarkdownExtractor>()));
         }
 
         /// The extractors this service will use. Exposed so a test can say what

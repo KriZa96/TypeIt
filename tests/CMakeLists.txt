@@ -32,7 +32,12 @@ include(GoogleTest)
 # the antivirus scan and CMake reports it as a hang.
 gtest_discover_tests(tests DISCOVERY_TIMEOUT 60)
 
-add_test(all_tests tests)
+# No `add_test(all_tests tests)` beside that discovery. It registered the whole
+# binary a second time, so `ctest -j` ran the legacy suite concurrently with its
+# own individually discovered cases -- two processes creating and deleting the
+# same fixture files, which failed roughly one release run in four and passed on
+# a retry, the shape of a flake nobody chases. Discovery already covers every
+# case in the binary; the aggregate added a race and nothing else.
 
 typeit_set_warnings(tests)
 typeit_enable_sanitizers(tests)
