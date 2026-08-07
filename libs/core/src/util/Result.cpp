@@ -30,6 +30,8 @@ namespace typeit::core {
                 return "The history database could not be migrated to this version.";
             case ErrorCode::DbQuery:
                 return "The history database rejected a query.";
+            case ErrorCode::SessionNotFound:
+                return "No run with that id is in the history.";
             case ErrorCode::UnknownTheme:
                 return "No theme by that name is installed.";
             case ErrorCode::UnknownMode:

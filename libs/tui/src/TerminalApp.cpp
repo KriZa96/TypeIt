@@ -20,6 +20,7 @@
 #include "screens/HistoryScreen.h"
 #include "screens/MenuScreen.h"
 #include "screens/ResultsScreen.h"
+#include "screens/SessionDetailScreen.h"
 #include "screens/SessionScreen.h"
 #include "screens/TerminalTooSmallScreen.h"
 #include "typeit/tui/FrameTicker.h"
@@ -201,36 +202,56 @@ namespace typeit::tui {
             }
         }
 
+        /// What the run on top asked for when it ended.
+        void finish_session(SessionScreen& run) {
+            const std::optional<SessionOutcome> outcome = run.take_outcome();
+            if (!outcome.has_value()) {
+                return;
+            }
+            // Read before the pop: the record lives in the screen that is about
+            // to be destroyed.
+            const app::SessionRecord record = run.result().has_value() ? run.result()->record : app::SessionRecord{};
+            const bool again = *outcome == SessionOutcome::Restart;
+            session = nullptr;
+            stack.pop();
+
+            if (again) {
+                start_again();
+            } else if (*outcome == SessionOutcome::Finished) {
+                stack.push(std::make_shared<ResultsScreen>(context, record));
+            }
+        }
+
         /// Whatever the top screen has asked for since the last frame.
+        ///
+        /// One branch per screen that can ask for something, rather than a
+        /// virtual `IScreen::request()`: what each of them wants is a different
+        /// type, and an interface wide enough for all of them would be an
+        /// interface every screen has to ignore most of.
         void apply_requests() {
             if (stack.empty()) {
                 return;
             }
+            IScreen& top = stack.top();
 
-            if (auto* const menu = dynamic_cast<MenuScreen*>(&stack.top()); menu != nullptr) {
+            if (auto* const menu = dynamic_cast<MenuScreen*>(&top); menu != nullptr) {
                 if (menu->take_start()) {
                     start(menu->selection());
                 }
-                return;
-            }
-
-            if (auto* const run = dynamic_cast<SessionScreen*>(&stack.top()); run != nullptr) {
-                if (const std::optional<SessionOutcome> outcome = run->take_outcome(); outcome.has_value()) {
-                    const app::SessionRecord record =
-                            run->result().has_value() ? run->result()->record : app::SessionRecord{};
-                    const bool again = *outcome == SessionOutcome::Restart;
-                    session = nullptr;
-                    stack.pop();
-                    if (again) {
-                        start_again();
-                    } else if (*outcome == SessionOutcome::Finished) {
-                        stack.push(std::make_shared<ResultsScreen>(context, record));
-                    }
+            } else if (auto* const run = dynamic_cast<SessionScreen*>(&top); run != nullptr) {
+                finish_session(*run);
+            } else if (auto* const history = dynamic_cast<HistoryScreen*>(&top); history != nullptr) {
+                if (const std::optional<core::SessionId> opened = history->take_opened(); opened.has_value()) {
+                    stack.push(std::make_shared<SessionDetailScreen>(context, *opened));
                 }
-                return;
-            }
-
-            if (auto* const results = dynamic_cast<ResultsScreen*>(&stack.top()); results != nullptr) {
+            } else if (auto* const detail = dynamic_cast<SessionDetailScreen*>(&top); detail != nullptr) {
+                if (detail->take_back()) {
+                    // Popped rather than replaced, so the history underneath
+                    // still has its filters and its scroll position — which is
+                    // the whole reason the stack is a stack.
+                    stack.pop();
+                }
+            } else if (auto* const results = dynamic_cast<ResultsScreen*>(&top); results != nullptr) {
                 if (const std::optional<ResultsAction> action = results->take_action(); action.has_value()) {
                     stack.pop();
                     if (*action != ResultsAction::Menu) {

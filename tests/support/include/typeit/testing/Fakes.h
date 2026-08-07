@@ -102,6 +102,25 @@ namespace typeit::testing {
             return matched;
         }
 
+        [[nodiscard]] core::Result<app::SessionRecord> session(core::SessionId id) const override {
+            TYPEIT_FAIL_IF_ARMED()
+
+            for (std::size_t at = 0; at < rows.size(); ++at) {
+                if (rows[at].id == id) {
+                    app::SessionRecord found = records[at];
+                    // `keystrokes` is not stored by the real schema, so the
+                    // fake does not return it either — a contract test that
+                    // passed here and failed against SQLite would be a fake
+                    // that lies about the port.
+                    for (core::TimelineSample& sample: found.timeline) {
+                        sample.keystrokes = 0;
+                    }
+                    return found;
+                }
+            }
+            return core::fail(core::ErrorCode::SessionNotFound, std::to_string(id.value));
+        }
+
         [[nodiscard]] core::Result<app::Aggregates> aggregates(const app::HistoryFilter& filter) const override {
             TYPEIT_FAIL_IF_ARMED()
 

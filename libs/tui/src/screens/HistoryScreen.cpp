@@ -257,19 +257,16 @@ namespace typeit::tui {
         } else {
             LineChartData chart;
             for (std::size_t at = 0; at < data_.trend.size(); ++at) {
-                chart.series.push_back(
-                        {.x = static_cast<double>(at), .y = data_.trend.at(at).mean_net_wpm.value});
+                chart.series.push_back({.x = static_cast<double>(at), .y = data_.trend.at(at).mean_net_wpm.value});
             }
             chart.empty_message = "not enough days to plot a trend yet";
-            rows.push_back(line_chart(chart, *context_->theme,
-                                      {.width = layout.text_columns, .height = 6, .depth = depth}));
+            rows.push_back(
+                    line_chart(chart, *context_->theme, {.width = layout.text_columns, .height = 6, .depth = depth}));
             rows.push_back(ftxui::text(""));
 
             rows.push_back(ftxui::hbox({
-                    ftxui::text("  " + std::to_string(data_.totals.sessions) + " runs") |
-                            ftxui::color(accent.color),
-                    ftxui::text(" · " + duration_text(data_.totals.total_time) + " typed") |
-                            ftxui::color(muted.color),
+                    ftxui::text("  " + std::to_string(data_.totals.sessions) + " runs") | ftxui::color(accent.color),
+                    ftxui::text(" · " + duration_text(data_.totals.total_time) + " typed") | ftxui::color(muted.color),
                     ftxui::text(" · mean " + whole(data_.totals.mean_net_wpm.value) + " wpm") |
                             ftxui::color(muted.color),
                     ftxui::text(" · streak " + std::to_string(data_.streak.current) + " (best " +
@@ -280,8 +277,8 @@ namespace typeit::tui {
             rows.push_back(ftxui::text(""));
 
             rows.push_back(ftxui::text("  Errors by key") | ftxui::color(muted.color));
-            rows.push_back(heatmap(data_.keys, *context_->theme,
-                                   {.glyphs = context_->capabilities.glyphs, .depth = depth}));
+            rows.push_back(
+                    heatmap(data_.keys, *context_->theme, {.glyphs = context_->capabilities.glyphs, .depth = depth}));
             rows.push_back(ftxui::text(""));
 
             rows.push_back(ftxui::text("  Recent") | ftxui::color(muted.color));

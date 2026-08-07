@@ -138,6 +138,65 @@ namespace typeit {
             EXPECT_DOUBLE_EQ(rows->front().net_wpm.value, 100.0);
         }
 
+        TYPED_TEST(HistoryRepositoryContract, OneRunComesBackWholeIncludingItsSamples) {
+            // What `query` deliberately leaves out. A list wants many rows and
+            // no samples; a detail view wants one row and all of them.
+            // No `text_id`: the column is a foreign key into `text_item`, so
+            // inventing one here fails the constraint rather than testing the
+            // read. The library that would give it a real value is Phase 6.
+            app::SessionRecord written = TestFixture::a_run();
+            written.timeline = {
+                    {.at = core::Millis{0}, .wpm = core::Wpm{40.0}, .keystrokes = 5, .errors = 1},
+                    {.at = core::Millis{1'000}, .wpm = core::Wpm{60.0}, .keystrokes = 7, .errors = 0},
+            };
+            const core::Result<core::SessionId> id = this->repository().save(written);
+            ASSERT_TRUE(id) << (id ? "" : id.error().context);
+
+            const core::Result<app::SessionRecord> read = this->repository().session(*id);
+
+            ASSERT_TRUE(read) << (read ? "" : read.error().context);
+            EXPECT_EQ(read->mode, written.mode);
+            EXPECT_EQ(read->mode_param, written.mode_param);
+            EXPECT_EQ(read->started_at, written.started_at);
+            EXPECT_EQ(read->graphemes_typed, written.graphemes_typed);
+            EXPECT_DOUBLE_EQ(read->net_wpm.value, written.net_wpm.value);
+            EXPECT_DOUBLE_EQ(read->consistency, written.consistency);
+            EXPECT_EQ(read->completed, written.completed);
+            EXPECT_EQ(read->app_version, written.app_version);
+            EXPECT_EQ(read->provider, written.provider);
+            EXPECT_EQ(read->provider_seed, written.provider_seed);
+
+            ASSERT_EQ(read->timeline.size(), 2U);
+            EXPECT_EQ(read->timeline.at(0).at, core::Millis{0});
+            EXPECT_DOUBLE_EQ(read->timeline.at(1).wpm.value, 60.0);
+            EXPECT_EQ(read->timeline.at(0).errors, 1U);
+            // `keystrokes` is not stored: the schema keeps time, speed and
+            // errors, which is what the chart draws. Asserted rather than left
+            // to surprise somebody comparing a written record with a read one.
+            EXPECT_EQ(read->timeline.at(0).keystrokes, 0U);
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, ARunWithNoTextIdComesBackWithout) {
+            // Generated text with nothing in the library behind it. The column
+            // is NULL, and NULL must not read back as text zero.
+            const core::Result<core::SessionId> id = this->repository().save(TestFixture::a_run());
+            ASSERT_TRUE(id);
+
+            const core::Result<app::SessionRecord> read = this->repository().session(*id);
+
+            ASSERT_TRUE(read);
+            EXPECT_FALSE(read->text_id.has_value());
+        }
+
+        TYPED_TEST(HistoryRepositoryContract, AnIdNobodyRecordedIsNotFoundRatherThanEmpty) {
+            // A stale bookmark is a user error, not a fault, and not silence.
+            const core::Result<app::SessionRecord> read = this->repository().session(core::SessionId{9'999});
+
+            ASSERT_FALSE(read);
+            EXPECT_EQ(read.error().code, core::ErrorCode::SessionNotFound);
+            EXPECT_EQ(read.error().context, "9999") << "and it says which id";
+        }
+
         TYPED_TEST(HistoryRepositoryContract, IdsAreDistinct) {
             const core::Result<core::SessionId> first = this->repository().save(TestFixture::a_run());
             const core::Result<core::SessionId> second = this->repository().save(TestFixture::a_run());

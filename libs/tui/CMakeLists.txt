@@ -7,7 +7,7 @@
 # and it sees neither through a header of ours.
 add_library(typeit_tui STATIC src/Bars.cpp src/Charts.cpp src/ColorQuantizer.cpp src/FrameTicker.cpp src/Layout.cpp src/Glyphs.cpp src/Heatmap.cpp src/Keymap.cpp src/ScreenStack.cpp src/TerminalApp.cpp src/TypingArea.cpp
                                 src/screens/HelpScreen.cpp src/screens/HistoryScreen.cpp src/screens/MenuScreen.cpp
-                                src/screens/ResultsScreen.cpp src/screens/SessionScreen.cpp
+                                src/screens/ResultsScreen.cpp src/screens/SessionDetailScreen.cpp src/screens/SessionScreen.cpp
                                 src/screens/TerminalTooSmallScreen.cpp src/ConsoleMode.cpp)
 add_library(typeit::tui ALIAS typeit_tui)
 
@@ -20,7 +20,11 @@ target_include_directories(typeit_tui PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_
                                       PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 target_link_libraries(typeit_tui PUBLIC typeit::core typeit::app)
-target_link_libraries(typeit_tui PRIVATE ftxui::dom ftxui::screen ftxui::component)
+# typeit_version carries the generated header, privately: the session detail
+# screen compares a stored run's version against this build's major, because
+# metric definitions may differ across a MAJOR version (VERSIONING section 9),
+# and nothing in this library's public headers needs to see it.
+target_link_libraries(typeit_tui PRIVATE ftxui::dom ftxui::screen ftxui::component typeit_version)
 
 target_compile_features(typeit_tui PUBLIC cxx_std_23)
 

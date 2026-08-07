@@ -186,6 +186,31 @@ A single past run in full.
   ([VERSIONING §9](../VERSIONING.md#9-compatibility-promises)).
 - Back returns to the history screen with filters and scroll position preserved.
 
+**Acceptance**
+- [x] Needed a port method, and got one: `IHistoryRepository::session(id)` returns a whole
+      `SessionRecord` including its per-second samples, which `SessionRow` deliberately omits.
+      Separate from `query` rather than a flag on it because the two have opposite shapes — a
+      list wants many rows and no samples, a detail view wants one row and all of them, and a
+      `query` that returned samples would load three hundred thousand of them to draw a list of
+      forty. Both implementations are held to it by the contract suite.
+- [x] `ErrorCode::SessionNotFound` is a new code rather than a reused `DbQuery`. The database
+      answered; the answer was "no such run". A stale bookmark is a user error, not a fault,
+      and the two deserve different messages.
+- [x] `keystrokes` is **not** stored — the schema keeps time, speed and errors, which is what
+      the chart draws — so a sample read back is not the one that was written. The contract
+      test asserts that rather than leaving somebody to find it in a diff, and the fake zeroes
+      the field too: a fake that returned more than the real adapter would be a fake that lies
+      about the port.
+- [x] A run whose text has since been deleted renders. `text_id` is absent for generated text
+      and for a library entry somebody removed; neither is an error, and NULL must not read
+      back as text zero.
+- [x] A run from an older MAJOR version is shown with a note, because 2.0 changed what WPM and
+      accuracy *mean* (VERSIONING §9) and showing the two side by side without saying so is the
+      quiet kind of wrong. A version that cannot be parsed, or is missing entirely, counts as
+      **not** this one: "unknown" is not "current".
+- [x] Back pops rather than replaces, so the history underneath keeps its filters and its
+      scroll position — which is the whole reason the stack is a stack.
+
 ---
 
 ## TI-105 — `ResultsScreen` enrichment

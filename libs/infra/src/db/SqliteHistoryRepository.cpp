@@ -289,6 +289,95 @@ namespace typeit::infra {
         return rows;
     }
 
+    Result<app::SessionRecord> SqliteHistoryRepository::session(core::SessionId id) const {
+        Result<Statement> statement = database_->prepare(
+                "SELECT started_at, ended_at, mode, mode_param, text_id, provider, provider_seed, duration_ms,"
+                " graphemes_typed, graphemes_correct, errors_total, errors_uncorrected, backspaces, raw_wpm,"
+                " gross_wpm, net_wpm, accuracy, final_correctness, consistency, peak_wpm, wall_wpm, completed,"
+                " app_version FROM session WHERE id = ?1");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+
+        const Result<bool> found = statement->step();
+        if (!found) {
+            return std::unexpected{found.error()};
+        }
+        if (!*found) {
+            // The database answered, and the answer was "no such run" — which
+            // is a different thing from a query it could not run.
+            return core::fail(core::ErrorCode::SessionNotFound, std::to_string(id.value));
+        }
+
+        app::SessionRecord record;
+        record.started_at = core::Millis{statement->column_int(0)};
+        record.ended_at = core::Millis{statement->column_int(1)};
+        record.mode = statement->column_text(2);
+        record.mode_param = statement->column_text(3);
+        if (!statement->column_is_null(4)) {
+            record.text_id = core::TextId{statement->column_int(4)};
+        }
+        record.provider = statement->column_text(5);
+        record.provider_seed = static_cast<std::uint64_t>(statement->column_int(6));
+        record.duration = core::Millis{statement->column_int(7)};
+        record.graphemes_typed = static_cast<std::size_t>(statement->column_int(8));
+        record.graphemes_correct = static_cast<std::size_t>(statement->column_int(9));
+        record.errors_total = static_cast<std::size_t>(statement->column_int(10));
+        record.errors_uncorrected = static_cast<std::size_t>(statement->column_int(11));
+        record.backspaces = static_cast<std::size_t>(statement->column_int(12));
+        record.raw_wpm = core::Wpm{statement->column_double(13)};
+        record.gross_wpm = core::Wpm{statement->column_double(14)};
+        record.net_wpm = core::Wpm{statement->column_double(15)};
+        record.accuracy = core::Accuracy{statement->column_double(16)};
+        record.final_correctness = core::Accuracy{statement->column_double(17)};
+        record.consistency = statement->column_double(18);
+        if (!statement->column_is_null(19)) {
+            record.peak_wpm = core::Wpm{statement->column_double(19)};
+        }
+        if (!statement->column_is_null(20)) {
+            record.wall_wpm = core::Wpm{statement->column_double(20)};
+        }
+        record.completed = statement->column_int(21) != 0;
+        record.app_version = statement->column_text(22);
+
+        Result<std::vector<core::TimelineSample>> samples = read_samples(id);
+        if (!samples) {
+            return std::unexpected{samples.error()};
+        }
+        record.timeline = std::move(*samples);
+        return record;
+    }
+
+    Result<std::vector<core::TimelineSample>> SqliteHistoryRepository::read_samples(core::SessionId id) const {
+        Result<Statement> statement =
+                database_->prepare("SELECT t_ms, wpm, errors FROM session_sample WHERE session_id = ?1 ORDER BY t_ms");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+
+        std::vector<core::TimelineSample> samples;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            // `keystrokes` is not stored — the schema keeps time, speed and
+            // errors, which is what the chart draws — so a sample read back is
+            // not byte-for-byte the one that was written. Said here rather than
+            // left for somebody to discover in a diff.
+            samples.push_back(core::TimelineSample{.at = core::Millis{statement->column_int(0)},
+                                                   .wpm = core::Wpm{statement->column_double(1)},
+                                                   .keystrokes = 0,
+                                                   .errors = static_cast<std::size_t>(statement->column_int(2))});
+        }
+        return samples;
+    }
+
     Result<app::Aggregates> SqliteHistoryRepository::aggregates(const app::HistoryFilter& filter) const {
         // COALESCE, so an empty range is zeros rather than NULLs read as
         // garbage — a new user's history screen is a normal thing to draw.

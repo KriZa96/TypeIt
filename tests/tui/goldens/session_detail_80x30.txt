@@ -1,0 +1,30 @@
+Session  timed  {"seconds":30}                                                  
+                                                                                
+  net wpm                 72.5                                                  
+  gross wpm                 80                                                  
+  raw wpm                   82                                                  
+  accuracy                 98%                                                  
+  correctness              99%                                                  
+  consistency               88                                                  
+  characters               300                                                  
+  correct                  295                                                  
+  errors                     5                                                  
+  uncorrected                2                                                  
+  backspaces                 3                                                  
+  seconds                   30                                                  
+                                                                                
+     |                                                                 *        
+   67|                                                          *               
+     |                                                   *                      
+   65|                                           *                              
+   64|                             *      *                                     
+     |                      x                                                   
+   62|              *                                                           
+     |*      *                                                                  
+     +------------------------------------------------------------------        
+                                                                                
+escape back                                                                     
+                                                                                
+                                                                                
+                                                                                
+                                                                                

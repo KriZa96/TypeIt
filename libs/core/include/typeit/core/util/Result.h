@@ -26,6 +26,10 @@ namespace typeit::core {
         DbOpen,
         DbMigrate,
         DbQuery,
+        /// An id nobody recorded. Distinct from `DbQuery`, which means the
+        /// database could not answer: here it answered, and the answer was
+        /// "no such run". A stale bookmark is a user error, not a fault.
+        SessionNotFound,
         UnknownTheme,
         UnknownMode,
         InvalidKeyBinding,
@@ -43,14 +47,15 @@ namespace typeit::core {
     /// cover the enum without a sentinel enumerator that every switch would then
     /// have to handle.
     inline constexpr std::array kAllErrorCodes{
-            ErrorCode::FileNotFound,      ErrorCode::FileUnreadable,
-            ErrorCode::InvalidUtf8,       ErrorCode::EmptyText,
-            ErrorCode::TextTooLarge,      ErrorCode::ConfigParse,
-            ErrorCode::ConfigInvalid,     ErrorCode::DbOpen,
-            ErrorCode::DbMigrate,         ErrorCode::DbQuery,
-            ErrorCode::UnknownTheme,      ErrorCode::UnknownMode,
-            ErrorCode::InvalidKeyBinding, ErrorCode::UnsupportedTerminal,
-            ErrorCode::InvalidArgument,   ErrorCode::InvalidScript,
+            ErrorCode::FileNotFound,        ErrorCode::FileUnreadable,
+            ErrorCode::InvalidUtf8,         ErrorCode::EmptyText,
+            ErrorCode::TextTooLarge,        ErrorCode::ConfigParse,
+            ErrorCode::ConfigInvalid,       ErrorCode::DbOpen,
+            ErrorCode::DbMigrate,           ErrorCode::DbQuery,
+            ErrorCode::SessionNotFound,     ErrorCode::UnknownTheme,
+            ErrorCode::UnknownMode,         ErrorCode::InvalidKeyBinding,
+            ErrorCode::UnsupportedTerminal, ErrorCode::InvalidArgument,
+            ErrorCode::InvalidScript,
     };
 
     struct Error {

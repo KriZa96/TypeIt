@@ -33,6 +33,8 @@ namespace typeit::infra {
 
         [[nodiscard]] core::Result<std::vector<app::SessionRow>> query(const app::HistoryFilter& filter) const override;
 
+        [[nodiscard]] core::Result<app::SessionRecord> session(core::SessionId id) const override;
+
         [[nodiscard]] core::Result<app::Aggregates> aggregates(const app::HistoryFilter& filter) const override;
 
         [[nodiscard]] core::Result<std::vector<app::PersonalBest>> personal_bests() const override;
@@ -61,6 +63,8 @@ namespace typeit::infra {
 
         [[nodiscard]] core::Result<core::SessionId> write_session(const app::SessionRecord& record);
         [[nodiscard]] core::Status write_samples(core::SessionId session, const app::SessionRecord& record);
+        /// The per-second samples of one run, oldest first.
+        [[nodiscard]] core::Result<std::vector<core::TimelineSample>> read_samples(core::SessionId id) const;
         [[nodiscard]] core::Status update_personal_bests(core::SessionId session, const app::SessionRecord& record);
         [[nodiscard]] core::Status write_key_stats(const core::KeyStats& stats);
         [[nodiscard]] core::Status write_error_pairs(const core::ErrorMap& errors);

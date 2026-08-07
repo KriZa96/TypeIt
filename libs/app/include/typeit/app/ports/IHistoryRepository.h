@@ -52,6 +52,18 @@ namespace typeit::app {
 
         [[nodiscard]] virtual core::Result<std::vector<SessionRow>> query(const HistoryFilter& filter) const = 0;
 
+        /// One run, with everything that was stored about it — including the
+        /// per-second samples, which `SessionRow` deliberately omits.
+        ///
+        /// Separate from `query` rather than a flag on it because the two have
+        /// opposite shapes: a list wants many rows and no samples, and a detail
+        /// view wants one row and all of them. A `query` that returned samples
+        /// would load three hundred thousand of them to draw a list of forty.
+        ///
+        /// `ErrorCode::NotFound` for an id nobody recorded, rather than an
+        /// empty optional the caller might read as "no error".
+        [[nodiscard]] virtual core::Result<SessionRecord> session(core::SessionId id) const = 0;
+
         /// Zeros over an empty range, not NaN: a new user's history screen is a
         /// normal thing to draw.
         [[nodiscard]] virtual core::Result<Aggregates> aggregates(const HistoryFilter& filter) const = 0;

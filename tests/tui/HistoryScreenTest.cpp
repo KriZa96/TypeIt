@@ -45,8 +45,8 @@ namespace typeit::tui {
                 context.keymap = &keymap;
                 context.config = &config;
                 context.size = TerminalSize{.columns = 80, .rows = 24};
-                context.history = HistorySource{
-                        .service = &service, .records = &history, .wall_clock = &clock, .utc_offset = 0};
+                context.history =
+                        HistorySource{.service = &service, .records = &history, .wall_clock = &clock, .utc_offset = 0};
             }
 
             /// One run, `days_ago` days back, at `wpm`.
