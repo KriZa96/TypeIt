@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 
+#include "typeit/app/ingest/Code.h"
 #include "typeit/app/ingest/ExtractorRegistry.h"
 #include "typeit/app/ingest/Markdown.h"
 #include "typeit/app/ingest/PlainText.h"
@@ -34,6 +35,10 @@ namespace typeit::app {
         /// True when the content was already in the library and this import
         /// found it rather than storing it again.
         bool already_present = false;
+        /// What the extractor thought worth mentioning: a source file that
+        /// mixes tabs and spaces, one with minified lines nobody can type.
+        /// Empty for almost everything.
+        std::vector<std::string> warnings;
     };
 
     /// How far through a long text somebody is (GAMEPLAY §2.3).
@@ -70,6 +75,7 @@ namespace typeit::app {
             // onwards add to this list.
             static_cast<void>(extractors_.add(std::make_shared<PlainTextExtractor>()));
             static_cast<void>(extractors_.add(std::make_shared<MarkdownExtractor>()));
+            static_cast<void>(extractors_.add(std::make_shared<CodeExtractor>()));
         }
 
         /// The extractors this service will use. Exposed so a test can say what
@@ -121,6 +127,18 @@ namespace typeit::app {
     private:
         ExtractorRegistry extractors_;
         ITextLibraryRepository* library_;
+        /// The shared tail of both imports: normalise, deduplicate, store.
+        ///
+        /// Takes the normalisation rather than reading the member, because an
+        /// extractor can override it (`ExtractedText::normalization`) and a
+        /// source file normalised as prose is a source file with its
+        /// indentation collapsed into single spaces.
+        [[nodiscard]] core::Result<ImportOutcome> store(std::string content, TextSource source,
+                                                        std::optional<std::string> origin,
+                                                        std::optional<std::string> title,
+                                                        const core::NormalizeOptions& normalization,
+                                                        std::vector<std::string> warnings);
+
         IFileSystem* files_;
         core::IWallClock* clock_;
         core::NormalizeOptions normalization_;

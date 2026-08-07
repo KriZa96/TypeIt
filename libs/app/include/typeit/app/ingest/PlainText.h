@@ -60,9 +60,9 @@ namespace typeit::app {
 
     /// Text that is already text.
     ///
-    /// Claims source code and subtitles as well as `text/plain`: until TX-003
-    /// and TX-004 give them extractors of their own, passing them through
-    /// unchanged is exactly what Phase 6 did and is better than refusing them.
+    /// Claims subtitles as well as `text/plain`: until TX-004 gives them an
+    /// extractor of their own, passing them through unchanged is exactly what
+    /// Phase 6 did and is better than refusing them.
     class PlainTextExtractor final : public ITextExtractor {
     public:
         [[nodiscard]] std::span<const std::string_view> mime_types() const override;

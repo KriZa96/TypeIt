@@ -23,6 +23,7 @@
 #include <string_view>
 #include <vector>
 
+#include "typeit/core/text/TextNormalizer.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
 
@@ -65,6 +66,25 @@ namespace typeit::app {
         std::optional<std::string> title;
         std::optional<std::string> author;
         std::optional<std::string> language;
+
+        /// Normalisation this text needs instead of the library's settings.
+        ///
+        /// Empty for prose, which is the whole point of having library-wide
+        /// settings. Code is the case that forces it to exist: the default
+        /// collapses runs of whitespace and expands tabs, which between them
+        /// destroy every indented line in a source file — the one thing TX-003
+        /// promises to preserve byte for byte. An extractor that knows its
+        /// output is not prose says so here rather than hoping the user has
+        /// configured the library the way its format needs.
+        std::optional<core::NormalizeOptions> normalization;
+
+        /// Things worth telling somebody about the text they just imported.
+        ///
+        /// Not errors: a file that mixes tabs and spaces still imports, because
+        /// refusing it would be refusing a real file somebody wants to type.
+        /// It is worth knowing before they wonder why the indentation will not
+        /// match.
+        std::vector<std::string> warnings;
     };
 
     /// Where bytes come from: a file, standard input, a paste, later a URL.

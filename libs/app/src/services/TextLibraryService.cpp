@@ -70,8 +70,13 @@ namespace typeit::app {
             return std::unexpected{extracted.error()};
         }
 
-        return import_text(std::move(extracted->text), TextSource::File, path.string(),
-                           title.has_value() ? std::move(title) : std::optional<std::string>{fetched->suggested_title});
+        // The extractor's normalisation when it has an opinion, the library's
+        // otherwise. Code is the case that needs one: normalised as prose, its
+        // indentation collapses to single spaces and the one thing the code
+        // extractor promises is gone before anybody types a character.
+        return store(std::move(extracted->text), TextSource::File, path.string(),
+                     title.has_value() ? std::move(title) : std::optional<std::string>{fetched->suggested_title},
+                     extracted->normalization.value_or(normalization_), std::move(extracted->warnings));
     }
 
     namespace {
@@ -127,6 +132,14 @@ namespace typeit::app {
     core::Result<ImportOutcome> TextLibraryService::import_text(std::string content, TextSource source,
                                                                 std::optional<std::string> origin,
                                                                 std::optional<std::string> title) {
+        return store(std::move(content), source, std::move(origin), std::move(title), normalization_, {});
+    }
+
+    core::Result<ImportOutcome> TextLibraryService::store(std::string content, TextSource source,
+                                                          std::optional<std::string> origin,
+                                                          std::optional<std::string> title,
+                                                          const core::NormalizeOptions& normalization,
+                                                          std::vector<std::string> warnings) {
         if (content.size() > kMaxImportBytes) {
             // Naming the limit, because "too large" without a number is a
             // message that sends someone to the source code.
@@ -147,7 +160,7 @@ namespace typeit::app {
         // so two copies of one text — one saved with a mark and one without —
         // hash the same and import once.
         const std::string_view body = without_utf8_bom(content);
-        core::Result<std::string> normalized = core::normalize(body, normalization_);
+        core::Result<std::string> normalized = core::normalize(body, normalization);
         if (!normalized) {
             return std::unexpected{normalized.error()};
         }
@@ -172,7 +185,7 @@ namespace typeit::app {
         // Result wrapping the optional.
         const std::optional<TextItem>& existing = found.value();
         if (existing.has_value()) {
-            return ImportOutcome{.id = existing->id, .already_present = true};
+            return ImportOutcome{.id = existing->id, .already_present = true, .warnings = std::move(warnings)};
         }
 
         core::Result<core::TextBuffer> buffer = core::TextBuffer::from_utf8(*normalized);
@@ -199,7 +212,7 @@ namespace typeit::app {
         if (!id) {
             return std::unexpected{id.error()};
         }
-        return ImportOutcome{.id = *id, .already_present = false};
+        return ImportOutcome{.id = *id, .already_present = false, .warnings = std::move(warnings)};
     }
 
     core::Result<TextProgress> TextLibraryService::progress(core::TextId id) const {

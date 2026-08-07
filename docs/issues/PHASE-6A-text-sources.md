@@ -147,8 +147,45 @@ exercises symbols, brackets, and indentation that prose never touches.
 - A file with CRLF line endings normalises without corrupting indentation.
 
 **Acceptance**
-- [ ] Code mode interacts correctly with `strict_spaces`, which matters far more here than in
-      prose.
+- [x] Code mode interacts correctly with `strict_spaces`, which matters far more here than in
+      prose. With the indentation preserved, an indented line is four keystrokes before any
+      letter arrives, and the setting decides whether skipping them is an error — in prose a
+      missing space is a typo, and in Python it is a different program.
+- [x] **Indentation is byte-identical to the source**, for tab-indented, space-indented and
+      mixed files alike. This forced a change one level up: the library's normalisation
+      collapses runs of whitespace and expands tabs, which between them turn every indented
+      line into one leading space, so `ExtractedText` gained a normalisation the extractor
+      chooses. Trusting the user to have configured the library for code would mean a promise
+      kept only by accident.
+- [x] A mixed-indentation file is **warned about, not repaired**. Tabs and spaces are invisible
+      and identical on screen, so the typist has no way to know which the next line wants —
+      but rewriting somebody's file would be editing the thing they wanted to practise.
+      `ImportOutcome` carries warnings for the same reason: it is worth knowing before they
+      wonder why the indentation will not match.
+- [x] A minified line is reported. One line of forty thousand characters is technically
+      importable and impossible to type; saying so at import beats leaving somebody to find out
+      at the keyboard.
+- [x] Comments are kept by default. They are prose written by a programmer and a large fraction
+      of what anybody types in a working day; a file without them is not the file anybody works
+      on. Stripping is string-literal aware, because the `//` in `"http://example.com"` starts
+      no comment and cutting there cuts the line in half.
+- [x] A block comment spanning lines takes the front of its continuation line with it. The
+      first cut returned a prefix of each line, which is right until the comment ends
+      mid-line — the code after `*/` was dropped and the comment before it kept, exactly
+      backwards.
+- [x] CRLF becomes LF without touching indentation: a `\r` is a line ending rather than
+      trailing whitespace, and conflating them leaves a carriage return mid-text whenever
+      trailing whitespace is kept.
+- [x] Non-UTF-8 is refused with the byte offset. Checked in the extractor rather than left to
+      normalisation because every other thing it reports is a statement about a text, and
+      "line 40 mixes tabs and spaces" about a JPEG is a confident answer to the wrong question.
+- [x] A language it cannot name still imports, with its whitespace intact and no sections.
+      That is the right answer rather than a degraded one; guessing a section heuristic at it
+      would be worse than declining to.
+- [x] Section detection is a heuristic and says so. A top-level line opening a block in a
+      braced language, `def`/`class` at column zero in Python. An indented definition belongs
+      to the one above it, because a section per method puts a bookmark in the middle of a
+      type.
 
 ---
 

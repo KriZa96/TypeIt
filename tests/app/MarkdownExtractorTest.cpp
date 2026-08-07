@@ -85,11 +85,13 @@ namespace typeit::app {
             // The commonest way a stripper corrupts a technical document: the
             // asterisks in `a * b` are multiplication, and a stripper that does
             // not know it is inside a code span eats them.
-            EXPECT_EQ(extracted("The expression `a * b + _c` is arithmetic."), "The expression a * b + _c is arithmetic.");
+            EXPECT_EQ(extracted("The expression `a * b + _c` is arithmetic."),
+                      "The expression a * b + _c is arithmetic.");
         }
 
         TEST(MarkdownExtractorTest, AnEscapedMarkIsTheMarkItself) {
-            EXPECT_EQ(extracted(R"(A literal \*asterisk\* and a \[bracket\].)"), "A literal *asterisk* and a [bracket].");
+            EXPECT_EQ(extracted(R"(A literal \*asterisk\* and a \[bracket\].)"),
+                      "A literal *asterisk* and a [bracket].");
         }
 
         TEST(MarkdownExtractorTest, AComparisonIsNotATag) {
@@ -173,9 +175,7 @@ namespace typeit::app {
             EXPECT_EQ(extracted(markdown), "if (a * b) {\n    return _x;\n}");
         }
 
-        TEST(MarkdownExtractorTest, ATildeFenceIsAFenceToo) {
-            EXPECT_EQ(extracted("~~~\n  kept  \n~~~"), "  kept  ");
-        }
+        TEST(MarkdownExtractorTest, ATildeFenceIsAFenceToo) { EXPECT_EQ(extracted("~~~\n  kept  \n~~~"), "  kept  "); }
 
         TEST(MarkdownExtractorTest, AnUnclosedFenceRunsToTheEndRatherThanSwallowingNothing) {
             EXPECT_EQ(extracted("```\ncode\nmore"), "code\nmore");
@@ -207,8 +207,7 @@ namespace typeit::app {
         TEST(MarkdownExtractorTest, EachHeadingStartsASection) {
             const MarkdownExtractor extractor;
 
-            const core::Result<ExtractedText> result =
-                    extractor.extract(source("# One\n\nalpha\n\n## Two\n\nbeta\n"));
+            const core::Result<ExtractedText> result = extractor.extract(source("# One\n\nalpha\n\n## Two\n\nbeta\n"));
 
             ASSERT_TRUE(result);
             ASSERT_EQ(result->sections.size(), 2U);
@@ -264,7 +263,8 @@ namespace typeit::app {
             // removes exactly the characters they came for.
             const std::string_view markdown = "# Title\n\n*emphasis* and [a link](https://example.com)\n";
 
-            EXPECT_EQ(extracted(markdown, MarkdownOptions{.preserve_markup = true}), markdown.substr(0, markdown.size() - 1));
+            EXPECT_EQ(extracted(markdown, MarkdownOptions{.preserve_markup = true}),
+                      markdown.substr(0, markdown.size() - 1));
         }
 
         TEST(MarkdownExtractorTest, PreservingMarkupKeepsFrontMatterToo) {

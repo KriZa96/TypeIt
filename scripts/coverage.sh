@@ -53,6 +53,16 @@ report() {
 
     cmake --preset linux-coverage -B "${BUILD_DIR}" >/dev/null
     cmake --build "${BUILD_DIR}" --parallel
+
+    # The counters from the previous run, deleted before this one records its
+    # own. Two things go wrong without this. The counts are a sum over every run
+    # the directory has ever seen, which only ever flatters; and where a source
+    # file changed, libgcov finds a checksum it does not recognise and says so
+    # on stderr -- which lands in the middle of a test's output and failed
+    # cli.version, whose assertion is anchored to the start of it. A coverage
+    # run that fails a test for reasons that have nothing to do with the test is
+    # worse than no coverage run.
+    find "${BUILD_DIR}" -name '*.gcda' -delete
     # A failing suite still produces a report; the tests' own job is to fail the
     # build elsewhere, and a coverage run that stops at the first failure tells
     # you nothing about the rest of the tree.

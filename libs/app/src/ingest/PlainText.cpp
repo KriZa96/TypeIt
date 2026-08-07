@@ -72,16 +72,15 @@ namespace typeit::app {
     }
 
     std::span<const std::string_view> PlainTextExtractor::mime_types() const {
-        // Code and subtitles are here until TX-003 and TX-004 give them
-        // extractors of their own; each of those issues takes its type off this
-        // list, and the registry's no-two-claims rule will say so loudly if one
-        // forgets. TX-002 took `text/markdown` off it.
+        // Subtitles are here until TX-004 gives them an extractor; that issue
+        // takes their types off this list, and the registry's no-two-claims
+        // rule will say so loudly if it forgets. TX-002 took `text/markdown`
+        // off it and TX-003 took `text/x-code`.
         //
         // Passing them through unchanged is exactly what Phase 6 did. Leaving
         // them off would refuse a `.srt` file that imported yesterday, which is
         // a behaviour change dressed up as a refactor.
-        static constexpr std::array<std::string_view, 4> kTypes{"text/plain", "text/x-code", "text/x-subrip",
-                                                                "text/vtt"};
+        static constexpr std::array<std::string_view, 3> kTypes{"text/plain", "text/x-subrip", "text/vtt"};
         return kTypes;
     }
 
