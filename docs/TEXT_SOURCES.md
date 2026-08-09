@@ -69,7 +69,12 @@ public:
 | `StdinFetcher` | `-` | Must reattach the TUI to `/dev/tty` / `CONIN$` afterwards |
 | `PasteFetcher` | in-app | Handles bracketed paste as one event |
 | `HttpFetcher` | `http(s)://…` | **Optional at build time, opt-in at runtime** — see §6 |
-| `DirectoryFetcher` | a directory | Batch import; each file becomes its own `text_item` |
+
+A folder is deliberately *not* on that list. `fetch` returns one `FetchedContent`, and a folder
+of two hundred files is two hundred texts with two hundred MIME types and two hundred ways to
+fail — a shape the interface cannot express without becoming a list. Batch import is therefore
+one operation on the importing service, which runs each child down the ordinary single-file
+path and reports a summary rather than failing on the first bad file (TX-004).
 
 ---
 

@@ -1,7 +1,7 @@
 # The app layer's tests. The layer rule — app sees core and never infra — is
 # checked by infra.lint.source_rules, which reads the sources rather than
 # relying on an include path that a system package would defeat anyway.
-add_executable(app_tests BookmarkTest.cpp CodeExtractorTest.cpp ConfigServiceTest.cpp ExtractorRegistryTest.cpp MarkdownExtractorTest.cpp MimeDetectionTest.cpp HistoryServiceTest.cpp ImportFileTest.cpp PortsTest.cpp ProfileServiceTest.cpp SessionServiceTest.cpp TextLibraryServiceTest.cpp)
+add_executable(app_tests BookmarkTest.cpp CodeExtractorTest.cpp ConfigServiceTest.cpp DirectoryImportTest.cpp ExtractorRegistryTest.cpp MarkdownExtractorTest.cpp MimeDetectionTest.cpp HistoryServiceTest.cpp ImportFileTest.cpp PortsTest.cpp ProfileServiceTest.cpp SessionServiceTest.cpp SubtitleExtractorTest.cpp TextLibraryServiceTest.cpp)
 
 # typeit_version carries the generated header: the run record's app_version is
 # read from it, and the test asserts that rather than a literal.

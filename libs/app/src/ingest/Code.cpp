@@ -285,7 +285,7 @@ namespace typeit::app {
 
         /// Sections over the assembled text, one per top-level definition.
         [[nodiscard]] std::vector<TextSection> sections_of(std::span<const std::string> emitted,
-                                                          std::string_view language) {
+                                                           std::string_view language) {
             std::vector<TextSection> sections;
             std::size_t offset = 0;
             for (const std::string& line: emitted) {
@@ -293,8 +293,7 @@ namespace typeit::app {
                     if (!sections.empty()) {
                         sections.back().length = offset - sections.back().start;
                     }
-                    sections.push_back(
-                            TextSection{.title = definition_title(line), .start = offset, .length = 0});
+                    sections.push_back(TextSection{.title = definition_title(line), .start = offset, .length = 0});
                 }
                 offset += line.size() + 1;  // The newline this line is joined with.
             }

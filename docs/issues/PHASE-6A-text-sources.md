@@ -201,13 +201,47 @@ already cut into short lines — unusually good typing material.
   lines into sentences; `DirectoryFetcher` importing a folder as one `text_item` per file.
 - Out: styling and karaoke tags beyond stripping.
 
-**Unit tests** (`SubtitleExtractorTest.cpp`, `DirectoryFetcherTest.cpp`)
+**Unit tests** (`SubtitleExtractorTest.cpp`, `DirectoryImportTest.cpp`)
 - SRT and VTT fixtures extract to clean prose.
 - Malformed timecodes are skipped with a warning, not fatal.
 - HTML tags inside cues (`<i>`) are stripped.
 - Duplicate consecutive cues (common in captions) are collapsed.
 - Directory import skips unsupported files with a summary, rather than failing the whole batch.
 - An empty directory reports clearly.
+
+**Acceptance**
+- [x] SRT and VTT extract to clean prose: no indices, no timecodes, no WebVTT header, no NOTE
+      blocks, no cue identifiers, no positioning settings.
+- [x] **Cues are re-joined into sentences.** A cue is wrapped to fit a screen, so its line
+      breaks fall where the width ran out rather than where the sentence did — typing them as
+      written is a test of the subtitler's line-wrapping and not of anybody's typing. A
+      sentence spanning two cues comes back as one line; a closing quote after the full stop
+      still ends it.
+- [x] Tags inside a cue go: `<i>`, `<c.yellow>`, `{\an8}` and karaoke timestamps are
+      instructions to a renderer, and typing `<i>` is typing markup that was never on screen.
+      An *unclosed* bracket stays, because `Is a < b?` is a thing people say and eating the
+      rest of the line would lose the dialogue.
+- [x] A cue repeated verbatim in the very next slot is said once. Captions do this across a
+      scene change more often than one would think, and a typing test that says the same
+      sentence twice in a row reads as a bug in the test. A repeat that is *not* consecutive
+      stays, because people do say the same thing twice in a conversation.
+- [x] A malformed timecode skips its cue with a count and is not fatal. A subtitle file with
+      one corrupt cue in nine hundred is a file worth importing; refusing the lot would be
+      refusing the film. A file with no cues at all says so rather than importing silence.
+- [x] Directory import reports rather than fails: one unreadable file in a folder of two
+      hundred does not cost somebody the other hundred and ninety-nine, and the reason travels
+      with the filename because a count of failures says something is wrong without saying
+      what.
+- [x] Subfolders are not recursed into, and the summary says why. Recursing would import a
+      source tree's vendored dependencies from a single keystroke.
+- [x] An empty folder is a clear error, and a file where a folder was expected is a *different*
+      error from a path that is not there — "not a directory" about a missing path sends
+      somebody looking for the wrong mistake.
+- [x] Each file in a folder goes through its own extractor, so the Markdown arrives stripped
+      and the source file arrives with its indentation, without anybody saying which was which.
+- [x] `PlainTextExtractor` is down to `text/plain` alone. Markdown, code and subtitles were
+      parked on it through TX-001 so that nothing which imported before the split stopped
+      importing during it; each has taken its types back.
 
 ---
 

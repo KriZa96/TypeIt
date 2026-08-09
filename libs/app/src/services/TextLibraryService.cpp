@@ -79,6 +79,45 @@ namespace typeit::app {
                      extracted->normalization.value_or(normalization_), std::move(extracted->warnings));
     }
 
+    core::Result<DirectoryImport> TextLibraryService::import_directory(const std::filesystem::path& path) {
+        if (!files_->is_directory(path)) {
+            // Distinguished from "does not exist" by the port, which already
+            // tells the two apart; saying "not a directory" about a path that
+            // is not there at all sends somebody looking for the wrong mistake.
+            return files_->exists(path) ? core::fail(core::ErrorCode::FileUnreadable,
+                                                     path.string() + ": this is a file, not a folder")
+                                        : core::fail(core::ErrorCode::FileNotFound, path.string() + ": no such folder");
+        }
+
+        core::Result<std::vector<std::filesystem::path>> children = files_->list(path);
+        if (!children) {
+            return std::unexpected{children.error()};
+        }
+        if (children->empty()) {
+            return core::fail(core::ErrorCode::EmptyText, path.string() + ": there is nothing in this folder");
+        }
+
+        DirectoryImport summary;
+        for (const std::filesystem::path& child: *children) {
+            if (files_->is_directory(child)) {
+                // Immediate children only. Recursing would import a source
+                // tree's vendored dependencies from one keystroke.
+                summary.skipped.push_back(child.filename().string() + ": a folder, and folders are not recursed into");
+                continue;
+            }
+            core::Result<ImportOutcome> imported = import_file(child);
+            if (imported) {
+                summary.imported.push_back(std::move(*imported));
+                continue;
+            }
+            // One bad file does not cost somebody the other hundred and
+            // ninety-nine. The reason travels with the name, because a count of
+            // failures tells them something is wrong without telling them what.
+            summary.skipped.push_back(child.filename().string() + ": " + imported.error().context);
+        }
+        return summary;
+    }
+
     namespace {
 
         /// The byte-order marks that mean "this is not UTF-8", and what to call

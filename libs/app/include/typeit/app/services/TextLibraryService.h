@@ -20,6 +20,7 @@
 #include "typeit/app/ingest/ExtractorRegistry.h"
 #include "typeit/app/ingest/Markdown.h"
 #include "typeit/app/ingest/PlainText.h"
+#include "typeit/app/ingest/Subtitles.h"
 #include "typeit/app/ports/IFileSystem.h"
 #include "typeit/app/ports/ITextLibraryRepository.h"
 #include "typeit/app/records/TextLibrary.h"
@@ -39,6 +40,20 @@ namespace typeit::app {
         /// mixes tabs and spaces, one with minified lines nobody can type.
         /// Empty for almost everything.
         std::vector<std::string> warnings;
+    };
+
+    /// What came of importing a folder (TX-004).
+    ///
+    /// A batch reports rather than fails. One unreadable file in a folder of
+    /// two hundred should not cost somebody the other hundred and ninety-nine,
+    /// and a summary they can read beats an error naming only the first thing
+    /// that went wrong.
+    struct DirectoryImport {
+        std::vector<ImportOutcome> imported;
+        /// One line per file that did not import, each naming the file and the
+        /// reason. A count alone would tell somebody that something was wrong
+        /// without telling them what.
+        std::vector<std::string> skipped;
     };
 
     /// How far through a long text somebody is (GAMEPLAY §2.3).
@@ -76,6 +91,7 @@ namespace typeit::app {
             static_cast<void>(extractors_.add(std::make_shared<PlainTextExtractor>()));
             static_cast<void>(extractors_.add(std::make_shared<MarkdownExtractor>()));
             static_cast<void>(extractors_.add(std::make_shared<CodeExtractor>()));
+            static_cast<void>(extractors_.add(std::make_shared<SubtitleExtractor>()));
         }
 
         /// The extractors this service will use. Exposed so a test can say what
@@ -93,6 +109,13 @@ namespace typeit::app {
         [[nodiscard]] core::Result<ImportOutcome> import_text(std::string content, TextSource source,
                                                               std::optional<std::string> origin = std::nullopt,
                                                               std::optional<std::string> title = std::nullopt);
+
+        /// Every file in a folder, one text apiece.
+        ///
+        /// Immediate children only. Recursing would import a source tree's
+        /// entire history of vendored dependencies from one keystroke, and a
+        /// folder somebody points at is a folder they can see the contents of.
+        [[nodiscard]] core::Result<DirectoryImport> import_directory(const std::filesystem::path& path);
 
         /// Records how far through a text somebody got, stamped with the
         /// clock's time rather than the caller's idea of it.

@@ -214,18 +214,15 @@ namespace typeit::app {
             EXPECT_TRUE(extractor.extract(content));
         }
 
-        TEST(PlainTextExtractorTest, ItStillClaimsTheTypesPhase6ImportedAsText) {
-            // Subtitles pass through until TX-004 gives them an extractor.
-            // Leaving them off would refuse a `.srt` file that imported
-            // yesterday. TX-002 took markdown off this list and TX-003 took
-            // code.
+        TEST(PlainTextExtractorTest, ItIsDownToPlainTextAlone) {
+            // Markdown, code and subtitles were parked here through TX-001 so
+            // that nothing which imported before the split stopped importing
+            // during it. TX-002, TX-003 and TX-004 have each taken theirs back.
             const PlainTextExtractor extractor;
             const std::span<const std::string_view> types = extractor.mime_types();
 
-            for (const std::string_view expected: {"text/plain", "text/x-subrip"}) {
-                EXPECT_NE(std::ranges::find(types, expected), types.end()) << expected;
-            }
-            for (const std::string_view taken: {"text/markdown", "text/x-code"}) {
+            EXPECT_NE(std::ranges::find(types, "text/plain"), types.end());
+            for (const std::string_view taken: {"text/markdown", "text/x-code", "text/x-subrip", "text/vtt"}) {
                 EXPECT_EQ(std::ranges::find(types, taken), types.end()) << taken << " has its own extractor now";
             }
         }

@@ -86,7 +86,8 @@ namespace typeit::app {
             ASSERT_TRUE(result->normalization.has_value());
             EXPECT_FALSE(result->normalization->collapse_whitespace);
             EXPECT_FALSE(result->normalization->expand_tabs);
-            EXPECT_FALSE(result->normalization->flatten_typography) << "a curly quote in a literal is part of the program";
+            EXPECT_FALSE(result->normalization->flatten_typography)
+                    << "a curly quote in a literal is part of the program";
             EXPECT_TRUE(result->normalization->line_endings) << "CRLF to LF is still wanted";
         }
 
@@ -197,8 +198,9 @@ namespace typeit::app {
 
         TEST(CodeExtractorTest, TopLevelDefinitionsBecomeSectionsInCpp) {
             const CodeExtractor extractor;
-            const std::string_view code = "#include <cstdio>\n\nint one() {\n    return 1;\n}\n\nint two() {\n"
-                                          "    return 2;\n}\n";
+            const std::string_view code =
+                    "#include <cstdio>\n\nint one() {\n    return 1;\n}\n\nint two() {\n"
+                    "    return 2;\n}\n";
 
             const core::Result<ExtractedText> result = extractor.extract(source(code));
 
@@ -234,7 +236,8 @@ namespace typeit::app {
 
         TEST(CodeExtractorTest, TopLevelDefinitionsBecomeSectionsInRust) {
             const CodeExtractor extractor;
-            const std::string_view code = "use std::io;\n\nfn one() -> i32 {\n    1\n}\n\nfn two() -> i32 {\n    2\n}\n";
+            const std::string_view code =
+                    "use std::io;\n\nfn one() -> i32 {\n    1\n}\n\nfn two() -> i32 {\n    2\n}\n";
 
             const core::Result<ExtractedText> result = extractor.extract(source(code, "sample.rs"));
 
