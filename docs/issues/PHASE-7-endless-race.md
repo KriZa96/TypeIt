@@ -104,9 +104,37 @@ r = +k_up · f(lead) · g(A)   if lead ≥ lead_comfort and A ≥ A_min
 - A full scripted run produces a speed curve matching a committed golden reference.
 
 **Acceptance**
-- [ ] Every property above is a named test.
-- [ ] The controller has no dependency on time, I/O, or randomness — it takes Δt as a
-      parameter.
+- [x] Every property above is a named test.
+- [x] The controller has no dependency on time, I/O, or randomness — it takes Δt as a
+      parameter. Which is what makes the rest of this list assertable at all: a ramp always
+      produces *a* number, and a wrong one still looks like a race.
+- [x] **No gain below `A_min`, asserted across the whole range of leads rather than at one
+      convenient point** — twenty-eight combinations, up to a lead of ten thousand. Accuracy is
+      tested first and alone in the law, so no lead however large can reach the climbing
+      branch. This is the term that makes the mode teach typing rather than teach mashing.
+- [x] The gate is proportional above itself rather than a switch, so a typist hovering on the
+      boundary has no cliff to fall off.
+- [x] The dead band leaves the speed **exactly** unchanged, swept across its whole width. Not
+      nearly: without the hysteresis `V` oscillates every tick around the boundary and the
+      typist watches the ghost twitch. The band is closed at the danger end and open at the
+      comfort end, and both edges are asserted.
+- [x] `f(lead)` saturates at one, so somebody two hundred graphemes ahead does not accelerate
+      away from a speed they held only briefly.
+- [x] Two half-steps equal one whole step, and a thousand ten-millisecond steps equal one
+      ten-second step. The law is linear in Δt, so this is exact rather than close — and it is
+      what makes the ramp independent of the frame rate it happens to be ticked at.
+- [x] A stumble is recovered from rather than spiralled into, scripted rather than argued: five
+      seconds of bad typing, then thirty of good, ending above where it started.
+- [x] Parameters that would divide by zero have defined answers — a `lead_scale` of zero means
+      any lead is full comfort, an `A_min` of one earns only on perfect. A NaN here would
+      propagate into the speed, then the pacer, then every decision the run makes.
+- [x] A full scripted run — climb, dead band, stumble, recovery — matches a committed golden
+      curve, derived independently rather than read off the implementation. It is what TI-129's
+      tuning pass regenerates, and what makes any constant change a diff somebody has to agree
+      with.
+- [x] The trend is exposed rather than inferred. A typist forty graphemes ahead and gaining
+      nothing deserves to see *why*, and the controller is the only thing that knows which
+      branch it took — without it the accuracy gate is invisible (TI-125).
 
 ---
 
