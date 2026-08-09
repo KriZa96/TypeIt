@@ -256,7 +256,8 @@ acquire, extract, normalise ([ADR-013](ARCHITECTURE.md#adr-013--ingestion-is-a-t
 — and adds formats in four waves:
 
 1. **TX-001 – TX-004** — the fetch/extract split, plus Markdown, source code, and subtitles.
-2. **TX-005 – TX-007** — sections, schema v2, and the typing-readiness pass that stops an
+2. **TX-005 – TX-007** — sections, the schema that persists them (`user_version` 3, not 2:
+   TI-109 took 2 for the daily-totals index), and the typing-readiness pass that stops an
    imported chapter from being unpassable.
 3. **TX-008 – TX-009** — EPUB, and the external converter hook that inherits pandoc's forty
    formats without shipping a parser

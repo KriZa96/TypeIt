@@ -89,12 +89,15 @@ namespace typeit::tui {
                 // A text picked from the library beats whatever the menu was
                 // showing: it is the more recent and more specific request.
                 const core::Result<std::optional<app::TextItem>> item = dependencies.library.records->get(*chosen_text);
-                // Named rather than reached through two dereferences:
-                // clang-tidy cannot see the `has_value` check through the
-                // `Result` wrapping the optional.
-                if (item.has_value() && item->has_value()) {
+                // Named rather than reached through two dereferences, and
+                // checked on the name: clang-tidy cannot follow `has_value`
+                // through the `Result` wrapping the optional, so the test has
+                // to be on the thing it then sees used.
+                if (item.has_value()) {
                     const std::optional<app::TextItem>& text = item.value();
-                    return text->content;
+                    if (text.has_value()) {
+                        return text->content;
+                    }
                 }
             }
             if (dependencies.texts.empty() || !dependencies.load_text) {

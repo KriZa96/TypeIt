@@ -8,6 +8,7 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
@@ -115,10 +116,13 @@ namespace typeit::infra {
             // reads a byte back.
             const std::filesystem::path file = std::filesystem::temp_directory_path() / "typeit-stdin-reattach.txt";
             {
-                std::FILE* written = std::fopen(file.string().c_str(), "w");
-                ASSERT_NE(written, nullptr);
-                ASSERT_GT(std::fputs("k", written), 0);
-                ASSERT_EQ(std::fclose(written), 0);
+                // `ofstream` rather than `fopen`, which is a deprecation error
+                // under MSVC's and clang-cl's `/W4 -Werror`. Nothing here needs
+                // a `FILE*`; the thing under test is what `stdin` points at
+                // afterwards, not how the byte got onto the disk.
+                std::ofstream written{file};
+                ASSERT_TRUE(written.is_open());
+                written << 'k';
             }
 
             const core::Status reattached = reattach_input(file);

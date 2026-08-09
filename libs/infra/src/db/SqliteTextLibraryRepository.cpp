@@ -176,13 +176,17 @@ namespace typeit::infra {
 
     Result<std::optional<app::TextItem>> SqliteTextLibraryRepository::with_sections(
             Result<std::optional<app::TextItem>> text) const {
-        if (!text || !text->has_value()) {
+        if (!text) {
             return text;
         }
-        // Named rather than reached through two dereferences: clang-tidy
-        // cannot see the `has_value` check through the `Result` wrapping the
-        // optional, and reports every use of it as unchecked.
+        // Named rather than reached through two dereferences, and checked on
+        // the name: clang-tidy cannot follow `has_value` through the `Result`
+        // wrapping the optional, so the test has to be on the thing it then
+        // sees used. A combined `!text || !text->has_value()` is not enough.
         std::optional<app::TextItem>& item = text.value();
+        if (!item.has_value()) {
+            return text;
+        }
         Result<std::vector<app::TextSection>> sections = sections_of(item->id);
         if (!sections) {
             return std::unexpected{sections.error()};
