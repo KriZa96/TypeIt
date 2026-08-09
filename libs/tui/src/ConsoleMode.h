@@ -71,9 +71,12 @@ namespace typeit::tui {
         /// before FTXUI ran would undo FTXUI's raw mode as a side effect, and
         /// the two objects have no idea about each other's lifetime.
         ///
-        /// `unsigned int` rather than `tcflag_t`, so the header needs no
+        /// `unsigned long` rather than `tcflag_t`, so the header needs no
         /// `<termios.h>`; the one place that uses it checks the two agree.
-        unsigned int previous_input_flags_ = 0;
+        /// Not `unsigned int`: `tcflag_t` is that on Linux and `unsigned long`
+        /// on macOS, and the narrower of the two is a static assertion failure
+        /// on exactly one of the platforms in the matrix.
+        unsigned long previous_input_flags_ = 0;
         bool captured_ = false;
 #endif
     };

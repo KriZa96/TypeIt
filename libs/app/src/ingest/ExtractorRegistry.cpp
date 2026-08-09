@@ -22,7 +22,7 @@ namespace typeit::app {
 
     }  // namespace
 
-    core::Status ExtractorRegistry::add(std::shared_ptr<ITextExtractor> extractor) {
+    core::Status ExtractorRegistry::add(const std::shared_ptr<ITextExtractor>& extractor) {
         if (extractor == nullptr) {
             return core::fail(core::ErrorCode::InvalidArgument, "an extractor registration needs an extractor");
         }

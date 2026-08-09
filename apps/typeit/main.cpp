@@ -476,11 +476,15 @@ namespace {
             if (!item) {
                 return complain(item.error());
             }
-            if (!item->has_value()) {
+            // Named rather than reached through two dereferences: clang-tidy
+            // cannot see the `has_value` check through the `Result` wrapping
+            // the optional, and reports every use of it as unchecked.
+            const std::optional<typeit::app::TextItem>& text = item.value();
+            if (!text.has_value()) {
                 std::cerr << "typeit: no text with id " << options.text_id->value << ". Try --list-texts.\n";
                 return kFailed;
             }
-            from_library = (*item)->content;
+            from_library = text->content;
         } else {
             catalogue = bundled_texts(options, assets.value_or(std::filesystem::path{}));
         }

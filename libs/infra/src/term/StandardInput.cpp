@@ -46,8 +46,18 @@ namespace typeit::infra {
         // and must not close — changing the stream the C runtime and FTXUI
         // already hold, in place, is the entire point.
         //
+        // `freopen_s` on Windows, where the plain one is a deprecation error
+        // under `/W4 -Werror` on both MSVC and clang-cl. Same call, same
+        // in-place reopen; the difference is which of them the C runtime
+        // considers safe, and there is no portable spelling of "I meant it".
+#ifdef _WIN32
+        FILE* reopened = nullptr;
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+        if (freopen_s(&reopened, device.string().c_str(), "r", stdin) != 0) {
+#else
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
         if (std::freopen(device.string().c_str(), "r", stdin) == nullptr) {
+#endif
             return core::fail(core::ErrorCode::UnsupportedTerminal,
                               device.string() + ": there is no terminal to read the keyboard from");
         }

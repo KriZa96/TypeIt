@@ -347,7 +347,11 @@ namespace typeit::app {
         if (!text) {
             return std::unexpected{text.error()};
         }
-        if (!text->has_value()) {
+        // Named rather than reached through two dereferences: clang-tidy cannot
+        // see the `has_value` check through the `Result` wrapping the optional,
+        // and reports every use of it as unchecked.
+        const std::optional<TextItem>& item = text.value();
+        if (!item.has_value()) {
             return core::fail(core::ErrorCode::FileNotFound, "no text with id " + std::to_string(id.value));
         }
 
@@ -355,12 +359,13 @@ namespace typeit::app {
         if (!mark) {
             return std::unexpected{mark.error()};
         }
+        const std::optional<Bookmark>& found = mark.value();
 
         TextProgress out;
-        out.total = (*text)->grapheme_count;
+        out.total = item->grapheme_count;
         // No bookmark is offset zero, not an error: not having started is the
         // normal state of most of a library.
-        out.offset = mark->has_value() ? (*mark)->offset : core::GraphemeIndex{0};
+        out.offset = found.has_value() ? found->offset : core::GraphemeIndex{0};
         out.offset = core::GraphemeIndex{std::min(out.offset.value, out.total)};
         // An empty text counts as finished rather than dividing by zero. There
         // is nothing left to type either way, and 0/0 is not a percentage.
@@ -392,7 +397,10 @@ namespace typeit::app {
         if (!text) {
             return std::unexpected{text.error()};
         }
-        if (!text->has_value()) {
+        // Named rather than reached through two dereferences, as in `progress`:
+        // clang-tidy cannot see the `has_value` check through the `Result`.
+        const std::optional<TextItem>& item = text.value();
+        if (!item.has_value()) {
             return core::fail(core::ErrorCode::FileNotFound, "no text with id " + std::to_string(id.value));
         }
 
@@ -400,7 +408,7 @@ namespace typeit::app {
         mark.text_id = id;
         mark.offset = offset;
         mark.updated_at = clock_->unix_now();
-        mark.section_idx = section_at((*text)->sections, offset);
+        mark.section_idx = section_at(item->sections, offset);
         return library_->set_bookmark(mark);
     }
 

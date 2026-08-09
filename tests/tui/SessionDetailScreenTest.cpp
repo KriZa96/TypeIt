@@ -14,6 +14,7 @@
 #include "Snapshot.h"
 #include "screens/SessionDetailScreen.h"
 #include "typeit/app/records/History.h"
+#include "typeit/core/Version.h"
 #include "typeit/core/metrics/Timeline.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/testing/Fakes.h"
@@ -66,7 +67,10 @@ namespace typeit::tui {
             record.final_correctness = core::Accuracy{0.99};
             record.consistency = 88.0;
             record.completed = true;
-            record.app_version = "2.0.0-alpha.6";
+            // Read rather than written out: a literal here would be a second
+            // place the version lives, which is what the guard in CI_CD section 6
+            // exists to stop.
+            record.app_version = kVersionString;
             for (std::int64_t second = 0; second < 10; ++second) {
                 record.timeline.push_back({.at = core::Millis{second * 1'000},
                                            .wpm = core::Wpm{60.0 + static_cast<double>(second)},
@@ -160,7 +164,7 @@ namespace typeit::tui {
             EXPECT_FALSE(recorded_by_this_major(""));
             EXPECT_FALSE(recorded_by_this_major("who knows"));
             EXPECT_FALSE(recorded_by_this_major("1.9.9"));
-            EXPECT_TRUE(recorded_by_this_major("2.0.0-alpha.6"));
+            EXPECT_TRUE(recorded_by_this_major(kVersionString));
         }
 
         TEST(SessionDetailScreenTest, AnIdNobodyRecordedSaysSoRatherThanDrawingZeros) {

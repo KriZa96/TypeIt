@@ -95,7 +95,11 @@ namespace typeit::cli {
         if (!existing) {
             return std::unexpected{existing.error()};
         }
-        if (!existing->has_value()) {
+        // Named rather than reached through two dereferences: clang-tidy
+        // cannot see the `has_value` check through the `Result` wrapping the
+        // optional, and reports every use of it as unchecked.
+        const std::optional<app::TextItem>& text = existing.value();
+        if (!text.has_value()) {
             return core::fail(core::ErrorCode::FileNotFound, "no text with id " + std::to_string(id.value));
         }
 
@@ -105,7 +109,7 @@ namespace typeit::cli {
             // so the confirmation is a flag, and saying which one is the whole
             // message.
             return core::fail(core::ErrorCode::InvalidArgument,
-                              "removing \"" + one_line((*existing)->title) +
+                              "removing \"" + one_line(text->title) +
                                       "\" also removes its tags and bookmark; pass --yes to go ahead");
         }
 
@@ -114,7 +118,7 @@ namespace typeit::cli {
         }
         // What actually happened to the rest, because "removed" alone leaves
         // somebody wondering about the runs they typed from it.
-        return "removed text " + std::to_string(id.value) + " (\"" + one_line((*existing)->title) +
+        return "removed text " + std::to_string(id.value) + " (\"" + one_line(text->title) +
                "\") and its tags and bookmark; past sessions are kept and no longer name a text\n";
     }
 

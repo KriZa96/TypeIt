@@ -179,11 +179,15 @@ namespace typeit::infra {
         if (!text || !text->has_value()) {
             return text;
         }
-        Result<std::vector<app::TextSection>> sections = sections_of((*text)->id);
+        // Named rather than reached through two dereferences: clang-tidy
+        // cannot see the `has_value` check through the `Result` wrapping the
+        // optional, and reports every use of it as unchecked.
+        std::optional<app::TextItem>& item = text.value();
+        Result<std::vector<app::TextSection>> sections = sections_of(item->id);
         if (!sections) {
             return std::unexpected{sections.error()};
         }
-        (*text)->sections = std::move(*sections);
+        item->sections = std::move(*sections);
         return text;
     }
 

@@ -52,7 +52,10 @@ add_executable(tui_tests ColorQuantizerTest.cpp FrameTickerTest.cpp GlyphSetTest
 # internal because they name FTXUI, and testing them means speaking FTXUI too.
 # The isolation probes above still hold — they link `typeit::tui` alone.
 target_include_directories(tui_tests PRIVATE "${CMAKE_SOURCE_DIR}/libs/tui/src")
-target_link_libraries(tui_tests PRIVATE typeit::tui typeit::infra typeit::test_support
+# typeit_version carries the generated header: the session-detail test stamps
+# its fixture with the version rather than writing one out, because a literal
+# here would be a second place the version lives (CI_CD section 6).
+target_link_libraries(tui_tests PRIVATE typeit::tui typeit::infra typeit::test_support typeit_version
                                         ftxui::dom ftxui::screen ftxui::component
                                         GTest::gtest GTest::gtest_main)
 

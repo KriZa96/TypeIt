@@ -321,7 +321,7 @@ namespace typeit::infra {
 
         TEST_F(LibraryTest, ASearchAndATagFilterNarrowTogether) {
             // The search finds and the filter narrows: an OR across title and
-            // tags, ANDed with the tags asked for.
+            // tags, and that narrowed again by the tags asked for.
             const core::TextId wanted = add(a_text("Rust Book", "hash-a"));
             const core::TextId other = add(a_text("Rust Notes", "hash-b"));
             ASSERT_TRUE(repository_->tag(wanted, "long"));

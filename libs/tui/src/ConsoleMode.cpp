@@ -76,8 +76,8 @@ namespace typeit::tui {
 #else
 
     ConsoleMode::ConsoleMode() {
-        static_assert(sizeof(tcflag_t) <= sizeof(unsigned int),
-                      "the header stores c_iflag as an unsigned int to avoid including <termios.h>");
+        static_assert(sizeof(tcflag_t) <= sizeof(unsigned long),
+                      "the header stores c_iflag as an unsigned long to avoid including <termios.h>");
 
         termios settings{};
         if (tcgetattr(STDIN_FILENO, &settings) != 0) {
@@ -86,7 +86,7 @@ namespace typeit::tui {
             problems_.emplace_back("no terminal attached; input is redirected");
             return;
         }
-        previous_input_flags_ = static_cast<unsigned int>(settings.c_iflag);
+        previous_input_flags_ = static_cast<unsigned long>(settings.c_iflag);
         captured_ = true;
 
         // The whole point. IXON makes the line discipline swallow Ctrl+S and

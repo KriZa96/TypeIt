@@ -161,8 +161,8 @@ SHA-256 over normalised content.
 **Acceptance**
 - [x] Search now looks at the **tags as well as the title**, which it did not. Somebody who
       tagged a text `rust` and called it something else types "rust" and expects to find it.
-- [x] The search finds and the tag filter narrows: an OR across title and tags, ANDed with the
-      tags asked for. Both halves have a test, and the combination has its own.
+- [x] The search finds and the tag filter narrows: an OR across title and tags, narrowed
+      again by the tags asked for. Both halves have a test, and the combination has its own.
 - [x] Every tag asked for, not any: `ListFiltersByEveryTagAskedFor`. Tagging twice is
       idempotent (`TaggingTwiceIsSomebodyClickingTwice`), and untagging removes only that one.
 - [x] Case folding is **ASCII-only**, because `LIKE` is SQLite's: a search for `Č` will not

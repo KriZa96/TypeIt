@@ -28,7 +28,7 @@ namespace typeit::app {
         /// and claims **none** of them in that case, so a rejected
         /// registration leaves the registry as it was rather than half
         /// applied.
-        [[nodiscard]] core::Status add(std::shared_ptr<ITextExtractor> extractor);
+        [[nodiscard]] core::Status add(const std::shared_ptr<ITextExtractor>& extractor);
 
         /// The extractor for a type, or `nullptr`.
         ///
