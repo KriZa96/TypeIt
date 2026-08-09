@@ -67,7 +67,72 @@ These are the three places 2.0 does not agree with 1.0. Everything else is addit
   domain types (TI-024), the `Result` error type (TI-025), the `IClock` time port (TI-026), and
   the text foundation: a UTF-8 decoder that reports the byte it rejected (TI-027), grapheme
   cluster segmentation (TI-028), and display width tables generated from Unicode 17.0.0
-  (TI-029). None of it is wired into the application yet; the 1.0 tree is untouched.
+  (TI-029).
+- **Text is grapheme clusters, not bytes.** `TextBuffer` indexes in clusters, so a two-byte `č`
+  is one character to type rather than two, and line wrapping is a pure function of text and
+  column count rather than state on the buffer — which is what makes a terminal resize a matter
+  of calling it again (TI-030, TI-031).
+- **The keystroke log is the single source of truth.** Every metric is a pure function over an
+  append-only log of what was pressed and when (TI-032, TI-033, TI-035), which is what makes the
+  1.0 accuracy defect unrepresentable rather than merely fixed. Typing rules — whether an error
+  stops you, whether a missing space is an error — are variants over the same model (TI-034).
+- Metrics: raw, gross and net speed (TI-036); first-attempt accuracy and end-state correctness
+  as separate figures (TI-037); consistency (TI-038); rolling and peak-sustained WPM (TI-039);
+  a per-second timeline (TI-040); per-key and per-bigram statistics (TI-041); and the
+  expected-to-typed error map that drills are later built from (TI-042).
+- Modes behind one interface, so adding one needs no migration: timed, word count, quote and zen
+  (TI-043 – TI-047). Text supply is a separate interface again — whole text, chunked, shuffled
+  sentences and a word pool — each driven by a seed that reproduces the exact stream
+  (TI-048, TI-049, TI-116, TI-117).
+- A configuration value type with pure validation, so a bad setting is a message rather than a
+  crash or a silent default (TI-050).
+- `typeit::infra`, the driven adapters: a SQLite connection with a statement cache and
+  transactions (TI-056), the migrator and schema v1 (TI-057), the history and text-library
+  repositories (TI-058, TI-059), the TOML configuration store with key migration
+  (TI-060, TI-061), platform paths and asset location that no longer depend on `__FILE__`
+  (TI-054, TI-055), and the system clock and filesystem (TI-062).
+- `typeit::app`, the use cases: config, session, history, text library and profile services over
+  declared ports (TI-066 – TI-070, TI-073), with import-time normalisation and difficulty
+  scoring in `core` where they belong (TI-071, TI-072). Every port has a contract suite run
+  against both the real adapter and a fake, so the two cannot disagree (TI-063, TI-064).
+- A command line: argument parsing (TI-074), `--simulate` for running a whole session headless
+  from a keystroke script (TI-075), `--doctor` for terminal capabilities, paths and database
+  health (TI-076), and `--stats` / `--export` in CSV and JSON (TI-077, TI-078).
+- `typeit::tui`, the terminal frontend: a frame ticker, a screen stack, capability detection,
+  theming with colour quantisation for terminals that cannot do true colour, glyph sets for
+  terminals without Unicode, and a rebindable keymap (TI-079 – TI-086). Then the widgets and
+  screens themselves — typing area, stats and key-hint bars, responsive layout, and the menu,
+  session, results, help and too-small screens (TI-087 – TI-096), with a render snapshot harness
+  and the assertion that `Render()` mutates nothing (TI-095).
+- History: sparkline, line chart, histogram and heatmap widgets (TI-099 – TI-102); a history
+  screen and a per-run detail screen (TI-103, TI-104); an enriched results screen (TI-105); the
+  menu's recent-runs sparkline (TI-106); streaks counted against the daily goal rather than
+  against turning up (TI-107); and export from the interface (TI-108). The daily totals are
+  aggregated by SQL, so the memory a history screen needs stops growing with how much somebody
+  has typed (TI-109).
+- A text library. Import from a file, from standard input or by paste (TI-110 – TI-112);
+  deduplication by content hash, so the same file imported twice is one text (TI-113); tags and
+  search (TI-114); bookmarks that advance by what was actually typed rather than by the chunk
+  that was offered (TI-115); a library screen (TI-118); and the flags to drive all of it from a
+  command line (TI-119).
+- **Import is a pipeline, and formats plug into it.** Acquisition, extraction and normalisation
+  are separate stages resolved by MIME type, so adding a format is one new file and one
+  registration (TX-001). Markdown extracts with its markup stripped and its code fences intact
+  (TX-002); source code keeps its indentation byte for byte and warns when a file mixes tabs and
+  spaces (TX-003); SubRip and WebVTT subtitles come back as re-joined sentences rather than as
+  the subtitler's line wrapping (TX-004). A whole folder imports at once, reporting what it
+  skipped instead of failing on the first bad file (TX-004).
+- **Sections.** A chapter has a name and a grapheme range, and the ranges cover a text end to
+  end with no gaps, so a bookmark always lands in exactly one of them (TX-005). They are
+  persisted, along with which section a bookmark is in and what read the text in the first place
+  (TX-006).
+- **A typing-readiness pass**, which is the difference between a feature and a trap. An
+  extracted chapter arrives with running heads, page numbers, footnote markers, words broken
+  across line breaks and typography no keyboard produces; the pass removes what it recognises
+  and *reports* what it cannot, counting every character a standard keyboard cannot reach and
+  saying for each whether normalisation will rescue it (TX-007). `inspect_file` produces that
+  report before anything is stored, so the answer to "is this worth typing" arrives before the
+  library grows.
 
 ### Changed
 
@@ -84,6 +149,14 @@ These are the three places 2.0 does not agree with 1.0. Everything else is addit
 - The whole tree is formatted to the repository's `.clang-format` for the first time (CI-006).
 - `CMakeLists.txt` no longer overrides a compiler or toolchain chosen on the command line or in
   the environment (CI-005, TI-009).
+- The database schema is at `user_version` 3. Version 2 added a covering index for the history
+  screen's daily aggregation (TI-109); version 3 added the `text_section` table, `section_idx`
+  on bookmarks, and `author` / `mime` / `extractor` on `text_item` (TX-006). Both migrate
+  in place: an existing library keeps every text and every bookmark, and each text gains the
+  single section it always implicitly had.
+- Line endings are LF in the working tree on every platform (`.gitattributes`). Two things
+  depended on it without saying so: the rendered-screen fixtures are compared byte for byte, and
+  the schema files are read at build time and embedded in the binary.
 
 ### Fixed
 
@@ -94,6 +167,27 @@ These are the three places 2.0 does not agree with 1.0. Everything else is addit
   undefined behaviour (TI-005).
 - The no-op `ExitLoopClosure` call in the menu is removed; quitting already went through the
   screen's own exit path (TI-006).
+- The history screen's daily totals no longer fail on any build that does not find a system
+  SQLite. `floor()` has been opt-in since SQLite 3.35 and the bundled amalgamation was built
+  without it, so the query failed with `no such function: FLOOR` — on Windows always, and on
+  Linux never, which is why it went unnoticed until the Windows job first got far enough to run
+  its tests.
+- `--import-dir` imports a directory instead of reporting that the feature is not built. The
+  capability landed in TX-004 without the flag being connected to it.
+- `typeit --import` prints what the extractor and the readiness pass found — a file that mixes
+  tabs and spaces, characters no keyboard can reach — instead of computing both and discarding
+  them.
+
+### Known gaps
+
+Recorded here because they are visible from the outside, not to excuse them.
+
+- **The 1.0 tree is still present and still built.** The rebuild is complete and is what
+  `typeit` runs; `TypeIt` is the 1.0 binary, kept alongside it. Deleting it is TI-097, which is
+  gated on a manual four-terminal compatibility sweep in TI-098 that nobody has done yet.
+- Endless mode, race mode and drills are declared by `--help` and are not implemented
+  (phases 7 and 8). `--url` likewise: web import is wave 4 of Phase 6A and ships in 2.1.0.
+- `--section` is parsed and not yet acted on.
 
 ## [1.0.0] - 2025-05-17
 
