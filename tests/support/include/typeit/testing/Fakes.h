@@ -220,13 +220,20 @@ namespace typeit::testing {
             return {};
         }
 
-        [[nodiscard]] core::Result<core::Wpm> best_sustained_wpm(core::Days window) const override {
+        [[nodiscard]] core::Result<core::Wpm> best_sustained_wpm(core::Days window,
+                                                                 core::Accuracy min_accuracy) const override {
             TYPEIT_FAIL_IF_ARMED()
 
             const core::Millis cutoff{now.value - (static_cast<std::int64_t>(window.value) * 86'400'000)};
             double best = 0.0;
             for (const app::SessionRecord& record: records) {
                 if (!record.completed || !record.peak_wpm.has_value()) {
+                    continue;
+                }
+                // A speed reached while typing badly is not a speed anybody
+                // held, and starting tomorrow's race from it means re-losing it
+                // every time (TI-126).
+                if (record.accuracy < min_accuracy) {
                     continue;
                 }
                 if (window.value != 0 && record.started_at < cutoff) {

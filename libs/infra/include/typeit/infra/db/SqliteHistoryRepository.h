@@ -58,7 +58,8 @@ namespace typeit::infra {
 
         [[nodiscard]] core::Status merge_error_map(const core::ErrorMap& errors) override;
 
-        [[nodiscard]] core::Result<core::Wpm> best_sustained_wpm(core::Days window) const override;
+        [[nodiscard]] core::Result<core::Wpm> best_sustained_wpm(core::Days window,
+                                                                 core::Accuracy min_accuracy) const override;
 
         /// The accuracy a run needs before it can set a record
         /// (GAMEPLAY section 7.3). A personal best cannot be bought by typing

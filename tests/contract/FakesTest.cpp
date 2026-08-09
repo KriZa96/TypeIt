@@ -138,7 +138,7 @@ namespace typeit::testing {
             ASSERT_TRUE(repository.save(inside));
             ASSERT_TRUE(repository.save(outside));
 
-            const core::Result<core::Wpm> best = repository.best_sustained_wpm(core::Days{30});
+            const core::Result<core::Wpm> best = repository.best_sustained_wpm(core::Days{30}, core::Accuracy{0.90});
 
             ASSERT_TRUE(best);
             EXPECT_DOUBLE_EQ(best->value, 80.0);

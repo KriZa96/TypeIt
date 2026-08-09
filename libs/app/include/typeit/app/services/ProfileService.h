@@ -25,6 +25,10 @@ namespace typeit::app {
     inline constexpr double kDefaultStartFactor = 0.85;
     inline constexpr core::Wpm kDefaultStartFloor{20.0};
     inline constexpr core::Days kStartingSpeedWindow{30};
+    /// The bar a run has to have cleared to set a starting speed. A speed
+    /// reached while typing at 60% accuracy is not a speed anybody held, and
+    /// beginning tomorrow's race from it means re-losing it every time.
+    inline constexpr core::Accuracy kStartingSpeedAccuracy{0.90};
 
     class ProfileService {
     public:

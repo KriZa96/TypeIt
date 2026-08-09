@@ -39,6 +39,7 @@
 #include "typeit/app/Theme.h"
 #include "typeit/app/ports/IConfigStore.h"
 #include "typeit/app/services/HistoryService.h"
+#include "typeit/app/services/ProfileService.h"
 #include "typeit/app/services/SessionService.h"
 #include "typeit/app/services/TextLibraryService.h"
 #include "typeit/cli/Cli.h"
@@ -132,7 +133,24 @@ namespace {
     /// The modes a run can be started in, each closed over the configured
     /// default it falls back to. The caller's choice wins; the configuration is
     /// what a caller with nothing to say gets.
-    typeit::core::ModeRegistry built_in_modes(const typeit::core::Config& config) {
+    /// Where a race starts, and therefore where progression lives (TI-126).
+    ///
+    /// Today's ceiling becomes tomorrow's floor, so nobody re-grinds a speed
+    /// they have already proven. A history that cannot be read is *not*
+    /// answered with the floor — somebody whose database is unreadable has not
+    /// gone back to 20 WPM — so the error is reported and the configured start
+    /// is used, which is what `start_policy = "fixed"` would have given them.
+    typeit::core::Wpm race_start(const typeit::core::Config& config, typeit::app::IHistoryRepository& history) {
+        const typeit::app::ProfileService profile{history};
+        const Result<typeit::core::Wpm> start = profile.starting_speed(config);
+        if (!start) {
+            std::cerr << "typeit: " << start.error().context << "; starting the race at the configured speed\n";
+            return typeit::core::Wpm{static_cast<double>(config.race.start_wpm)};
+        }
+        return *start;
+    }
+
+    typeit::core::ModeRegistry built_in_modes(const typeit::core::Config& config, typeit::core::Wpm race_start_speed) {
         typeit::core::ModeRegistry registry;
         // The configured value is the default, and whatever the caller chose
         // wins. Baking the configured one in was the bug: the menu's seconds
@@ -155,7 +173,7 @@ namespace {
         // one message rather than two behaviours (TI-120, TI-123, TI-124).
         const typeit::core::RaceParams race =
                 typeit::core::race_params_from(config.race).value_or(typeit::core::RaceParams{});
-        const typeit::core::Wpm start{static_cast<double>(config.race.start_wpm)};
+        const typeit::core::Wpm start = race_start_speed;
         registry.register_mode("race", [race, start] { return std::make_unique<typeit::core::RaceMode>(race, start); });
         registry.register_mode("endless",
                                [race, start] { return std::make_unique<typeit::core::RaceMode>(race, start, false); });
@@ -325,7 +343,7 @@ namespace {
         // point of the exercise. The only thing a scripted run does not use is
         // a terminal.
         const typeit::core::Config config;
-        const typeit::core::ModeRegistry modes = built_in_modes(config);
+        const typeit::core::ModeRegistry modes = built_in_modes(config, race_start(config, (*history)->repository));
         const typeit::infra::SystemClock clock;
         const typeit::app::SessionService sessions{(*history)->repository, modes, clock, clock};
 
@@ -503,7 +521,7 @@ namespace {
             catalogue = bundled_texts(options, assets.value_or(std::filesystem::path{}));
         }
 
-        const typeit::core::ModeRegistry modes = built_in_modes(config);
+        const typeit::core::ModeRegistry modes = built_in_modes(config, race_start(config, (*history)->repository));
         const typeit::infra::SystemClock clock;
         const typeit::app::SessionService sessions{(*history)->repository, modes, clock, clock};
         const typeit::app::HistoryService past_runs{(*history)->repository};

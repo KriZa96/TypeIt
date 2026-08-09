@@ -641,7 +641,8 @@ namespace typeit::infra {
         return {};
     }
 
-    Result<core::Wpm> SqliteHistoryRepository::best_sustained_wpm(core::Days window) const {
+    Result<core::Wpm> SqliteHistoryRepository::best_sustained_wpm(core::Days window,
+                                                                  core::Accuracy min_accuracy) const {
         // Race mode's starting speed (GAMEPLAY section 3.4). In SQL because it
         // is a maximum over a history that may be years long, and because the
         // window boundary is then one comparison rather than a filter applied
@@ -649,6 +650,7 @@ namespace typeit::infra {
         Result<Statement> statement = database_->prepare(
                 "SELECT COALESCE(MAX(peak_wpm), 0) FROM session"
                 " WHERE completed = 1 AND peak_wpm IS NOT NULL"
+                "   AND accuracy >= ?3"
                 "   AND (?1 = 0 OR started_at >= ?2)");
         if (!statement) {
             return std::unexpected{statement.error()};
@@ -660,7 +662,7 @@ namespace typeit::infra {
         }
         const std::int64_t cutoff = *now - (static_cast<std::int64_t>(window.value) * kMillisPerDay);
 
-        statement->bind(1, static_cast<std::int64_t>(window.value)).bind(2, cutoff);
+        statement->bind(1, static_cast<std::int64_t>(window.value)).bind(2, cutoff).bind(3, min_accuracy.value);
         const Result<bool> row = statement->step();
         if (!row) {
             return std::unexpected{row.error()};

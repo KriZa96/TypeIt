@@ -509,7 +509,8 @@ namespace typeit {
             ASSERT_TRUE(this->repository().save(recent));
             ASSERT_TRUE(this->repository().save(ancient));
 
-            const core::Result<core::Wpm> best = this->repository().best_sustained_wpm(core::Days{30});
+            const core::Result<core::Wpm> best =
+                    this->repository().best_sustained_wpm(core::Days{30}, core::Accuracy{0.90});
 
             ASSERT_TRUE(best) << (best ? "" : best.error().context);
             EXPECT_DOUBLE_EQ(best->value, 80.0);
@@ -518,7 +519,8 @@ namespace typeit {
         TYPED_TEST(HistoryRepositoryContract, BestSustainedWithNoRacesIsZero) {
             ASSERT_TRUE(this->repository().save(TestFixture::a_run()));
 
-            const core::Result<core::Wpm> best = this->repository().best_sustained_wpm(core::Days{30});
+            const core::Result<core::Wpm> best =
+                    this->repository().best_sustained_wpm(core::Days{30}, core::Accuracy{0.90});
 
             ASSERT_TRUE(best) << (best ? "" : best.error().context);
             EXPECT_DOUBLE_EQ(best->value, 0.0) << "a timed run has no pacer to have kept up with";

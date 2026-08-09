@@ -9,7 +9,7 @@
 namespace typeit::app {
 
     core::Result<core::Wpm> ProfileService::starting_speed(double factor, core::Wpm floor) const {
-        const core::Result<core::Wpm> best = history_->best_sustained_wpm(kStartingSpeedWindow);
+        const core::Result<core::Wpm> best = history_->best_sustained_wpm(kStartingSpeedWindow, kStartingSpeedAccuracy);
         if (!best) {
             return std::unexpected{best.error()};
         }

@@ -96,7 +96,14 @@ namespace typeit::app {
         /// Race mode's starting speed comes from here (GAMEPLAY section 3.4).
         /// A port method rather than client-side filtering because it is a
         /// maximum over a large history, and that belongs in SQL.
-        [[nodiscard]] virtual core::Result<core::Wpm> best_sustained_wpm(core::Days window) const = 0;
+        ///
+        /// `min_accuracy` is the bar a run has to have cleared to count. A
+        /// speed reached while typing badly is not a speed anybody held, and
+        /// starting tomorrow's race from it would mean re-losing it every time
+        /// (TI-126). It travels as a parameter for the same reason the window
+        /// does: it is a domain rule, and infra's job is the maximum.
+        [[nodiscard]] virtual core::Result<core::Wpm> best_sustained_wpm(core::Days window,
+                                                                         core::Accuracy min_accuracy) const = 0;
     };
 
 }  // namespace typeit::app

@@ -428,14 +428,14 @@ namespace typeit::infra {
             ASSERT_TRUE(repository_->save(recent));
             ASSERT_TRUE(repository_->save(ancient));
 
-            const Result<core::Wpm> best = repository_->best_sustained_wpm(core::Days{30});
+            const Result<core::Wpm> best = repository_->best_sustained_wpm(core::Days{30}, core::Accuracy{0.90});
 
             ASSERT_TRUE(best) << (best ? "" : best.error().context);
             EXPECT_DOUBLE_EQ(best->value, 80.0) << "the 100-day-old run is outside the window";
         }
 
         TEST_F(HistoryTest, BestSustainedWithNoHistoryIsZero) {
-            const Result<core::Wpm> best = repository_->best_sustained_wpm(core::Days{30});
+            const Result<core::Wpm> best = repository_->best_sustained_wpm(core::Days{30}, core::Accuracy{0.90});
 
             ASSERT_TRUE(best) << (best ? "" : best.error().context);
             EXPECT_DOUBLE_EQ(best->value, 0.0) << "not an error: a new user has no races behind them";
@@ -445,7 +445,7 @@ namespace typeit::infra {
             // Only races have a peak; a timed run has nothing to report here.
             ASSERT_TRUE(repository_->save(a_run()));
 
-            const Result<core::Wpm> best = repository_->best_sustained_wpm(core::Days{30});
+            const Result<core::Wpm> best = repository_->best_sustained_wpm(core::Days{30}, core::Accuracy{0.90});
 
             ASSERT_TRUE(best);
             EXPECT_DOUBLE_EQ(best->value, 0.0);

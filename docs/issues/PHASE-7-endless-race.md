@@ -332,8 +332,24 @@ already proven.
   strictly increasing `V₀`.
 
 **Acceptance**
-- [ ] The progression property passes over a simulated multi-session history — this is the
+- [x] The progression property passes over a simulated multi-session history — this is the
       feature's whole justification, so it gets an explicit test rather than an assumption.
+      Twelve sessions, each better than the last, each starting strictly above the one before.
+- [x] **Only runs typed well enough count.** The gap this issue closed: the ramp will happily
+      push the pacer to 120 while somebody mashes at 60% accuracy, and starting tomorrow's race
+      there would mean losing immediately, every time, forever. The bar travels to the
+      repository as a parameter beside the window, because "which runs count" is a domain rule
+      and infra's job is the maximum.
+- [x] A bad day does not undo weeks of progress: it is the *best* of the window, not the last
+      of it. Somebody tired on a Tuesday has not become a slower typist.
+- [x] A plateau stops rising rather than drifting, which is the other half of the same
+      property.
+- [x] `start_policy = "fixed"` never asks the history at all — asserted with the repository
+      armed to fail, so a fixed start survives a database that cannot be read.
+- [x] **The composition root actually uses it.** Registering the race mode with
+      `config.race.start_wpm` was the state before this issue: the formula existed, was tested,
+      and nothing called it. A history that cannot be read reports and falls back to the
+      configured speed rather than silently dropping somebody to 20 WPM.
 
 ---
 
@@ -408,7 +424,7 @@ otherwise never happens.
       **Blocked on a contradiction in the specification** — see TI-124. The documented ramp law
       overshoots by construction, and the property cannot hold without a term the law does not
       have.
-- [ ] The progression property (improving player → increasing start speed) passes.
+- [x] The progression property (improving player → increasing start speed) passes.
 - [ ] The pacer does not visibly stutter.
 - [ ] Endless mode runs for 10 minutes with bounded memory. The mode's own state is bounded and
       tested; the text buffer is not refilled at all yet — see TI-120.
