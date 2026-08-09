@@ -20,6 +20,7 @@
 #include "typeit/app/ingest/ExtractorRegistry.h"
 #include "typeit/app/ingest/Markdown.h"
 #include "typeit/app/ingest/PlainText.h"
+#include "typeit/app/ingest/Readiness.h"
 #include "typeit/app/ingest/Subtitles.h"
 #include "typeit/app/ports/IFileSystem.h"
 #include "typeit/app/ports/ITextLibraryRepository.h"
@@ -40,6 +41,10 @@ namespace typeit::app {
         /// mixes tabs and spaces, one with minified lines nobody can type.
         /// Empty for almost everything.
         std::vector<std::string> warnings;
+        /// What the typing-readiness pass did to the text, and what it found it
+        /// could not fix (TX-007). The same report `inspect_file` offers
+        /// beforehand, repeated here for a caller who did not ask first.
+        ReadinessReport readiness;
     };
 
     /// What came of importing a folder (TX-004).
@@ -98,6 +103,15 @@ namespace typeit::app {
         /// is registered rather than infer it from what imports.
         [[nodiscard]] const ExtractorRegistry& extractors() const noexcept { return extractors_; }
 
+        /// What importing this file would cost, without importing it (TX-007).
+        ///
+        /// Everything `import_file` does except the storing: fetch, extract,
+        /// make typeable, count what a keyboard cannot reach. The report says
+        /// how many characters will still be unreachable *after* normalisation
+        /// has flattened what it can, which is the number that decides whether
+        /// a text is worth agreeing to. Cancelling is not calling `import_file`.
+        [[nodiscard]] core::Result<ReadinessReport> inspect_file(const std::filesystem::path& path);
+
         /// Reads, imports, and titles the text after the file unless `title`
         /// says otherwise.
         [[nodiscard]] core::Result<ImportOutcome> import_file(const std::filesystem::path& path,
@@ -147,6 +161,13 @@ namespace typeit::app {
 
         [[nodiscard]] const core::NormalizeOptions& normalization() const noexcept { return normalization_; }
 
+        /// Which typing-readiness steps the next import will run (TX-007). An
+        /// extractor that knows better overrides it — the code extractor turns
+        /// every one of them off.
+        void set_readiness(ReadinessOptions options) { readiness_ = options; }
+
+        [[nodiscard]] const ReadinessOptions& readiness() const noexcept { return readiness_; }
+
     private:
         ExtractorRegistry extractors_;
         ITextLibraryRepository* library_;
@@ -168,7 +189,32 @@ namespace typeit::app {
             std::optional<std::string> mime;
             std::optional<std::string> extractor;
             std::optional<std::string> author;
+            ReadinessReport readiness;
+            /// The extractor's text before the typing-readiness pass touched
+            /// it, when the pass changed anything.
+            ///
+            /// `content_raw` would otherwise be the *cleaned* text: the pass
+            /// runs before `store` sees anything, so without this the running
+            /// heads it dropped would be gone from the copy that exists to have
+            /// kept them.
+            std::optional<std::string> as_imported;
         };
+
+        /// Fetch and extract, with the typing-readiness pass already applied.
+        ///
+        /// Shared by `inspect_file` and `import_file` so that the report
+        /// somebody agreed to is the one produced by the import they agreed to.
+        /// Two copies of this would be two answers to the same question.
+        struct Prepared {
+            std::string text;
+            std::string suggested_title;
+            /// The extractor's own, where it has an opinion; the library's
+            /// otherwise.
+            core::NormalizeOptions normalization;
+            Extraction extraction;
+        };
+
+        [[nodiscard]] core::Result<Prepared> prepare(const std::filesystem::path& path);
 
         /// The shared tail of both imports: normalise, deduplicate, store.
         ///
@@ -185,6 +231,7 @@ namespace typeit::app {
         IFileSystem* files_;
         core::IWallClock* clock_;
         core::NormalizeOptions normalization_;
+        ReadinessOptions readiness_;
     };
 
 }  // namespace typeit::app

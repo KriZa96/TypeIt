@@ -227,19 +227,49 @@ extraction and normalisation cleans this up:
 
 | Step | Default | What it does |
 |---|---|---|
-| Dehyphenation | on | `exam-\nple` → `example`, using a dictionary check to avoid mangling genuine hyphens |
-| Drop running heads | on | Repeated short lines matching the title or a page-number pattern |
+| Dehyphenation | on | `exam-\nple` → `example`, checked against the document's own vocabulary to avoid mangling genuine hyphens |
+| Drop running heads | on | Repeated short lines and page-number lines |
 | Footnote markers | on | Strips `[12]` and superscript markers |
 | Table of contents | on | Detects and drops leading dotted-leader blocks |
 | Paragraph rejoin | on | Reflows hard-wrapped lines into paragraphs — the wrapping is TypeIt's job |
-| Front/back matter | prompt | Offers to skip legal boilerplate (Gutenberg headers are formulaic and detectable) |
+| Front/back matter | on, reported | Removes legal boilerplate (Gutenberg headers are formulaic and detectable) |
 | Non-typeable characters | report | Reports any grapheme unreachable on a standard keyboard, with a count, before import |
 
-That last one matters. Importing text containing `—`, `"`, or `…` produces a test the user
+**On the dictionary.** There is no bundled word list. The document is the dictionary: the pass
+takes the words the text itself uses, and decides a line-break hyphen in descending order of
+evidence — the document spells the word joined somewhere else, it spells it hyphenated
+somewhere else, or both halves are words the document uses on their own. Failing all three the
+hyphen goes, because a hyphen landing exactly at a line ending is far more often a typesetter's
+than an author's. A bundled list would be one language's, would need generating and guarding
+like the Unicode tables, and would still be wrong about the names and jargon that most line
+breaks land in.
+
+**On the prompt.** Front matter is removed rather than prompted for, and the removal is in the
+report. There is no prompt at this layer to hand it to; the original bytes are kept in
+`content_raw`; and eight kilobytes of licence in a typing test is a worse outcome than a line
+in a report. `inspect_file` produces the same report *before* anything is stored, which is
+where a caller that wants to ask gets its answer.
+
+Every step is individually toggleable and the whole pass is off for source code, where each
+step would be actively wrong: dehyphenation joins `foo-\nbar`, paragraph rejoin puts a function
+on one line, `[1]` is a subscript rather than a footnote, and a line that is nothing but a
+number is a value rather than a page.
+
+The pass is idempotent, across every combination of the toggles, because re-importing a text
+after changing a setting is exactly running it twice.
+
+The last row matters most. Importing text containing `—`, `"`, or `…` produces a test the user
 cannot pass, and the current application would simply mark every attempt wrong forever.
 Reporting it up front — and flattening it by default
 ([GAMEPLAY §5.2](GAMEPLAY.md#52-normalisation-at-import)) — is the difference between a feature
 and a trap.
+
+The report counts each unreachable grapheme and says, for each, **whether normalisation will
+rescue it**. An em dash becomes a hyphen and stops being a problem; `č` does not. A single
+number would hide both: judged against ASCII — because TypeIt does not know the keyboard in
+front of the user — a page of Croatian looks as alarming as a page of smart quotes, and only
+one of the two is actually a trap. `ReadinessReport::unreachable_after_normalisation()` is the
+figure worth showing somebody before they agree to type a text.
 
 ---
 

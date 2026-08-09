@@ -372,9 +372,53 @@ application would simply mark every attempt at `—` wrong, forever.
 - Every step disableable, verified by a toggle matrix.
 
 **Acceptance**
-- [ ] The unreachable-character report appears **before** import completes, with the option to
-      flatten or cancel.
-- [ ] Idempotence holds across all toggle combinations.
+- [x] The unreachable-character report appears **before** import completes, with the option to
+      flatten or cancel. `inspect_file` does everything `import_file` does except the storing,
+      and both share one function, so the report somebody agreed to is produced by the import
+      they agreed to. Cancelling is not calling `import_file`; flattening is
+      `flatten_typography`, and the report answers for the settings actually in force rather
+      than for the defaults.
+- [x] Idempotence holds across all sixty-four toggle combinations, asserted by a matrix rather
+      than by argument. Re-importing a text after changing a setting *is* running the pass
+      twice, and a step that is stable on its own can still be unstable after another one has
+      moved the lines about.
+- [x] **The report says whether normalisation will rescue each character.** An em dash becomes
+      a hyphen and stops being a problem; `č` does not. Judged against ASCII, because TypeIt
+      does not know the keyboard in front of the user — which over-reports for anybody typing
+      their own language, and a single count would hide both cases at once. The question is
+      asked of the real normaliser rather than of a second copy of its table, so a list here
+      cannot drift into saying an em dash is handled when it is not.
+- [x] **The dictionary is the document.** There is no bundled word list: it would be one
+      language's, would need generating and guarding like the Unicode tables, and would still
+      be wrong about the names and jargon most line breaks land in. The evidence runs in
+      descending order — the document spells the word joined elsewhere, it spells it hyphenated
+      elsewhere, both halves are words it uses alone — and failing all three the hyphen goes,
+      because a hyphen at a line ending is far more often a typesetter's than an author's.
+- [x] A running head has to prove itself by repeating; a page number does not. A chapter title
+      appears once and somebody wants to type it, whereas a line that is nothing but a number
+      is a page number in any book. A repeated line ending in a full stop is a sentence
+      somebody said three times, and it stays.
+- [x] Dropping a page number that sat alone between two blank lines takes one of the blanks
+      with it. Otherwise every page of the book leaves a double paragraph break behind.
+- [x] Poetry survives, and the heuristic says what it is betting on: a block whose median line
+      is short was meant to be short. A long-lined poem *would* be reflowed, and that is the
+      documented cost of not having a way to ask the document what it is.
+- [x] Front matter is removed rather than prompted for. There is no prompt at this layer to
+      hand it to, the original bytes are kept in `content_raw`, and eight kilobytes of licence
+      in a typing test is a worse outcome than a line in a report. A sentence *mentioning*
+      Project Gutenberg is not a marker: the stars are checked as well as the name.
+- [x] The whole pass is off for source code, where every step would be actively wrong.
+      Dehyphenation joins `foo-\nbar`, paragraph rejoin puts a function on one line, `[1]` is a
+      subscript rather than a footnote, and a line that is nothing but a number is a value.
+- [x] A text without a trailing newline comes back without one, and an empty text stays empty.
+      Both were bugs in the first cut: one extra grapheme to type on every import that changed
+      nothing else is a behaviour change dressed up as a clean-up.
+- [x] `content_raw` holds the text as it *arrived*, not as the pass left it. The pass runs
+      before `store` sees anything, so without carrying the original through, the copy that
+      exists to have kept the running heads would be the copy they were removed from.
+- [x] Chapter boundaries survive the pass. It deletes and merges lines, so it returns a line
+      map and the boundaries go through it — without which dropping one running head moves
+      every chapter marker in a book up by a line (TX-005).
 
 ---
 
@@ -532,11 +576,15 @@ density-scoring heuristic in TEXT_SOURCES §5.
 ## Phase exit criteria
 
 **Waves 1–2 (in `v2.0.0-beta.1`)**
-- [ ] Markdown, code, and subtitle files import cleanly.
-- [ ] Sections work end to end; an ebook-sized text is typed chapter by chapter with per-chapter
-      bookmarks.
-- [ ] Schema v2 migrates without data loss, and the CI schema guard has been watched to fail.
-- [ ] The typing-readiness pass reports unreachable characters before import.
+- [x] Markdown, code, and subtitle files import cleanly.
+- [x] Sections work end to end; a text is stored chapter by chapter, with the bookmark
+      recording which chapter its offset is in. Reading that back on screen is TI-118's and
+      TX-012's, and neither is in this phase.
+- [x] The schema migrates without data loss — as `user_version` 3, not 2; TI-109 took 2 — and
+      the schema guard's own fixtures in `version-tools-test.sh` are what have been watched to
+      fail.
+- [x] The typing-readiness pass reports unreachable characters before import, through
+      `inspect_file`, and says for each whether normalisation will rescue it.
 
 **Waves 3–4 (in `v2.1.0`)**
 - [ ] A real EPUB imports with correct chapters, metadata, and readable text.

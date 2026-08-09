@@ -47,9 +47,8 @@ namespace typeit::app {
 
     }  // namespace
 
-    core::Result<ImportOutcome> TextLibraryService::import_file(const std::filesystem::path& path,
-                                                                std::optional<std::string> title) {
-        // Fetch, then extract, then the shared tail (TX-001, ADR-013). The
+    core::Result<TextLibraryService::Prepared> TextLibraryService::prepare(const std::filesystem::path& path) {
+        // Fetch, extract, then make typeable (TX-001, TX-007, ADR-013). The
         // stages are new; the behaviour is not — a missing file and a directory
         // still come back as the different codes the port has always given,
         // because the fetcher reads through that same port.
@@ -75,18 +74,53 @@ namespace typeit::app {
         // otherwise. Code is the case that needs one: normalised as prose, its
         // indentation collapses to single spaces and the one thing the code
         // extractor promises is gone before anybody types a character.
-        // Assembled before the text is moved: the boundaries index into it, and
-        // moving it out from under the argument that describes it would be
-        // reading a moved-from string. A named local rather than an argument
-        // list whose evaluation order is unspecified.
-        Extraction extraction{.boundaries = std::move(extracted->sections),
-                              .warnings = std::move(extracted->warnings),
-                              .mime = fetched->detected_mime,
-                              .extractor = std::string{extractor->name()},
-                              .author = std::move(extracted->author)};
-        return store(std::move(extracted->text), TextSource::File, path.string(),
-                     title.has_value() ? std::move(title) : std::optional<std::string>{fetched->suggested_title},
-                     extracted->normalization.value_or(normalization_), std::move(extraction));
+        const core::NormalizeOptions normalization = extracted->normalization.value_or(normalization_);
+
+        // The readiness pass deletes lines and merges others, so the
+        // extractor's chapter boundaries go through the line map it returns.
+        // Without that, dropping one running head moves every chapter marker in
+        // the book up by a line (TX-005, TX-007).
+        ReadinessResult typeable =
+                make_typeable(extracted->text, extracted->readiness.value_or(readiness_), normalization);
+        std::vector<SectionBoundary> boundaries = remapped(extracted->sections, extracted->text, typeable);
+        // Only when it changed something. The copy exists to hold what the
+        // running heads and page numbers were before they went, and keeping a
+        // byte-identical second copy of every text would double the database to
+        // answer a question nobody asks.
+        std::optional<std::string> as_imported = typeable.text == extracted->text
+                                                         ? std::nullopt
+                                                         : std::optional<std::string>{std::move(extracted->text)};
+
+        return Prepared{.text = std::move(typeable.text),
+                        .suggested_title = std::move(fetched->suggested_title),
+                        .normalization = normalization,
+                        .extraction = Extraction{.boundaries = std::move(boundaries),
+                                                 .warnings = std::move(extracted->warnings),
+                                                 .mime = fetched->detected_mime,
+                                                 .extractor = std::string{extractor->name()},
+                                                 .author = std::move(extracted->author),
+                                                 .readiness = std::move(typeable.report),
+                                                 .as_imported = std::move(as_imported)}};
+    }
+
+    core::Result<ReadinessReport> TextLibraryService::inspect_file(const std::filesystem::path& path) {
+        core::Result<Prepared> prepared = prepare(path);
+        if (!prepared) {
+            return std::unexpected{prepared.error()};
+        }
+        return std::move(prepared->extraction.readiness);
+    }
+
+    core::Result<ImportOutcome> TextLibraryService::import_file(const std::filesystem::path& path,
+                                                                std::optional<std::string> title) {
+        core::Result<Prepared> prepared = prepare(path);
+        if (!prepared) {
+            return std::unexpected{prepared.error()};
+        }
+        return store(
+                std::move(prepared->text), TextSource::File, path.string(),
+                title.has_value() ? std::move(title) : std::optional<std::string>{std::move(prepared->suggested_title)},
+                prepared->normalization, std::move(prepared->extraction));
     }
 
     core::Result<DirectoryImport> TextLibraryService::import_directory(const std::filesystem::path& path) {
@@ -181,7 +215,19 @@ namespace typeit::app {
     core::Result<ImportOutcome> TextLibraryService::import_text(std::string content, TextSource source,
                                                                 std::optional<std::string> origin,
                                                                 std::optional<std::string> title) {
-        return store(std::move(content), source, std::move(origin), std::move(title), normalization_, {});
+        // The readiness *steps* are off: a paste is what somebody meant to
+        // type, and reflowing their poem or deciding their `[1]` was a footnote
+        // would be editing it. The *report* is still produced, because they
+        // deserve to know it has em dashes in it either way.
+        ReadinessResult typeable = make_typeable(content, ReadinessOptions::none(), normalization_);
+        return store(std::move(content), source, std::move(origin), std::move(title), normalization_,
+                     Extraction{.boundaries = {},
+                                .warnings = {},
+                                .mime = std::nullopt,
+                                .extractor = std::nullopt,
+                                .author = std::nullopt,
+                                .readiness = std::move(typeable.report),
+                                .as_imported = std::nullopt});
     }
 
     core::Result<ImportOutcome> TextLibraryService::store(std::string content, TextSource source,
@@ -190,6 +236,10 @@ namespace typeit::app {
                                                           const core::NormalizeOptions& normalization,
                                                           Extraction extraction) {
         std::vector<std::string> warnings = std::move(extraction.warnings);
+        // Every path that reaches here has already produced one; carried
+        // through so that a caller who never asked for the report still gets
+        // it rather than having to inspect the file a second time.
+        ReadinessReport readiness = std::move(extraction.readiness);
         if (content.size() > kMaxImportBytes) {
             // Naming the limit, because "too large" without a number is a
             // message that sends someone to the source code.
@@ -235,7 +285,10 @@ namespace typeit::app {
         // Result wrapping the optional.
         const std::optional<TextItem>& existing = found.value();
         if (existing.has_value()) {
-            return ImportOutcome{.id = existing->id, .already_present = true, .warnings = std::move(warnings)};
+            return ImportOutcome{.id = existing->id,
+                                 .already_present = true,
+                                 .warnings = std::move(warnings),
+                                 .readiness = std::move(readiness)};
         }
 
         core::Result<core::TextBuffer> buffer = core::TextBuffer::from_utf8(*normalized);
@@ -257,7 +310,14 @@ namespace typeit::app {
         // Only when normalising changed something. Keeping a byte-identical
         // copy of every text would double the database to answer a question
         // nobody asks.
-        item.content_raw = content == *normalized ? std::nullopt : std::optional<std::string>{std::move(content)};
+        // The extractor's own output when the readiness pass rewrote it,
+        // otherwise the content as it arrived here — and nothing at all when
+        // neither step changed a byte.
+        if (extraction.as_imported.has_value()) {
+            item.content_raw = std::move(extraction.as_imported);
+        } else if (content != *normalized) {
+            item.content_raw = std::move(content);
+        }
         item.content_sha256 = hash;
         item.grapheme_count = buffer->size();
         item.word_count = buffer->word_count();
@@ -276,7 +336,10 @@ namespace typeit::app {
         if (!id) {
             return std::unexpected{id.error()};
         }
-        return ImportOutcome{.id = *id, .already_present = false, .warnings = std::move(warnings)};
+        return ImportOutcome{.id = *id,
+                             .already_present = false,
+                             .warnings = std::move(warnings),
+                             .readiness = std::move(readiness)};
     }
 
     core::Result<TextProgress> TextLibraryService::progress(core::TextId id) const {

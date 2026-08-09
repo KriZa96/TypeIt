@@ -377,6 +377,11 @@ namespace typeit::app {
         }
         extracted.sections = sections_of(kept, language);
         extracted.normalization = code_normalization();
+        // Every typing-readiness step would be wrong here (TX-007).
+        // Dehyphenation would join `foo-\nbar`, paragraph rejoin would put a
+        // function on one line, `[1]` is a subscript rather than a footnote, and
+        // a line that is nothing but a number is a value rather than a page.
+        extracted.readiness = ReadinessOptions::none();
         if (!language.empty()) {
             extracted.language = language;
         }

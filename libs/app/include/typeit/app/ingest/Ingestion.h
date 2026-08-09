@@ -23,6 +23,7 @@
 #include <string_view>
 #include <vector>
 
+#include "typeit/app/ingest/Readiness.h"
 #include "typeit/core/text/TextNormalizer.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
@@ -82,6 +83,16 @@ namespace typeit::app {
         /// output is not prose says so here rather than hoping the user has
         /// configured the library the way its format needs.
         std::optional<core::NormalizeOptions> normalization;
+
+        /// Typing-readiness steps this text needs instead of the library's
+        /// (TX-007).
+        ///
+        /// Empty for prose, which is what the defaults are for. Code is again
+        /// the case that forces it: every step would be wrong about a source
+        /// file — dehyphenation joins `foo-\nbar`, paragraph rejoin puts a
+        /// function on one line, and `[1]` is a subscript rather than a
+        /// footnote.
+        std::optional<ReadinessOptions> readiness;
 
         /// Things worth telling somebody about the text they just imported.
         ///

@@ -71,7 +71,35 @@ namespace typeit::app {
             return boundary.title;
         }
 
+        /// Where line `line` starts in `text`, in bytes.
+        [[nodiscard]] std::size_t byte_of_line(std::string_view text, std::size_t line) {
+            std::size_t at = 0;
+            for (std::size_t seen = 0; seen < line; ++seen) {
+                const std::size_t newline = text.find('\n', at);
+                if (newline == std::string_view::npos) {
+                    return text.size();
+                }
+                at = newline + 1;
+            }
+            return at;
+        }
+
     }  // namespace
+
+    std::vector<SectionBoundary> remapped(std::span<const SectionBoundary> boundaries, std::string_view extracted,
+                                          const ReadinessResult& typeable) {
+        std::vector<SectionBoundary> moved;
+        moved.reserve(boundaries.size());
+        for (const SectionBoundary& boundary: boundaries) {
+            const std::size_t line = typeable.line_from_source(line_of(extracted, boundary.start));
+            // The length is not carried across: it described the old text, and
+            // a stale length is worse than none. `sections_for` derives every
+            // end from the next start anyway.
+            moved.push_back(
+                    SectionBoundary{.title = boundary.title, .start = byte_of_line(typeable.text, line), .length = 0});
+        }
+        return moved;
+    }
 
     std::vector<TextSection> sections_for(std::span<const SectionBoundary> boundaries, std::string_view extracted,
                                           const core::TextBuffer& normalized) {

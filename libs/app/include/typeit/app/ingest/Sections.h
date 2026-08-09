@@ -18,10 +18,22 @@
 #include <vector>
 
 #include "typeit/app/ingest/Ingestion.h"
+#include "typeit/app/ingest/Readiness.h"
 #include "typeit/app/records/TextLibrary.h"
 #include "typeit/core/text/TextBuffer.h"
 
 namespace typeit::app {
+
+    /// The same boundaries, re-expressed against the text the typing-readiness
+    /// pass produced (TX-007).
+    ///
+    /// That pass deletes lines and merges others, so an extractor's boundary —
+    /// a byte offset into what *it* emitted — points somewhere else afterwards.
+    /// Dropping a single running head would otherwise move every chapter marker
+    /// in a book up by a line, which is a bookmark for Chapter 20 landing in
+    /// Chapter 19 by the end of it.
+    [[nodiscard]] std::vector<SectionBoundary> remapped(std::span<const SectionBoundary> boundaries,
+                                                        std::string_view extracted, const ReadinessResult& typeable);
 
     /// The sections of `normalized`, given where the extractor found them in
     /// `extracted`.
