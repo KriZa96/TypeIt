@@ -63,7 +63,7 @@ if(TYPEIT_BUILD_PROBES)
                          core.nodiscard.result_cannot_be_ignored PROPERTIES RESOURCE_LOCK build_directory)
 endif()
 
-add_executable(core_tests ChunkedProviderTest.cpp ConfigValidationTest.cpp DifficultyScoreTest.cpp ErrorMapTest.cpp FakeClockTest.cpp GraphemeTest.cpp KeyStatsTest.cpp KeystrokeLogTest.cpp LogBuilderTest.cpp ModeInterfaceTest.cpp MetricsAccuracyTest.cpp MetricsConsistencyTest.cpp MetricsRollingTest.cpp MetricsSpeedTest.cpp QuoteModeTest.cpp ResultTest.cpp SegmenterTest.cpp ShuffledSentenceProviderTest.cpp SessionTest.cpp Sha256Test.cpp TextBufferTest.cpp TextNormalizerTest.cpp TimedModeTest.cpp TimelineTest.cpp TypingModelTest.cpp TypingRulesTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp WholeTextProviderTest.cpp WordPoolProviderTest.cpp WidthTest.cpp WordCountModeTest.cpp WrapperTest.cpp ZenModeTest.cpp)
+add_executable(core_tests ChunkedProviderTest.cpp ConfigValidationTest.cpp DifficultyScoreTest.cpp ErrorMapTest.cpp FakeClockTest.cpp GraphemeTest.cpp KeyStatsTest.cpp KeystrokeLogTest.cpp LogBuilderTest.cpp ModeInterfaceTest.cpp MetricsAccuracyTest.cpp PacerTest.cpp MetricsConsistencyTest.cpp MetricsRollingTest.cpp MetricsSpeedTest.cpp QuoteModeTest.cpp ResultTest.cpp SegmenterTest.cpp ShuffledSentenceProviderTest.cpp SessionTest.cpp Sha256Test.cpp TextBufferTest.cpp TextNormalizerTest.cpp TimedModeTest.cpp TimelineTest.cpp TypingModelTest.cpp TypingRulesTest.cpp UnitsTest.cpp Utf8DecoderTest.cpp WholeTextProviderTest.cpp WordPoolProviderTest.cpp WidthTest.cpp WordCountModeTest.cpp WrapperTest.cpp ZenModeTest.cpp)
 
 # The corpora are found through the path CMake compiled in, never through
 # __FILE__ (defect C2): a test that only passes on the machine that built it is

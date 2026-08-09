@@ -51,6 +51,25 @@ The ghost cursor. Position advances as `pacer += Δt · V · 5/60` graphemes.
 - Zero speed does not advance; negative speed is rejected.
 - Position never decreases except via `push_back`.
 
+**Acceptance**
+- [x] Every case above is a named test, plus the ones only writing it revealed.
+- [x] **The first tick establishes the origin rather than covering the epoch.** A pacer handed a
+      wall-clock timestamp would otherwise cover forty-five thousand years of graphemes on its
+      first call — which is the same class of bug as 1.0 starting its clock at the menu.
+- [x] Time going backwards advances nothing. A suspend or an NTP step must not teleport the
+      pacer through the text and end a run the typist was winning.
+- [x] The remainder of the step the grace period ends in still counts, so a race under a 60 Hz
+      ticker starts in the same place as one under 30. Throwing it away would make the start
+      depend on how often somebody happened to call `advance`.
+- [x] A negative speed reads as stationary rather than as reverse. Nothing but the ramp law
+      writes this and the ramp law clamps, so a negative is a caller's bug — and the safe
+      reading of a bug is "does not move".
+- [x] `push_back` near the beginning stops at the beginning rather than going negative, which
+      would be an index every reader has to defend against for a case that means "the start".
+- [x] The position is fractional and only rounded when somebody asks where to draw it. Rounding
+      each step would lose a fraction of a grapheme per frame — at sixty frames a second, a
+      pacer running slow by more than a word a minute.
+
 ---
 
 ## TI-122 — `DifficultyController` — the ramp law
