@@ -156,11 +156,16 @@ namespace typeit::app {
         /// extractor can override it (`ExtractedText::normalization`) and a
         /// source file normalised as prose is a source file with its
         /// indentation collapsed into single spaces.
+        ///
+        /// `boundaries` are where the extractor found chapters, in the bytes it
+        /// produced; they are mapped onto the normalised text here, which is
+        /// the only place that has both halves to map between (TX-005).
         [[nodiscard]] core::Result<ImportOutcome> store(std::string content, TextSource source,
                                                         std::optional<std::string> origin,
                                                         std::optional<std::string> title,
                                                         const core::NormalizeOptions& normalization,
-                                                        std::vector<std::string> warnings);
+                                                        std::vector<std::string> warnings,
+                                                        std::vector<SectionBoundary> boundaries = {});
 
         IFileSystem* files_;
         core::IWallClock* clock_;

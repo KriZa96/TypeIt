@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "typeit/app/ingest/PlainText.h"
+#include "typeit/app/ingest/Sections.h"
 #include "typeit/app/records/TextLibrary.h"
 #include "typeit/core/text/Difficulty.h"
 #include "typeit/core/text/TextBuffer.h"
@@ -74,9 +75,15 @@ namespace typeit::app {
         // otherwise. Code is the case that needs one: normalised as prose, its
         // indentation collapses to single spaces and the one thing the code
         // extractor promises is gone before anybody types a character.
+        // `text` is moved last: the boundaries index into it, and moving it out
+        // from under the argument that describes it would be reading a moved-from
+        // string. Named locals rather than an argument list whose evaluation
+        // order is unspecified.
+        std::vector<SectionBoundary> boundaries = std::move(extracted->sections);
+        std::vector<std::string> warnings = std::move(extracted->warnings);
         return store(std::move(extracted->text), TextSource::File, path.string(),
                      title.has_value() ? std::move(title) : std::optional<std::string>{fetched->suggested_title},
-                     extracted->normalization.value_or(normalization_), std::move(extracted->warnings));
+                     extracted->normalization.value_or(normalization_), std::move(warnings), std::move(boundaries));
     }
 
     core::Result<DirectoryImport> TextLibraryService::import_directory(const std::filesystem::path& path) {
@@ -178,7 +185,8 @@ namespace typeit::app {
                                                           std::optional<std::string> origin,
                                                           std::optional<std::string> title,
                                                           const core::NormalizeOptions& normalization,
-                                                          std::vector<std::string> warnings) {
+                                                          std::vector<std::string> warnings,
+                                                          std::vector<SectionBoundary> boundaries) {
         if (content.size() > kMaxImportBytes) {
             // Naming the limit, because "too large" without a number is a
             // message that sends someone to the source code.
@@ -232,6 +240,12 @@ namespace typeit::app {
             return std::unexpected{buffer.error()};
         }
 
+        // Before `content` is moved out below. The boundaries index into it, so
+        // reading it afterwards would be reading a moved-from string — and the
+        // one case that matters, a text whose normalisation changed nothing, is
+        // exactly the case where the move does not happen and the bug hides.
+        std::vector<TextSection> sections = sections_for(boundaries, content, *buffer);
+
         TextItem item;
         item.title = title.has_value() && !title->empty() ? *std::move(title) : title_from_content(*buffer);
         item.source = source;
@@ -246,6 +260,11 @@ namespace typeit::app {
         item.word_count = buffer->word_count();
         item.difficulty = core::difficulty_score(*normalized);
         item.created_at = clock_->unix_now();
+        // Mapped onto the normalised buffer rather than passed through: the
+        // extractor's offsets are into bytes it emitted before any of this ran,
+        // and handing those on unchanged would be a chapter marker pointing
+        // wherever normalisation happened to leave it.
+        item.sections = std::move(sections);
 
         const core::Result<core::TextId> id = library_->add(item);
         if (!id) {

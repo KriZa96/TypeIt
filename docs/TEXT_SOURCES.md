@@ -83,7 +83,7 @@ path and reports a summary rather than failing on the first bad file (TX-004).
 ```cpp
 struct ExtractedText {
     std::string              text;
-    std::vector<TextSection> sections;   // chapters, articles, functions — may be empty
+    std::vector<SectionBoundary> sections;  // chapters, articles, functions — may be empty
     std::optional<std::string> title;
     std::optional<std::string> author;
     std::optional<std::string> language;
@@ -248,6 +248,21 @@ and a trap.
 Long content needs structure. `TextSection` records a title and a grapheme range, which lets
 the bookmark be per chapter, the library show "Chapter 4 of 31", and a session target one
 chapter rather than an arbitrary offset.
+
+Two types rather than one, because an extractor and a bookmark measure different things. A
+`SectionBoundary` is what an extractor found, in bytes of its own output and before
+normalisation ran — which is everything it can honestly know. A `TextSection` is graphemes into
+the normalised text, which is the unit a bookmark is in. Import maps the first onto the second,
+through line numbers: every boundary either extractor produces sits at the start of a line, and
+normalisation is the one step here that promises to leave line structure alone. Passing the
+byte offsets through unchanged would put the marker for Chapter 4 inside Chapter 3 on any text
+with typography in it, which is every book.
+
+The sections of a text are contiguous, non-overlapping, and cover it end to end. A bookmark is
+one number, so wherever it lands it must land in exactly one section: a gap makes "which
+chapter is this" unanswerable and an overlap gives it two answers. A text nobody found
+structure in therefore has *one* section covering all of it rather than none — the two describe
+the same text, and only one of them needs handling everywhere downstream.
 
 ```sql
 -- schema v2

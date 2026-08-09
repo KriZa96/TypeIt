@@ -26,6 +26,32 @@ namespace typeit::app {
     [[nodiscard]] std::string_view to_string(TextSource source);
     [[nodiscard]] std::optional<TextSource> text_source_from(std::string_view name);
 
+    /// One named run of a text: a chapter, an article, a function (TX-005).
+    ///
+    /// Graphemes, and after normalisation — the same unit a bookmark is
+    /// measured in, so "which chapter is this offset in" is a comparison rather
+    /// than a conversion. An extractor's `SectionBoundary` is bytes into its own
+    /// output and is mapped onto this at import; keeping the two apart is what
+    /// stops a stale byte offset being read as a grapheme one.
+    ///
+    /// The sections of a text are contiguous, non-overlapping, and cover it
+    /// end to end, because a bookmark measured in offsets has to land inside a
+    /// section wherever it lands. A text nobody found any structure in has one
+    /// section covering all of it, rather than none.
+    struct TextSection {
+        /// Position in the text's own list, from zero. What "Chapter 4 of 31"
+        /// counts, and what a bookmark records.
+        std::size_t idx = 0;
+        /// Absent where the format gave no name — the prose before a document's
+        /// first heading is a section and is not called anything.
+        std::optional<std::string> title;
+        core::GraphemeIndex start{0};
+        /// Exclusive, and equal to the next section's `start`.
+        core::GraphemeIndex end{0};
+
+        friend bool operator==(const TextSection&, const TextSection&) = default;
+    };
+
     /// A text with its content. What an import produces and what a run reads.
     struct TextItem {
         core::TextId id{0};
@@ -46,6 +72,8 @@ namespace typeit::app {
         /// The 1–10 advisory score from TECHNICAL section 8.3.
         std::optional<double> difficulty;
         core::Millis created_at{0};
+        /// Always at least one, covering the whole text (TX-005).
+        std::vector<TextSection> sections;
     };
 
     /// A text as the library screen lists it: everything except the content,

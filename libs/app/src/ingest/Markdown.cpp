@@ -416,10 +416,10 @@ namespace typeit::app {
                 if (sections_.empty() && !trimmed(out_).empty()) {
                     // Content before the first heading belongs to a section
                     // too, or a bookmark landing in it would belong to none.
-                    sections_.push_back(TextSection{.title = {}, .start = 0, .length = out_.size()});
+                    sections_.push_back(SectionBoundary{.title = {}, .start = 0, .length = out_.size()});
                 }
                 close();
-                sections_.push_back(TextSection{.title = std::move(title), .start = out_.size(), .length = 0});
+                sections_.push_back(SectionBoundary{.title = std::move(title), .start = out_.size(), .length = 0});
             }
 
             /// A heading is both a section boundary and a line of the text —
@@ -440,13 +440,13 @@ namespace typeit::app {
         private:
             void close() {
                 if (!sections_.empty()) {
-                    TextSection& open = sections_.back();
+                    SectionBoundary& open = sections_.back();
                     open.length = out_.size() - open.start;
                 }
             }
 
             std::string out_;
-            std::vector<TextSection> sections_;
+            std::vector<SectionBoundary> sections_;
         };
 
         /// Copies a fenced block verbatim and returns the line after it.

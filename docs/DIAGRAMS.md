@@ -631,10 +631,15 @@ classDiagram
     }
     class ExtractedText {
         +text : string
-        +sections : vector~TextSection~
+        +sections : vector~SectionBoundary~
         +title : optional~string~
         +author : optional~string~
         +language : optional~string~
+    }
+    class SectionBoundary {
+        +title : string
+        +start : size_t
+        +length : size_t
     }
     class TextSection {
         +idx : int
@@ -660,7 +665,8 @@ classDiagram
 
     IContentFetcher --> FetchedContent
     ITextExtractor --> ExtractedText
-    ExtractedText *-- TextSection
+    ExtractedText *-- SectionBoundary
+    SectionBoundary ..> TextSection : mapped onto the normalised text at import
     ExtractorRegistry o-- ITextExtractor
 ```
 

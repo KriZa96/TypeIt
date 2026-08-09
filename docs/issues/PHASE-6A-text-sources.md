@@ -259,6 +259,32 @@ chapter and the library can show "Chapter 4 of 31".
   test proves offsets are not stale.
 - Section titles are optional.
 
+**Acceptance**
+- [x] **Two types, not one.** An extractor knows byte offsets into the bytes it emitted, before
+      normalisation; a bookmark is a grapheme offset into the text after it. Calling both
+      `TextSection` was the setup for reading one as the other, so the extractor's is
+      `SectionBoundary` and never leaves the pipeline. Import maps between them, through line
+      numbers: every boundary either extractor produces sits at a line start, and normalisation
+      is the one step here that promises to leave line structure alone.
+- [x] Offsets are **not** the extractor's passed through, and a test says so by the amount they
+      differ. Normalising `A line — with     spaces` shortens it by six characters and by eight
+      bytes, which are not the same number; passing the byte offset on would put the marker for
+      Chapter 4 inside Chapter 3 on any text with typography in it, which is every book.
+- [x] The sections cover the text with no gap and no overlap, asserted by every case rather
+      than by one, because it is an invariant of the function and not a property of one input.
+      A bookmark is one number: a gap makes "which chapter is this" unanswerable, and an
+      overlap gives it two answers, which is worse.
+- [x] What comes before the first boundary is a section too — a source file's includes, a
+      document's opening prose. The Markdown extractor already did this for itself; doing it
+      once here covers the code extractor as well, whose first definition is rarely on line one.
+- [x] A text with no structure has **one** section rather than none. The two describe the same
+      text, and only one of them needs handling by everything downstream.
+- [x] A boundary past the end, or out of order, is clamped rather than believed. Both are
+      reachable — the first when normalisation drops a trailing heading — and neither should be
+      able to produce a range the buffer cannot be indexed by.
+- [x] An empty title is stored as no title. Empty and absent are the same thing said twice, and
+      a section displayed as `""` is a blank where a chapter name goes.
+
 ---
 
 ## TX-006 — Schema v2 and section persistence

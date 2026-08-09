@@ -29,12 +29,17 @@
 
 namespace typeit::app {
 
-    /// One run of text with a name — a chapter, an article, a function.
+    /// Where an extractor found a chapter, an article, a function.
     ///
     /// Offsets into the extracted text rather than copies of it: a book's
-    /// chapters would otherwise double the memory of importing it, and the
-    /// offsets are what a bookmark is measured in anyway.
-    struct TextSection {
+    /// chapters would otherwise double the memory of importing it.
+    ///
+    /// **Bytes, and before normalisation** — which is everything an extractor
+    /// can honestly know, because normalisation has not run yet and will move
+    /// every offset it does not delete. Import maps these onto the normalised
+    /// text and hands out `TextSection`s measured in graphemes (TX-005); this
+    /// type never leaves the pipeline, and nothing persists it.
+    struct SectionBoundary {
         std::string title;
         std::size_t start = 0;
         std::size_t length = 0;
@@ -62,7 +67,7 @@ namespace typeit::app {
         std::string text;
         /// Chapters, articles, functions. Empty is normal and means "one
         /// undivided text", which is what a plain file is.
-        std::vector<TextSection> sections;
+        std::vector<SectionBoundary> sections;
         std::optional<std::string> title;
         std::optional<std::string> author;
         std::optional<std::string> language;
