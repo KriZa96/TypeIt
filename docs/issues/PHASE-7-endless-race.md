@@ -201,8 +201,59 @@ Lives, grace window, catch detection, push-back, and termination.
   pacer speed near 60 and is caught only after a sustained slowdown.
 
 **Acceptance**
-- [ ] The grace-window behaviour is tested at, just below, and just above the threshold.
-- [ ] The convergence property passes end to end through `--simulate`.
+- [x] The grace-window behaviour is tested at, just below, and just above the threshold — the
+      one duration that decides whether a fumble is survivable, so it is asserted on both sides
+      of itself rather than somewhere comfortably either side.
+- [x] Nothing at all happens during the opening grace, catching included. The typist has typed
+      nothing and the lead is zero, which is *exactly* the condition for being caught; a grace
+      that held only the pacer still ended the run 300 ms into the five seconds meant for
+      reading the first line. Found by test, not by reasoning.
+- [x] Regaining a lead resets the grace timer, asserted over twenty stumbles — otherwise a race
+      is lost by accumulating 300 ms of fumbles across ten minutes, which is every race.
+- [x] A backspace is not an attempt, so the accuracy gate cannot be moved by deleting rather
+      than by typing. `Corrected` counts as a miss, as first-attempt accuracy does everywhere
+      else in this project.
+- [x] Nothing typed yet reads as full accuracy rather than none. Opening at zero would have the
+      gate back the speed off before the first key is pressed.
+- [x] Being caught with lives left pushes the ghost back, applies the penalty and refreshes the
+      displayed lead in the same breath — the HUD should show the ghost where the push-back put
+      it, not where it was a moment before somebody lost a life.
+- [ ] **The convergence property does not hold, and cannot with the law as documented.**
+      See below; this box stays open on purpose.
+
+### The convergence property contradicts the ramp law
+
+This issue asks for "a scripted player typing at a constant 60 WPM with 99% accuracy converges
+to a pacer speed near 60 and is caught only after a sustained slowdown". [GAMEPLAY
+§3.2](../GAMEPLAY.md#32-the-ramp-law) specifies a ramp that reads the **lead** and not the rate
+the lead is changing at. Both cannot be true.
+
+The lead is the integral of the speed difference, so by the time the ghost is faster than the
+typist there is a large accumulated lead still to burn off — and the ramp keeps climbing for the
+whole of it, because `f(lead)` is saturated the entire time. That is integrator windup, and the
+overshoot is **structural rather than a matter of constants**: no value of `k_up` or `k_down`
+removes it.
+
+Measured, from a simulation of §3.2 written independently of the implementation and then
+confirmed against it:
+
+| Typist | Start | Peak pacer speed | Caught at |
+|---|---|---|---|
+| 60 WPM | 30 | 90 | 2 min 8 s |
+| 60 WPM | 20 | 100 | 2 min 35 s |
+| 90 WPM | 30 | 150 | 3 min 35 s |
+| 40 WPM | 20 | 60 | 1 min 52 s |
+
+The mode still works, and arguably still does what §3 asks of it — "keep the player in the band
+just above their sustainable speed **for as long as possible**" is a mode that ends. But it ends
+for a typist who never slowed down, at a pacer speed half again their own, which is not what
+TI-124 predicted.
+
+`RaceModeTest` asserts what the law measurably does rather than what the issue hoped, so a
+change here surfaces as a decision somebody made. Resolving it needs a term the law does not
+have — the simplest being to stop climbing while the lead is *shrinking*, which is one
+comparison and one stored value. That is a design decision rather than a tuning one, so it is
+recorded here for TI-129 rather than taken unilaterally.
 
 ---
 
@@ -319,6 +370,9 @@ otherwise never happens.
 - [ ] All `DifficultyController` properties pass: no gain below `A_min`, dead-band hysteresis,
       monotone response to lead, recovery after a stumble.
 - [ ] The convergence property (constant-rate player → matching pacer speed) passes end to end.
+      **Blocked on a contradiction in the specification** — see TI-124. The documented ramp law
+      overshoots by construction, and the property cannot hold without a term the law does not
+      have.
 - [ ] The progression property (improving player → increasing start speed) passes.
 - [ ] The pacer does not visibly stutter.
 - [ ] Endless mode runs for 10 minutes with bounded memory.
