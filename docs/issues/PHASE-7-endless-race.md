@@ -155,6 +155,28 @@ Gentle / Standard / Brutal, plus `custom`, with every value overridable in `[rac
   versus Brutal — asserted on the parameters, so a future edit to the table cannot silently
   invert the difficulty ordering.
 
+**Acceptance**
+- [x] Each preset holds exactly the values in the GAMEPLAY §3.5 column that explains it, so the
+      table and the document cannot drift apart.
+- [x] **The ordering is asserted on the parameters across seven axes** — ramp up, ramp down,
+      accuracy gate, grace, lives, start factor, comfort lead. A "Gentle" that ramps faster than
+      "Brutal" is a bug nobody would ever report, because both still produce a working race.
+- [x] `k_down ≥ k_up` in every preset, which is what makes a stumble breathing room rather than
+      the start of a slide. Brutal is the equality case, deliberately.
+- [x] A named preset uses the table and **ignores** the explicit values. Otherwise a stale
+      `ramp_up` left in a file from an afternoon of experimenting follows somebody into every
+      preset they pick afterwards, and "standard" stops meaning the same thing in two config
+      files. Only `custom` reads them.
+- [x] A misspelled preset is named in the error rather than falling back to Standard — a typo
+      in a difficulty is somebody playing the wrong game and wondering why.
+- [x] The cross-validation is on `RaceParams`, not on `RaceConfig`. A preset, a command line and
+      a settings screen can all produce a parameter set, and only one of those three is a file;
+      the per-field ranges stay where they were, in the config validator.
+- [x] `catch_penalty` and `start_factor` are in `[race]` now. GAMEPLAY §3.5 says every value is
+      overridable and these two were the ones that were not.
+- [x] `custom` is not a preset. It is a real configuration value and the *absence* of a
+      difficulty, so the two questions stay apart in the type.
+
 ---
 
 ## TI-124 — `RaceMode`

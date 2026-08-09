@@ -128,6 +128,10 @@ namespace typeit::core {
                     in_range("race.grace_ms", race.grace_ms, 0, 10'000),
                     in_range("race.lives", race.lives, 1, 100),
                     in_range("race.sustain_window_s", race.sustain_window_s, 1, 3'600),
+                    // Open at the top: a penalty of 1 sets the speed to zero
+                    // and the race stops being one.
+                    in_range("race.catch_penalty", race.catch_penalty, 0.0, 0.999),
+                    in_range("race.start_factor", race.start_factor, 0.001, 1.0),
             });
             if (!ranges) {
                 return ranges;

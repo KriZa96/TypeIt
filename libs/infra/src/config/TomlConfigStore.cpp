@@ -197,6 +197,8 @@ namespace typeit::infra {
             loader.field<std::int64_t>("race.lives", [](Config& c) -> auto& { return c.race.lives; });
             loader.field<std::int64_t>("race.sustain_window_s",
                                        [](Config& c) -> auto& { return c.race.sustain_window_s; });
+            loader.field<double>("race.catch_penalty", [](Config& c) -> auto& { return c.race.catch_penalty; });
+            loader.field<double>("race.start_factor", [](Config& c) -> auto& { return c.race.start_factor; });
 
             loader.field<bool>("history.keep_keystroke_logs",
                                [](Config& c) -> auto& { return c.history.keep_keystroke_logs; });
@@ -379,7 +381,10 @@ namespace typeit::infra {
         out << "lead_scale         = " << config.race.lead_scale << "\n";
         out << "grace_ms           = " << config.race.grace_ms << "\n";
         out << "lives              = " << config.race.lives << "\n";
-        out << "sustain_window_s   = " << config.race.sustain_window_s << "\n\n";
+        out << "sustain_window_s   = " << config.race.sustain_window_s << "\n";
+        out << "catch_penalty      = " << config.race.catch_penalty << "           # speed lost on being caught\n";
+        out << "start_factor       = " << config.race.start_factor
+            << "          # fraction of your sustained best the next race starts at\n\n";
 
         out << "[history]\n";
         out << "keep_keystroke_logs = " << boolean(config.history.keep_keystroke_logs)

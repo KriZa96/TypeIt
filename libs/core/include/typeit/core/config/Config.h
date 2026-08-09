@@ -71,6 +71,12 @@ namespace typeit::core {
         std::int64_t grace_ms = 300;
         std::int64_t lives = 1;
         std::int64_t sustain_window_s = 10;
+        /// What being caught costs in speed, as a fraction (GAMEPLAY §3.3).
+        double catch_penalty = 0.10;
+        /// `α`: the fraction of the sustained best the next race starts at
+        /// (GAMEPLAY §3.4). Both are here because that section says every value
+        /// is overridable, and these two were the ones that were not.
+        double start_factor = 0.85;
     };
 
     struct HistoryConfig {
