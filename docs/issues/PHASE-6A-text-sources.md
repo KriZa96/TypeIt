@@ -239,6 +239,9 @@ already cut into short lines — unusually good typing material.
       somebody looking for the wrong mistake.
 - [x] Each file in a folder goes through its own extractor, so the Markdown arrives stripped
       and the source file arrives with its indentation, without anybody saying which was which.
+- [x] `--import-dir` reaches the service. The flag was parsed and answered "not built yet" for
+      as long as the capability existed without it, which is a worse state than not having the
+      flag: it says the feature is missing when it is there.
 - [x] `PlainTextExtractor` is down to `text/plain` alone. Markdown, code and subtitles were
       parked on it through TX-001 so that nothing which imported before the split stopped
       importing during it; each has taken its types back.

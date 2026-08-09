@@ -22,6 +22,27 @@ namespace typeit::infra {
             return std::move(*database);
         }
 
+        // ---- the SQL this project needs to exist -----------------------------
+
+        TEST(SqliteDatabaseTest, TheOptionalSqlFunctionsThisProjectUsesArePresent) {
+            // `floor()` has been opt-in since SQLite 3.35, and the daily-totals
+            // query needs it. The build prefers a system SQLite and falls back
+            // to the amalgamation, so this is a property of whichever one was
+            // found rather than of the source — which is exactly why it is
+            // asserted here, at the seam, rather than left to surface as `no
+            // such function: FLOOR` from inside a history query.
+            //
+            // That is not hypothetical: it is what every Windows build did,
+            // unnoticed, for as long as the Windows job failed before its tests
+            // ever ran.
+            SqliteDatabase database = in_memory();
+
+            const Result<std::int64_t> floored = database.query_int("SELECT CAST(FLOOR(-1.5) AS INTEGER)");
+
+            ASSERT_TRUE(floored) << (floored ? "" : floored.error().context);
+            EXPECT_EQ(*floored, -2) << "and it floors rather than truncating, which is the reason it is used";
+        }
+
         /// A table to write into. Every test that needs one needs the same one.
         void make_table(SqliteDatabase& database) {
             ASSERT_TRUE(database.execute("CREATE TABLE note (id INTEGER PRIMARY KEY, body TEXT NOT NULL)"));

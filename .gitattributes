@@ -1,0 +1,20 @@
+# Line endings are LF in the repository and LF in the working tree, on every
+# platform.
+#
+# Git's default on Windows is to convert LF to CRLF on checkout, which is fine
+# for source a compiler reads and wrong for every file this project compares
+# byte for byte. Two of those already exist:
+#
+#   * tests/tui/goldens/* are rendered terminal screens, read in binary mode and
+#     compared against what the widgets produced. A CRLF checkout fails all
+#     fourteen of them on Windows and nowhere else — which is exactly what the
+#     Windows job found the first time it got far enough to run its tests.
+#   * libs/infra/schema/*.sql is read at build time and embedded in the binary,
+#     so a CRLF checkout ships a different schema string than a LF one.
+#
+# `text=auto` still normalises to LF on commit; `eol=lf` is what stops the
+# conversion back on the way out.
+* text=auto eol=lf
+
+# Rendered screens: never touched, never diffed as text.
+tests/tui/goldens/* -text

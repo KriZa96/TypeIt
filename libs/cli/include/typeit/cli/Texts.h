@@ -22,7 +22,22 @@ namespace typeit::cli {
 
     /// `--import PATH`. Reports the id, and says plainly when the content was
     /// already there rather than pretending to have done something.
+    ///
+    /// Reports what the extractor and the typing-readiness pass had to say as
+    /// well (TX-003, TX-007). A source file that mixes tabs and spaces, or a
+    /// chapter with four hundred characters no keyboard can reach, is worth
+    /// knowing about before somebody wonders why they cannot type it — and a
+    /// command line has nowhere else to put that.
     [[nodiscard]] core::Result<std::string> import_text(app::TextLibraryService& library, const CliOptions& options);
+
+    /// `--import-dir DIR`. Every supported file in the folder, one text apiece.
+    ///
+    /// Reports rather than fails: one unreadable file in a folder of two
+    /// hundred does not cost somebody the other hundred and ninety-nine, so the
+    /// summary names what went in and what did not, with the reason beside the
+    /// filename (TX-004).
+    [[nodiscard]] core::Result<std::string> import_directory(app::TextLibraryService& library,
+                                                             const CliOptions& options);
 
     /// `--list-texts`. One header line, then one line per text: id, words,
     /// difficulty, progress, title. Tab-separated.

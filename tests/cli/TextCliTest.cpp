@@ -89,6 +89,84 @@ namespace typeit::cli {
             EXPECT_EQ(said.error().code, ErrorCode::FileNotFound);
         }
 
+        TEST_F(TextCliTest, ImportSaysWhatTheExtractorAndTheReadinessPassFound) {
+            // Otherwise both are computed and thrown away: a command line has
+            // nowhere else to put them, and a file that mixes tabs and spaces
+            // is one somebody needs telling about before they wonder why the
+            // indentation will not match (TX-003, TX-007).
+            files_.add_file("mixed.py", "def one():\n\treturn 1\n  also indented, with spaces this time\n");
+            CliOptions options;
+            options.operand = "mixed.py";
+
+            const core::Result<std::string> said = import_text(service_, options);
+
+            ASSERT_TRUE(said) << (said ? "" : said.error().context);
+            EXPECT_NE(said->find("tabs and spaces"), std::string::npos) << *said;
+        }
+
+        TEST_F(TextCliTest, ImportCountsWhatAKeyboardCannotReachAfterFlattening) {
+            // The em dash is flattened and says nothing; `č` is not, and does.
+            files_.add_file("hr.txt", "Čvrsto — nešto o žitu, i to više puta over here.");
+            CliOptions options;
+            options.operand = "hr.txt";
+
+            const core::Result<std::string> said = import_text(service_, options);
+
+            ASSERT_TRUE(said) << (said ? "" : said.error().context);
+            EXPECT_NE(said->find("cannot reach"), std::string::npos) << *said;
+        }
+
+        TEST_F(TextCliTest, AnOrdinaryImportSaysNothingExtra) {
+            files_.add_file("plain.txt", "the quick brown fox jumps over the lazy dog");
+            CliOptions options;
+            options.operand = "plain.txt";
+
+            const core::Result<std::string> said = import_text(service_, options);
+
+            ASSERT_TRUE(said);
+            EXPECT_EQ(std::ranges::count(*said, '\n'), 1) << "one line, and no advice nobody needed: " << *said;
+        }
+
+        // ---- importing a folder -------------------------------------------------
+
+        TEST_F(TextCliTest, ImportingAFolderCountsWhatWentInAndWhatDidNot) {
+            files_.add_file("/texts/one.txt", "the quick brown fox jumps over the lazy dog");
+            files_.add_file("/texts/two.txt", "a second text, which is also long enough to import");
+            files_.add_file("/texts/empty.txt", "");
+            CliOptions options;
+            options.operand = "/texts";
+
+            const core::Result<std::string> said = import_directory(service_, options);
+
+            ASSERT_TRUE(said) << (said ? "" : said.error().context);
+            EXPECT_NE(said->find("imported 2 texts"), std::string::npos) << *said;
+            EXPECT_NE(said->find("skipped 1"), std::string::npos) << *said;
+        }
+
+        TEST_F(TextCliTest, TheReasonAFileWasSkippedTravelsWithItsName) {
+            // A count of failures says something is wrong without saying what.
+            files_.add_file("/texts/good.txt", "the quick brown fox jumps over the lazy dog");
+            files_.add_file("/texts/empty.txt", "");
+            CliOptions options;
+            options.operand = "/texts";
+
+            const core::Result<std::string> said = import_directory(service_, options);
+
+            ASSERT_TRUE(said);
+            EXPECT_NE(said->find("empty.txt"), std::string::npos) << *said;
+            EXPECT_NE(said->find("nothing here to type"), std::string::npos) << *said;
+        }
+
+        TEST_F(TextCliTest, ImportingAFolderThatIsNotThereIsReported) {
+            CliOptions options;
+            options.operand = "/nowhere";
+
+            const core::Result<std::string> said = import_directory(service_, options);
+
+            ASSERT_FALSE(said);
+            EXPECT_EQ(said.error().code, ErrorCode::FileNotFound);
+        }
+
         // ---- listing -----------------------------------------------------------
 
         TEST_F(TextCliTest, AnEmptyLibraryAnswersTheQuestionItWasAsked) {

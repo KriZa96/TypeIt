@@ -520,7 +520,7 @@ namespace {
         return kOk;
     }
 
-    /// `--import`, `--list-texts` and `--remove-text`.
+    /// `--import`, `--import-dir`, `--list-texts` and `--remove-text`.
     int run_text_action(const typeit::cli::CliOptions& options, const typeit::infra::Environment& environment) {
         const Result<std::filesystem::path> directory = data_directory(options, environment);
         if (!directory) {
@@ -535,6 +535,9 @@ namespace {
         switch (options.action) {
             case typeit::cli::Action::Import:
                 text = typeit::cli::import_text((*library)->service, options);
+                break;
+            case typeit::cli::Action::ImportDirectory:
+                text = typeit::cli::import_directory((*library)->service, options);
                 break;
             case typeit::cli::Action::ListTexts:
                 text = typeit::cli::list_texts((*library)->repository, (*library)->service, options);
@@ -578,12 +581,12 @@ namespace {
             case typeit::cli::Action::Run:
                 return run_terminal(options, environment);
             case typeit::cli::Action::Import:
+            case typeit::cli::Action::ImportDirectory:
             case typeit::cli::Action::ListTexts:
             case typeit::cli::Action::RemoveText:
                 return run_text_action(options, environment);
-            case typeit::cli::Action::ImportDirectory:
             case typeit::cli::Action::ImportUrl:
-                return not_yet("importing a directory or a URL");
+                return not_yet("importing from a URL");
         }
         return kFailed;
     }

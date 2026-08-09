@@ -75,7 +75,14 @@ if(NOT TARGET SQLite::SQLite3)
                 SQLITE_OMIT_DEPRECATED
                 SQLITE_OMIT_LOAD_EXTENSION
                 SQLITE_OMIT_SHARED_CACHE
-                SQLITE_ENABLE_FTS5)
+                SQLITE_ENABLE_FTS5
+                # `floor()` and friends have been opt-in since SQLite 3.35, and
+                # the daily-totals query needs one. Without this the history
+                # screen fails with `no such function: FLOOR` on every build
+                # that does not find a system SQLite — which is every Windows
+                # build, and which nobody saw because the Windows job never got
+                # past compiling.
+                SQLITE_ENABLE_MATH_FUNCTIONS)
     if(UNIX)
         find_package(Threads REQUIRED)
         target_link_libraries(sqlite3_amalgamation PRIVATE Threads::Threads ${CMAKE_DL_LIBS})

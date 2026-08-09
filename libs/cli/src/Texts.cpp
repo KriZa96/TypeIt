@@ -32,6 +32,28 @@ namespace typeit::cli {
 
     }  // namespace
 
+    namespace {
+
+        /// What the pipeline thought worth mentioning, indented under the text
+        /// it is about.
+        ///
+        /// Extractor warnings first — a file that mixes tabs and spaces is
+        /// effectively untypeable and the typist has no way to see why — then
+        /// what the readiness pass did and what it could not fix. Silence is
+        /// the common case and prints nothing.
+        [[nodiscard]] std::string notes_on(const app::ImportOutcome& imported) {
+            std::string out;
+            for (const std::string& warning: imported.warnings) {
+                out += "  " + warning + "\n";
+            }
+            for (const std::string& line: imported.readiness.lines()) {
+                out += "  " + line + "\n";
+            }
+            return out;
+        }
+
+    }  // namespace
+
     core::Result<std::string> import_text(app::TextLibraryService& library, const CliOptions& options) {
         const core::Result<app::ImportOutcome> imported = library.import_file(options.operand);
         if (!imported) {
@@ -42,7 +64,34 @@ namespace typeit::cli {
         // adds the same article twice should learn that it was already there,
         // not that they now have two.
         const std::string what = imported->already_present ? "already in the library as" : "imported as";
-        return options.operand + ": " + what + " text " + std::to_string(imported->id.value) + "\n";
+        return options.operand + ": " + what + " text " + std::to_string(imported->id.value) + "\n" +
+               notes_on(*imported);
+    }
+
+    core::Result<std::string> import_directory(app::TextLibraryService& library, const CliOptions& options) {
+        const core::Result<app::DirectoryImport> summary = library.import_directory(options.operand);
+        if (!summary) {
+            return std::unexpected{summary.error()};
+        }
+
+        // Counts first, because that is the line somebody reads; the detail
+        // after it, because a count of failures says something went wrong
+        // without saying what.
+        std::string out = options.operand + ": imported " + std::to_string(summary->imported.size()) +
+                          (summary->imported.size() == 1 ? " text" : " texts");
+        if (!summary->skipped.empty()) {
+            out += ", skipped " + std::to_string(summary->skipped.size());
+        }
+        out += "\n";
+        for (const app::ImportOutcome& imported: summary->imported) {
+            out += "  text " + std::to_string(imported.id.value) +
+                   (imported.already_present ? " (already in the library)" : "") + "\n";
+            out += notes_on(imported);
+        }
+        for (const std::string& skipped: summary->skipped) {
+            out += "  skipped " + skipped + "\n";
+        }
+        return out;
     }
 
     core::Result<std::string> list_texts(const app::ITextLibraryRepository& library,
