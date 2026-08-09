@@ -20,7 +20,9 @@ namespace typeit::core {
 
     }  // namespace
 
-    RollingWpm::RollingWpm(const TextBuffer& target, Millis window) : target_{target.graphemes()}, window_{window} {
+    RollingWpm::RollingWpm(const TextBuffer& target, Millis window) : RollingWpm{target.graphemes(), window} {}
+
+    RollingWpm::RollingWpm(std::span<const Grapheme> target, Millis window) : target_{target}, window_{window} {
         assert(window.value > 0 && "a window of no time holds no keystrokes");
     }
 

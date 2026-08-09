@@ -12,8 +12,10 @@
 
 #include <cstddef>
 #include <deque>
+#include <optional>
 #include <string_view>
 
+#include "typeit/core/metrics/RollingWpm.h"
 #include "typeit/core/modes/IMode.h"
 #include "typeit/core/race/DifficultyController.h"
 #include "typeit/core/race/Pacer.h"
@@ -46,6 +48,19 @@ namespace typeit::core {
         /// The speed at which accuracy first collapsed, if it has. The seed of
         /// the speed-wall analysis (TI-128).
         Wpm wall{0.0};
+
+        /// Gross WPM over the last fifteen seconds, which is what an endless
+        /// run's HUD shows instead of a cumulative average (GAMEPLAY §2.5). In
+        /// a run with no end a cumulative average stops responding to what the
+        /// typist is doing now — an hour of practice makes the last two minutes
+        /// invisible.
+        Wpm rolling_wpm{0.0};
+        /// The highest that reading reached, which is what an endless run is
+        /// scored on since there is nothing to finish.
+        Wpm peak_rolling_wpm{0.0};
+        /// Graphemes attempted. The other half of an endless run's result: how
+        /// far, since there is no "how much of it".
+        std::size_t distance = 0;
     };
 
     class RaceMode final : public IMode {
@@ -93,6 +108,9 @@ namespace typeit::core {
         bool paced_;
 
         RaceProgress progress_;
+        /// Built at `on_start`, because it needs the target and a mode is not
+        /// handed one until then.
+        std::optional<RollingWpm> rolling_;
         Millis started_at_{0};
         Millis now_{0};
         bool started_ = false;

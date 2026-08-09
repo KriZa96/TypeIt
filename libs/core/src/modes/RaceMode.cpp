@@ -44,7 +44,8 @@ namespace typeit::core {
         progress_.target_speed = controller_.speed();
     }
 
-    void RaceMode::on_start(Millis at, const TypingModel& /*model*/) {
+    void RaceMode::on_start(Millis at, const TypingModel& model) {
+        rolling_.emplace(model.target());
         started_at_ = at;
         now_ = at;
         started_ = true;
@@ -61,6 +62,7 @@ namespace typeit::core {
             // would let the gate be moved by deleting rather than by typing.
             return;
         }
+        ++progress_.distance;
         record_attempt(was_first_time_correct(model, event.target));
         // The lead has just changed, so the chase is re-evaluated on the
         // keystroke as well as on the tick — otherwise being caught is only
@@ -132,6 +134,13 @@ namespace typeit::core {
         now_ = Millis{std::max(now_.value, now.value)};
         progress_.elapsed = Millis{now_.value - started_at_.value};
         progress_.accuracy = rolling_accuracy();
+        if (rolling_.has_value()) {
+            // `now_` rather than `now`: the window's left edge only ever moves
+            // forward, so a clock that stepped backwards would get a wrong
+            // answer rather than a slow one.
+            progress_.rolling_wpm = rolling_->advance(model.log(), now_);
+            progress_.peak_rolling_wpm = std::max(progress_.peak_rolling_wpm, progress_.rolling_wpm);
+        }
 
         if (!paced_) {
             // Endless: no ghost, no ramp, no end. Everything else — the rolling

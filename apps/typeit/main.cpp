@@ -49,9 +49,11 @@
 #include "typeit/core/config/Config.h"
 #include "typeit/core/modes/ModeRegistry.h"
 #include "typeit/core/modes/QuoteMode.h"
+#include "typeit/core/modes/RaceMode.h"
 #include "typeit/core/modes/TimedMode.h"
 #include "typeit/core/modes/WordCountMode.h"
 #include "typeit/core/modes/ZenMode.h"
+#include "typeit/core/race/RacePresets.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/infra/Doctor.h"
@@ -145,6 +147,18 @@ namespace {
         });
         registry.register_mode("quote", [] { return std::make_unique<typeit::core::QuoteMode>(); });
         registry.register_mode("zen", [] { return std::make_unique<typeit::core::ZenMode>(); });
+
+        // Endless is race with the ghost switched off, as GAMEPLAY §2.5 says it
+        // should be — the only difference between "never finishes" and
+        // "finishes when the ghost catches you" is whether there is a ghost.
+        // Both resolve the difficulty the same way, so a bad `[race]` preset is
+        // one message rather than two behaviours (TI-120, TI-123, TI-124).
+        const typeit::core::RaceParams race =
+                typeit::core::race_params_from(config.race).value_or(typeit::core::RaceParams{});
+        const typeit::core::Wpm start{static_cast<double>(config.race.start_wpm)};
+        registry.register_mode("race", [race, start] { return std::make_unique<typeit::core::RaceMode>(race, start); });
+        registry.register_mode("endless",
+                               [race, start] { return std::make_unique<typeit::core::RaceMode>(race, start, false); });
         return registry;
     }
 

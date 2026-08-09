@@ -33,6 +33,11 @@ namespace typeit::core {
         /// log of a run over that text.
         explicit RollingWpm(const TextBuffer& target, Millis window = kDefaultWindow);
 
+        /// The same, for a caller that has the graphemes but not the buffer
+        /// they live in — a mode is handed a `TypingModel`, which exposes its
+        /// target as a span. The span must outlive this, as the buffer must.
+        explicit RollingWpm(std::span<const Grapheme> target, Millis window = kDefaultWindow);
+
         /// The gross WPM of the events in `(now − window, now]`.
         ///
         /// `now` must not go backwards — the left index does not rewind, and a

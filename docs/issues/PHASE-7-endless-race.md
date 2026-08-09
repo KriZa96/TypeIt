@@ -32,6 +32,41 @@ Implemented as race mode with the pacer disabled, not as a separate code path.
 - A 10-minute simulated run keeps memory bounded (the keystroke log grows linearly; nothing
   else does).
 
+**Acceptance**
+- [x] Built as race mode with the pacer disabled, not as a second code path — the only
+      difference between "never finishes" and "finishes when the ghost catches you" is whether
+      there is a ghost. Both register from the same resolved `RaceParams`, so a bad `[race]`
+      preset is one message rather than two behaviours.
+- [x] Never finished, however long the run and however far the typist gets.
+- [x] The HUD number is **rolling** rather than cumulative, and a case proves the difference: a
+      slow minute followed by fifteen fast seconds reads as fast. A cumulative average over an
+      hour makes the last two minutes invisible, which is the one thing an endless run's typist
+      wants to see.
+- [x] Distance and peak rolling WPM are recorded — the two numbers an endless run *can* be
+      scored on, since there is nothing to finish.
+- [x] Ten simulated minutes with the rolling speed amortised O(1) per tick rather than a rescan
+      of the log, and the accuracy window capped by construction.
+- [ ] **The provider is not pulled from as the cursor nears the end.** See below.
+
+### The refill needs a decision that is not this issue's to make
+
+`Session::create` takes one chunk, once, and says why: the model holds a span into the buffer,
+so appending would move the text out from under the cursor. Its comment defers the refill to
+this phase, "where rebasing the model is the design rather than an afterthought".
+
+It is not a Size S change. `TextBuffer` is immutable by design and stores a `vector<Grapheme>`;
+`TypingModel` holds a `span` into it. Growing the buffer reallocates and dangles the span, so a
+refill means rebuilding the model — and the model's per-position states and the keystroke log's
+`target` indices are both relative to the buffer. Sliding a window over it invalidates every
+logged index behind the window, and `Keystroke` does not store whether it was correct, so
+metrics could no longer be recomputed for the part that scrolled away.
+
+That is an architectural decision about how an endless run is *measured*, not a mode detail.
+Worth noting while making it: a `Grapheme` is 16 bytes and a `Keystroke` is 32, so the buffer an
+append-only refill would grow is **half the size of the keystroke log this issue already accepts
+growing linearly**. Ten minutes at 80 WPM is about 64 kB of text against 128 kB of log. "Nothing
+else grows" may be a stricter rule than the memory it is protecting.
+
 ---
 
 ## TI-121 — `Pacer`
@@ -375,6 +410,7 @@ otherwise never happens.
       have.
 - [ ] The progression property (improving player → increasing start speed) passes.
 - [ ] The pacer does not visibly stutter.
-- [ ] Endless mode runs for 10 minutes with bounded memory.
+- [ ] Endless mode runs for 10 minutes with bounded memory. The mode's own state is bounded and
+      tested; the text buffer is not refilled at all yet — see TI-120.
 - [ ] Race results identify the speed wall and its limiting key pairs.
 - [ ] Tuning pass complete, with reasons recorded.
