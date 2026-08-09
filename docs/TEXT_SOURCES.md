@@ -265,25 +265,36 @@ structure in therefore has *one* section covering all of it rather than none —
 the same text, and only one of them needs handling everywhere downstream.
 
 ```sql
--- schema v2
+-- 003_sections.sql
 CREATE TABLE text_section (
-    text_id    INTEGER NOT NULL REFERENCES text_item(id) ON DELETE CASCADE,
-    idx        INTEGER NOT NULL,
-    title      TEXT,
-    start_idx  INTEGER NOT NULL,   -- grapheme offset
-    end_idx    INTEGER NOT NULL,
+    text_id   INTEGER NOT NULL REFERENCES text_item(id) ON DELETE CASCADE,
+    idx       INTEGER NOT NULL,
+    title     TEXT,                -- absent where the format gave no name
+    start_idx INTEGER NOT NULL,    -- grapheme offset
+    end_idx   INTEGER NOT NULL,    -- exclusive, and equal to the next start
     PRIMARY KEY (text_id, idx)
 ) WITHOUT ROWID;
 
-ALTER TABLE text_bookmark ADD COLUMN section_idx INTEGER;
-ALTER TABLE text_item     ADD COLUMN author   TEXT;
-ALTER TABLE text_item     ADD COLUMN mime     TEXT;
+ALTER TABLE text_bookmark ADD COLUMN section_idx INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE text_item     ADD COLUMN author    TEXT;
+ALTER TABLE text_item     ADD COLUMN mime      TEXT;
 ALTER TABLE text_item     ADD COLUMN extractor TEXT;   -- which one produced this; aids debugging
+
+-- Every text already in the library gets the one section it always implicitly had.
+INSERT INTO text_section (text_id, idx, title, start_idx, end_idx)
+SELECT id, 0, NULL, 0, grapheme_count FROM text_item;
 ```
 
-This is schema version **2**, which is precisely the case the schema-version guard in
-[CI_CD §6](CI_CD.md#6-tier-1--versioning-guards-version-guardyml) exists to enforce: changing
-these files without bumping `user_version` and adding a migration test fails CI.
+`section_idx` is `NOT NULL` with a default rather than nullable, and the default is also what
+backfills the bookmarks already on disk. Every text has at least one section covering all of
+it, so "no section" describes nothing — a nullable column would be a null that every reader
+defends against and no writer can produce.
+
+This is user_version **3**, not 2: this document was written when v1 was the only schema, and
+TI-109 took 2 for the daily-totals index. It is the first migration after the schema shipped,
+and therefore the first live exercise of the guard in
+[CI_CD §6](CI_CD.md#6-tier-1--versioning-guards-version-guardyml): a released schema file is
+never edited, and a new one must be numbered above every released one.
 
 ---
 

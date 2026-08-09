@@ -130,4 +130,17 @@ namespace typeit::app {
         return sections;
     }
 
+    std::size_t section_at(std::span<const TextSection> sections, core::GraphemeIndex offset) {
+        // A linear scan over what is at most a few dozen chapters, and usually
+        // one. A binary search would be the same answer computed less legibly.
+        std::size_t found = 0;
+        for (const TextSection& section: sections) {
+            if (section.start > offset) {
+                break;
+            }
+            found = section.idx;
+        }
+        return found;
+    }
+
 }  // namespace typeit::app

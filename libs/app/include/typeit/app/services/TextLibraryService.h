@@ -150,22 +150,37 @@ namespace typeit::app {
     private:
         ExtractorRegistry extractors_;
         ITextLibraryRepository* library_;
+        /// Everything the extraction stage produced besides the text itself.
+        ///
+        /// One parameter rather than five, because they all come from the same
+        /// place and arrive together — and because five more strings and
+        /// vectors in a row is a call anybody can get out of order without the
+        /// compiler noticing.
+        struct Extraction {
+            /// Where the extractor found chapters, in the bytes *it* produced.
+            /// Mapped onto the normalised text at store time, which is the only
+            /// place holding both halves of the mapping (TX-005).
+            std::vector<SectionBoundary> boundaries;
+            std::vector<std::string> warnings;
+            /// The detected type and the extractor that claimed it, recorded
+            /// against the text (TX-006). Absent for content that never went
+            /// through the pipeline — a paste is typed, not detected.
+            std::optional<std::string> mime;
+            std::optional<std::string> extractor;
+            std::optional<std::string> author;
+        };
+
         /// The shared tail of both imports: normalise, deduplicate, store.
         ///
         /// Takes the normalisation rather than reading the member, because an
         /// extractor can override it (`ExtractedText::normalization`) and a
         /// source file normalised as prose is a source file with its
         /// indentation collapsed into single spaces.
-        ///
-        /// `boundaries` are where the extractor found chapters, in the bytes it
-        /// produced; they are mapped onto the normalised text here, which is
-        /// the only place that has both halves to map between (TX-005).
         [[nodiscard]] core::Result<ImportOutcome> store(std::string content, TextSource source,
                                                         std::optional<std::string> origin,
                                                         std::optional<std::string> title,
                                                         const core::NormalizeOptions& normalization,
-                                                        std::vector<std::string> warnings,
-                                                        std::vector<SectionBoundary> boundaries = {});
+                                                        Extraction extraction);
 
         IFileSystem* files_;
         core::IWallClock* clock_;

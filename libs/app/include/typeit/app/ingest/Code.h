@@ -61,6 +61,8 @@ namespace typeit::app {
     public:
         explicit CodeExtractor(CodeOptions options = {}) : options_{options} {}
 
+        [[nodiscard]] std::string_view name() const override;
+
         [[nodiscard]] std::span<const std::string_view> mime_types() const override;
 
         [[nodiscard]] core::Result<ExtractedText> extract(const FetchedContent& content) const override;

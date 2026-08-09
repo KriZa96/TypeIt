@@ -41,6 +41,18 @@ namespace typeit::infra {
     private:
         [[nodiscard]] core::Result<std::vector<std::string>> tags_of(core::TextId id) const;
 
+        /// The text's sections, in order. Read separately rather than joined
+        /// onto the text row: a join would repeat the whole content once per
+        /// chapter, which for a book is the content thirty times over.
+        [[nodiscard]] core::Result<std::vector<app::TextSection>> sections_of(core::TextId id) const;
+
+        /// The same text, with its sections filled in. Takes the read's own
+        /// result so that a failure and a miss both pass straight through: the
+        /// two queries that read a text are otherwise the same four lines
+        /// twice, and the second copy is where the section load gets forgotten.
+        [[nodiscard]] core::Result<std::optional<app::TextItem>> with_sections(
+                core::Result<std::optional<app::TextItem>> text) const;
+
         SqliteDatabase* database_;
     };
 

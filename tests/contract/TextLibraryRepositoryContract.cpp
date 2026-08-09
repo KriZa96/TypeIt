@@ -61,6 +61,12 @@ namespace typeit {
                 text.grapheme_count = 19;
                 text.word_count = 4;
                 text.created_at = kNoon;
+                // Every text has at least one section covering all of it
+                // (TX-005), so a fixture without one is one no import produces.
+                text.sections.push_back(app::TextSection{.idx = 0,
+                                                         .title = std::nullopt,
+                                                         .start = core::GraphemeIndex{0},
+                                                         .end = core::GraphemeIndex{19}});
                 return text;
             }
 
@@ -106,6 +112,43 @@ namespace typeit {
             EXPECT_EQ((*read)->title, "Prose");
             EXPECT_EQ((*read)->content, "the quick brown fox");
             EXPECT_EQ((*read)->source, app::TextSource::File);
+        }
+
+        TYPED_TEST(TextLibraryRepositoryContract, TheSectionsAndTheProvenanceRoundTrip) {
+            app::TextItem book = TestFixture::a_text("A book", "hash-sections");
+            book.author = "Kim";
+            book.mime = "text/markdown";
+            book.extractor = "markdown";
+            book.sections = {
+                    app::TextSection{
+                            .idx = 0, .title = "One", .start = core::GraphemeIndex{0}, .end = core::GraphemeIndex{9}},
+                    app::TextSection{.idx = 1,
+                                     .title = std::nullopt,
+                                     .start = core::GraphemeIndex{9},
+                                     .end = core::GraphemeIndex{19}},
+            };
+
+            const core::TextId id = this->add(book);
+            const core::Result<std::optional<app::TextItem>> read = this->repository().get(id);
+
+            ASSERT_TRUE(read) << (read ? "" : read.error().context);
+            ASSERT_TRUE(read->has_value());
+            EXPECT_EQ((*read)->sections, book.sections);
+            EXPECT_EQ((*read)->author, "Kim");
+            EXPECT_EQ((*read)->mime, "text/markdown");
+            EXPECT_EQ((*read)->extractor, "markdown");
+        }
+
+        TYPED_TEST(TextLibraryRepositoryContract, ABookmarkCarriesItsSectionIndex) {
+            const core::TextId id = this->add(TestFixture::a_text("A book", "hash-chapter"));
+
+            ASSERT_TRUE(this->repository().set_bookmark(
+                    {.text_id = id, .offset = core::GraphemeIndex{12}, .updated_at = kNoon, .section_idx = 3}));
+
+            const core::Result<std::optional<app::Bookmark>> mark = this->repository().bookmark(id);
+            ASSERT_TRUE(mark);
+            ASSERT_TRUE(mark->has_value());
+            EXPECT_EQ((*mark)->section_idx, 3U);
         }
 
         TYPED_TEST(TextLibraryRepositoryContract, TheSameContentTwiceIsRefused) {

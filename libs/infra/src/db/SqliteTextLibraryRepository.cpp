@@ -75,16 +75,49 @@ namespace typeit::infra {
                 text.difficulty = statement.column_double(10);
             }
             text.created_at = core::Millis{statement.column_int(11)};
+            if (!statement.column_is_null(12)) {
+                text.author = statement.column_text(12);
+            }
+            if (!statement.column_is_null(13)) {
+                text.mime = statement.column_text(13);
+            }
+            if (!statement.column_is_null(14)) {
+                text.extractor = statement.column_text(14);
+            }
             return text;
         }
 
     }  // namespace
 
+    namespace {
+
+        /// One nullable string, bound or nulled. Written once because the
+        /// alternative is eight identical four-line branches, and the one that
+        /// gets the parameter number wrong is the one nobody spots.
+        void bind_optional(Statement& statement, int parameter, const std::optional<std::string>& value) {
+            if (value.has_value()) {
+                statement.bind(parameter, *value);
+            } else {
+                statement.bind_null(parameter);
+            }
+        }
+
+    }  // namespace
+
     Result<core::TextId> SqliteTextLibraryRepository::add(const app::TextItem& text) {
+        // The text and its sections go in together or not at all: a text with
+        // its sections half written is one where "which chapter is this offset
+        // in" has no answer, and the migration made sure that state does not
+        // otherwise exist.
+        Result<Transaction> transaction = database_->begin();
+        if (!transaction) {
+            return std::unexpected{transaction.error()};
+        }
+
         Result<Statement> insert = database_->prepare(
                 "INSERT INTO text_item (title, source, origin, content, content_raw, content_sha256, language,"
-                " grapheme_count, word_count, difficulty, created_at)"
-                " VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)");
+                " grapheme_count, word_count, difficulty, created_at, author, mime, extractor)"
+                " VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)");
         if (!insert) {
             return std::unexpected{insert.error()};
         }
@@ -97,21 +130,12 @@ namespace typeit::infra {
                 .bind(9, static_cast<std::int64_t>(text.word_count))
                 .bind(11, text.created_at.value);
 
-        if (text.origin.has_value()) {
-            insert->bind(3, *text.origin);
-        } else {
-            insert->bind_null(3);
-        }
-        if (text.content_raw.has_value()) {
-            insert->bind(5, *text.content_raw);
-        } else {
-            insert->bind_null(5);
-        }
-        if (text.language.has_value()) {
-            insert->bind(7, *text.language);
-        } else {
-            insert->bind_null(7);
-        }
+        bind_optional(*insert, 3, text.origin);
+        bind_optional(*insert, 5, text.content_raw);
+        bind_optional(*insert, 7, text.language);
+        bind_optional(*insert, 12, text.author);
+        bind_optional(*insert, 13, text.mime);
+        bind_optional(*insert, 14, text.extractor);
         if (text.difficulty.has_value()) {
             insert->bind(10, *text.difficulty);
         } else {
@@ -126,7 +150,70 @@ namespace typeit::infra {
         if (!id) {
             return std::unexpected{id.error()};
         }
+
+        Result<Statement> section = database_->prepare(
+                "INSERT INTO text_section (text_id, idx, title, start_idx, end_idx) VALUES (?1, ?2, ?3, ?4, ?5)");
+        if (!section) {
+            return std::unexpected{section.error()};
+        }
+        for (const app::TextSection& part: text.sections) {
+            section->reset();
+            section->bind(1, *id)
+                    .bind(2, static_cast<std::int64_t>(part.idx))
+                    .bind(4, static_cast<std::int64_t>(part.start.value))
+                    .bind(5, static_cast<std::int64_t>(part.end.value));
+            bind_optional(*section, 3, part.title);
+            if (const Status written = section->run(); !written) {
+                return std::unexpected{written.error()};
+            }
+        }
+
+        if (const Status committed = transaction->commit(); !committed) {
+            return std::unexpected{committed.error()};
+        }
         return core::TextId{*id};
+    }
+
+    Result<std::optional<app::TextItem>> SqliteTextLibraryRepository::with_sections(
+            Result<std::optional<app::TextItem>> text) const {
+        if (!text || !text->has_value()) {
+            return text;
+        }
+        Result<std::vector<app::TextSection>> sections = sections_of((*text)->id);
+        if (!sections) {
+            return std::unexpected{sections.error()};
+        }
+        (*text)->sections = std::move(*sections);
+        return text;
+    }
+
+    Result<std::vector<app::TextSection>> SqliteTextLibraryRepository::sections_of(core::TextId id) const {
+        Result<Statement> statement = database_->prepare(
+                "SELECT idx, title, start_idx, end_idx FROM text_section WHERE text_id = ?1 ORDER BY idx");
+        if (!statement) {
+            return std::unexpected{statement.error()};
+        }
+        statement->bind(1, id.value);
+
+        std::vector<app::TextSection> sections;
+        for (;;) {
+            const Result<bool> row = statement->step();
+            if (!row) {
+                return std::unexpected{row.error()};
+            }
+            if (!*row) {
+                break;
+            }
+            app::TextSection section;
+            section.idx = static_cast<std::size_t>(statement->column_int(0));
+            if (!statement->column_is_null(1)) {
+                section.title = statement->column_text(1);
+            }
+            section.start = core::GraphemeIndex{static_cast<std::size_t>(statement->column_int(2))};
+            section.end = core::GraphemeIndex{static_cast<std::size_t>(statement->column_int(3))};
+            sections.push_back(std::move(section));
+        }
+        return sections;
     }
 
     Result<std::optional<app::TextItem>> SqliteTextLibraryRepository::get(core::TextId id) const {
@@ -136,23 +223,24 @@ namespace typeit::infra {
         // value. Two literals is a small price for a rule with no exceptions.
         Result<Statement> statement = database_->prepare(
                 "SELECT id, title, source, origin, content, content_raw, content_sha256, language, grapheme_count,"
-                " word_count, difficulty, created_at FROM text_item WHERE id = ?1");
+                " word_count, difficulty, created_at, author, mime, extractor FROM text_item WHERE id = ?1");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
         statement->bind(1, id.value);
-        return read_one(*statement);
+        return with_sections(read_one(*statement));
     }
 
     Result<std::optional<app::TextItem>> SqliteTextLibraryRepository::find_by_hash(std::string_view sha256) const {
         Result<Statement> statement = database_->prepare(
                 "SELECT id, title, source, origin, content, content_raw, content_sha256, language, grapheme_count,"
-                " word_count, difficulty, created_at FROM text_item WHERE content_sha256 = ?1");
+                " word_count, difficulty, created_at, author, mime, extractor FROM text_item"
+                " WHERE content_sha256 = ?1");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
         statement->bind(1, sha256);
-        return read_one(*statement);
+        return with_sections(read_one(*statement));
     }
 
     Result<std::vector<std::string>> SqliteTextLibraryRepository::tags_of(core::TextId id) const {
@@ -293,21 +381,23 @@ namespace typeit::infra {
         // One bookmark per text, updated in place: two bookmarks in one book is
         // a question with no good answer.
         Result<Statement> statement = database_->prepare(
-                "INSERT INTO text_bookmark (text_id, offset, updated_at) VALUES (?1, ?2, ?3)"
+                "INSERT INTO text_bookmark (text_id, offset, updated_at, section_idx) VALUES (?1, ?2, ?3, ?4)"
                 " ON CONFLICT (text_id) DO UPDATE SET"
-                "   offset = excluded.offset, updated_at = excluded.updated_at");
+                "   offset = excluded.offset, updated_at = excluded.updated_at,"
+                "   section_idx = excluded.section_idx");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
         statement->bind(1, bookmark.text_id.value)
                 .bind(2, static_cast<std::int64_t>(bookmark.offset.value))
-                .bind(3, bookmark.updated_at.value);
+                .bind(3, bookmark.updated_at.value)
+                .bind(4, static_cast<std::int64_t>(bookmark.section_idx));
         return statement->run();
     }
 
     Result<std::optional<app::Bookmark>> SqliteTextLibraryRepository::bookmark(core::TextId id) const {
-        Result<Statement> statement =
-                database_->prepare("SELECT text_id, offset, updated_at FROM text_bookmark WHERE text_id = ?1");
+        Result<Statement> statement = database_->prepare(
+                "SELECT text_id, offset, updated_at, section_idx FROM text_bookmark WHERE text_id = ?1");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
@@ -324,6 +414,7 @@ namespace typeit::infra {
                 .text_id = core::TextId{statement->column_int(0)},
                 .offset = core::GraphemeIndex{static_cast<std::size_t>(statement->column_int(1))},
                 .updated_at = core::Millis{statement->column_int(2)},
+                .section_idx = static_cast<std::size_t>(statement->column_int(3)),
         };
     }
 

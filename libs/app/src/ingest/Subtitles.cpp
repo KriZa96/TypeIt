@@ -210,6 +210,8 @@ namespace typeit::app {
 
     }  // namespace
 
+    std::string_view SubtitleExtractor::name() const { return "subtitle"; }
+
     std::span<const std::string_view> SubtitleExtractor::mime_types() const {
         static constexpr std::array<std::string_view, 2> kTypes{"text/x-subrip", "text/vtt"};
         return kTypes;

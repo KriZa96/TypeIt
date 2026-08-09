@@ -34,6 +34,8 @@ namespace typeit::app {
                 }
             }
 
+            [[nodiscard]] std::string_view name() const override { return name_; }
+
             [[nodiscard]] std::span<const std::string_view> mime_types() const override { return views_; }
 
             [[nodiscard]] core::Result<ExtractedText> extract(const FetchedContent& /*content*/) const override {

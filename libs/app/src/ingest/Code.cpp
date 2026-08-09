@@ -340,6 +340,8 @@ namespace typeit::app {
         return found == languages().end() ? std::string{} : std::string{found->name};
     }
 
+    std::string_view CodeExtractor::name() const { return "code"; }
+
     std::span<const std::string_view> CodeExtractor::mime_types() const {
         static constexpr std::array<std::string_view, 1> kTypes{"text/x-code"};
         return kTypes;

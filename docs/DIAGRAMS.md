@@ -16,7 +16,7 @@ prose document named beneath it wins — these are a map, not the territory.
 | 4 | [Application and ports](#4-application-layer-and-ports) | Services, ports |
 | 5 | [Infrastructure](#5-infrastructure-adapters) | Adapters |
 | 6 | [Ingestion](#6-ingestion-pipeline) | Fetchers, extractors |
-| 7 | [Database](#7-database-schema) | ER, v1 and v2 |
+| 7 | [Database](#7-database-schema) | ER, v1 and v3 |
 | 8 | [TUI](#8-terminal-frontend) | Screens, widgets, theming |
 | 9 | [Sequences](#9-sequences) | Startup, run, race, import, resize, headless |
 | 10 | [State machines](#10-state-machines) | Session, grapheme, race ramp |
@@ -461,9 +461,9 @@ classDiagram
     class ITextLibraryRepository {
         <<interface>>
         +add(TextItem) Result~TextId~*
-        +find_by_hash(string) Result~optional~TextId~~*
-        +sections(TextId) Result~vector~TextSection~~*
-        +set_bookmark(TextId, Bookmark) Status*
+        +find_by_hash(string) Result~optional~TextItem~~*
+        +get(TextId) Result~optional~TextItem~~*
+        +set_bookmark(Bookmark) Status*
     }
     class IConfigStore {
         <<interface>>
@@ -676,7 +676,7 @@ classDiagram
 
 ## 7. Database schema
 
-Schema v1 in solid relationships; v2 additions marked in the notes below.
+Schema v1 in solid relationships; the v3 additions (TX-006) are marked column by column.
 
 ```mermaid
 erDiagram
@@ -700,9 +700,9 @@ erDiagram
         int word_count
         real difficulty
         int created_at
-        string author "v2"
-        string mime "v2"
-        string extractor "v2"
+        string author "v3"
+        string mime "v3"
+        string extractor "v3"
     }
 
     TEXT_TAG {
@@ -711,7 +711,7 @@ erDiagram
     }
 
     TEXT_SECTION {
-        int text_id PK,FK "v2"
+        int text_id PK,FK "v3"
         int idx PK
         string title
         int start_idx
@@ -721,7 +721,7 @@ erDiagram
     TEXT_BOOKMARK {
         int text_id PK,FK
         int offset
-        int section_idx "v2"
+        int section_idx "v3"
         int updated_at
     }
 

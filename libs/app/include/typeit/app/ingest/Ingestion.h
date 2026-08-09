@@ -120,6 +120,12 @@ namespace typeit::app {
         ITextExtractor(ITextExtractor&&) = delete;
         ITextExtractor& operator=(ITextExtractor&&) = delete;
 
+        /// What to call this one in a database row and in a bug report
+        /// (TX-006). Recorded against every text it imports, because the answer
+        /// to "which of eight extractors produced this" is otherwise a guess
+        /// from the filename.
+        [[nodiscard]] virtual std::string_view name() const = 0;
+
         /// The MIME types this extractor claims. A span of static strings, so
         /// the registry can index them without copying and an extractor cannot
         /// change its mind after registration.

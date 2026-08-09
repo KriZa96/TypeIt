@@ -47,6 +47,15 @@ namespace typeit::app {
     [[nodiscard]] std::vector<TextSection> sections_for(std::span<const SectionBoundary> boundaries,
                                                         std::string_view extracted, const core::TextBuffer& normalized);
 
+    /// Which section `offset` falls in — "Chapter 4 of 31" (TX-006).
+    ///
+    /// Total, because `sections_for` guarantees the cover: every offset in the
+    /// text is in exactly one section, an offset past the end is in the last
+    /// one, and a text with no sections at all answers zero rather than
+    /// refusing. An empty section contains nothing, so an offset on the seam
+    /// belongs to the section that starts there.
+    [[nodiscard]] std::size_t section_at(std::span<const TextSection> sections, core::GraphemeIndex offset);
+
 }  // namespace typeit::app
 
 #endif  // TYPEIT_APP_INGEST_SECTIONS_H

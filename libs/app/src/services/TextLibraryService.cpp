@@ -75,15 +75,18 @@ namespace typeit::app {
         // otherwise. Code is the case that needs one: normalised as prose, its
         // indentation collapses to single spaces and the one thing the code
         // extractor promises is gone before anybody types a character.
-        // `text` is moved last: the boundaries index into it, and moving it out
-        // from under the argument that describes it would be reading a moved-from
-        // string. Named locals rather than an argument list whose evaluation
-        // order is unspecified.
-        std::vector<SectionBoundary> boundaries = std::move(extracted->sections);
-        std::vector<std::string> warnings = std::move(extracted->warnings);
+        // Assembled before the text is moved: the boundaries index into it, and
+        // moving it out from under the argument that describes it would be
+        // reading a moved-from string. A named local rather than an argument
+        // list whose evaluation order is unspecified.
+        Extraction extraction{.boundaries = std::move(extracted->sections),
+                              .warnings = std::move(extracted->warnings),
+                              .mime = fetched->detected_mime,
+                              .extractor = std::string{extractor->name()},
+                              .author = std::move(extracted->author)};
         return store(std::move(extracted->text), TextSource::File, path.string(),
                      title.has_value() ? std::move(title) : std::optional<std::string>{fetched->suggested_title},
-                     extracted->normalization.value_or(normalization_), std::move(warnings), std::move(boundaries));
+                     extracted->normalization.value_or(normalization_), std::move(extraction));
     }
 
     core::Result<DirectoryImport> TextLibraryService::import_directory(const std::filesystem::path& path) {
@@ -185,8 +188,8 @@ namespace typeit::app {
                                                           std::optional<std::string> origin,
                                                           std::optional<std::string> title,
                                                           const core::NormalizeOptions& normalization,
-                                                          std::vector<std::string> warnings,
-                                                          std::vector<SectionBoundary> boundaries) {
+                                                          Extraction extraction) {
+        std::vector<std::string> warnings = std::move(extraction.warnings);
         if (content.size() > kMaxImportBytes) {
             // Naming the limit, because "too large" without a number is a
             // message that sends someone to the source code.
@@ -244,7 +247,7 @@ namespace typeit::app {
         // reading it afterwards would be reading a moved-from string — and the
         // one case that matters, a text whose normalisation changed nothing, is
         // exactly the case where the move does not happen and the bug hides.
-        std::vector<TextSection> sections = sections_for(boundaries, content, *buffer);
+        std::vector<TextSection> sections = sections_for(extraction.boundaries, content, *buffer);
 
         TextItem item;
         item.title = title.has_value() && !title->empty() ? *std::move(title) : title_from_content(*buffer);
@@ -265,6 +268,9 @@ namespace typeit::app {
         // and handing those on unchanged would be a chapter marker pointing
         // wherever normalisation happened to leave it.
         item.sections = std::move(sections);
+        item.author = std::move(extraction.author);
+        item.mime = std::move(extraction.mime);
+        item.extractor = std::move(extraction.extractor);
 
         const core::Result<core::TextId> id = library_->add(item);
         if (!id) {
@@ -315,10 +321,23 @@ namespace typeit::app {
     core::Status TextLibraryService::reset_progress(core::TextId id) { return bookmark(id, core::GraphemeIndex{0}); }
 
     core::Status TextLibraryService::bookmark(core::TextId id, core::GraphemeIndex offset) {
+        // Which chapter that offset is in, recorded alongside it (TX-006). Read
+        // here rather than computed by whoever displays it: a section index
+        // derived at read time is one that disagrees with the offset the moment
+        // a text is re-imported, and this is written once per run.
+        const core::Result<std::optional<TextItem>> text = library_->get(id);
+        if (!text) {
+            return std::unexpected{text.error()};
+        }
+        if (!text->has_value()) {
+            return core::fail(core::ErrorCode::FileNotFound, "no text with id " + std::to_string(id.value));
+        }
+
         Bookmark mark;
         mark.text_id = id;
         mark.offset = offset;
         mark.updated_at = clock_->unix_now();
+        mark.section_idx = section_at((*text)->sections, offset);
         return library_->set_bookmark(mark);
     }
 

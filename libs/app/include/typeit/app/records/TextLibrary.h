@@ -67,6 +67,15 @@ namespace typeit::app {
         /// one text, not two.
         std::string content_sha256;
         std::optional<std::string> language;
+        /// From the format's own metadata, where it has any: EPUB and Markdown
+        /// front matter do, a text file does not.
+        std::optional<std::string> author;
+        /// What the content was detected as, and which extractor read it
+        /// (TX-006). Both recorded for the first time somebody reports that a
+        /// file imported wrongly: the answer to "which of eight extractors
+        /// produced this" is otherwise a guess from the filename.
+        std::optional<std::string> mime;
+        std::optional<std::string> extractor;
         std::size_t grapheme_count = 0;
         std::size_t word_count = 0;
         /// The 1–10 advisory score from TECHNICAL section 8.3.
@@ -105,6 +114,11 @@ namespace typeit::app {
         core::TextId text_id{0};
         core::GraphemeIndex offset{0};
         core::Millis updated_at{0};
+        /// Which section `offset` is in (TX-006). Not nullable, because every
+        /// text has at least one section covering all of it — "no section"
+        /// describes nothing, and an optional here would be a case every reader
+        /// defends against and none can produce.
+        std::size_t section_idx = 0;
     };
 
 }  // namespace typeit::app

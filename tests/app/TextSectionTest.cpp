@@ -255,6 +255,78 @@ namespace typeit::app {
             EXPECT_EQ(sections.front().start.value, 0U);
         }
 
+        // ---- what the text remembers about getting here (TX-006) ------------------
+
+        TEST_F(SectionImportTest, AnImportRecordsWhatItWasAndWhatReadIt) {
+            // For the first time somebody reports that a file imported wrongly:
+            // the answer to "which of eight extractors produced this" is
+            // otherwise a guess from the filename.
+            files.add_file("/main.py", "def one():\n    return 1\n");
+            const core::Result<ImportOutcome> outcome = service.import_file("/main.py");
+            ASSERT_TRUE(outcome) << outcome.error().context;
+
+            const core::Result<std::optional<TextItem>> stored = library.get(outcome->id);
+            ASSERT_TRUE(stored);
+            ASSERT_TRUE(stored->has_value());
+            EXPECT_EQ((*stored)->mime, "text/x-code");
+            EXPECT_EQ((*stored)->extractor, "code");
+        }
+
+        TEST_F(SectionImportTest, APasteHasNoTypeToRecord) {
+            // It was typed, not detected. Naming a MIME type for it would be
+            // recording a fact nobody established.
+            const core::Result<ImportOutcome> outcome =
+                    service.import_text("Some words somebody pasted in.", TextSource::Paste);
+            ASSERT_TRUE(outcome) << outcome.error().context;
+
+            const core::Result<std::optional<TextItem>> stored = library.get(outcome->id);
+            ASSERT_TRUE(stored);
+            ASSERT_TRUE(stored->has_value());
+            EXPECT_FALSE((*stored)->mime.has_value());
+            EXPECT_FALSE((*stored)->extractor.has_value());
+            ASSERT_EQ((*stored)->sections.size(), 1U) << "and still exactly one section";
+        }
+
+        TEST_F(SectionImportTest, ABookmarkRecordsWhichSectionItLandedIn) {
+            files.add_file("/doc.md", "# One\n\nalpha\n\n## Two\n\nbeta\n\n## Three\n\ngamma\n");
+            const core::Result<ImportOutcome> outcome = service.import_file("/doc.md");
+            ASSERT_TRUE(outcome) << outcome.error().context;
+            const core::Result<std::optional<TextItem>> stored = library.get(outcome->id);
+            ASSERT_TRUE(stored && stored->has_value());
+            ASSERT_EQ((*stored)->sections.size(), 3U);
+
+            // Somewhere inside the middle chapter, wherever normalisation left
+            // it — the point is that the service works it out rather than the
+            // caller being asked to.
+            ASSERT_TRUE(service.bookmark(outcome->id, (*stored)->sections[1].start));
+
+            const core::Result<std::optional<Bookmark>> mark = library.bookmark(outcome->id);
+            ASSERT_TRUE(mark);
+            ASSERT_TRUE(mark->has_value());
+            EXPECT_EQ((*mark)->section_idx, 1U);
+        }
+
+        TEST_F(SectionImportTest, AnOffsetPastTheEndBookmarksTheLastSection) {
+            // Reachable through `advance`, which clamps to the end of the text.
+            files.add_file("/doc.md", "# One\n\nalpha\n\n## Two\n\nbeta\n");
+            const core::Result<ImportOutcome> outcome = service.import_file("/doc.md");
+            ASSERT_TRUE(outcome) << outcome.error().context;
+
+            ASSERT_TRUE(service.advance(outcome->id, 100'000));
+
+            const core::Result<std::optional<Bookmark>> mark = library.bookmark(outcome->id);
+            ASSERT_TRUE(mark);
+            ASSERT_TRUE(mark->has_value());
+            EXPECT_EQ((*mark)->section_idx, 1U) << "the last one, not one past it";
+        }
+
+        TEST_F(SectionImportTest, BookmarkingATextThatIsNotThereSaysSo) {
+            const core::Status marked = service.bookmark(core::TextId{404}, core::GraphemeIndex{0});
+
+            ASSERT_FALSE(marked);
+            EXPECT_EQ(marked.error().code, core::ErrorCode::FileNotFound);
+        }
+
         TEST_F(SectionImportTest, ASourceFileGetsASectionPerTopLevelDefinition) {
             // And its indentation is preserved, so the offsets are measured
             // against a normalisation that is not the library's.

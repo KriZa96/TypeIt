@@ -24,6 +24,8 @@ namespace typeit::app {
     /// SubRip and WebVTT, stripped back to what was said.
     class SubtitleExtractor final : public ITextExtractor {
     public:
+        [[nodiscard]] std::string_view name() const override;
+
         [[nodiscard]] std::span<const std::string_view> mime_types() const override;
 
         [[nodiscard]] core::Result<ExtractedText> extract(const FetchedContent& content) const override;

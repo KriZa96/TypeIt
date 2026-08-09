@@ -34,6 +34,13 @@ namespace typeit::infra {
             text.word_count = 4;
             text.difficulty = 3.5;
             text.created_at = kNoon;
+            text.author = "Kim";
+            text.mime = "text/plain";
+            text.extractor = "plain-text";
+            // Every text has at least one section covering all of it (TX-005),
+            // so a fixture without one is a fixture no import could produce.
+            text.sections.push_back(app::TextSection{
+                    .idx = 0, .title = std::nullopt, .start = core::GraphemeIndex{0}, .end = core::GraphemeIndex{19}});
             return text;
         }
 
@@ -98,6 +105,72 @@ namespace typeit::infra {
             ASSERT_TRUE(text.difficulty.has_value());
             EXPECT_DOUBLE_EQ(*text.difficulty, 3.5);
             EXPECT_EQ(text.created_at, kNoon);
+            EXPECT_EQ(text.author, "Kim");
+            EXPECT_EQ(text.mime, "text/plain");
+            EXPECT_EQ(text.extractor, "plain-text") << "which of eight read this, for the bug report (TX-006)";
+        }
+
+        TEST_F(LibraryTest, TheSectionsGoInAndComeBackInOrder) {
+            app::TextItem book = a_text("A book", "hash-sections");
+            book.sections = {
+                    app::TextSection{
+                            .idx = 0, .title = "One", .start = core::GraphemeIndex{0}, .end = core::GraphemeIndex{4}},
+                    app::TextSection{.idx = 1,
+                                     .title = std::nullopt,
+                                     .start = core::GraphemeIndex{4},
+                                     .end = core::GraphemeIndex{10}},
+                    app::TextSection{.idx = 2,
+                                     .title = "Three",
+                                     .start = core::GraphemeIndex{10},
+                                     .end = core::GraphemeIndex{19}},
+            };
+
+            const core::TextId id = add(book);
+            const Result<std::optional<app::TextItem>> read = repository_->get(id);
+
+            ASSERT_TRUE(read) << (read ? "" : read.error().context);
+            ASSERT_TRUE(read->has_value());
+            EXPECT_EQ((*read)->sections, book.sections);
+            EXPECT_FALSE((*read)->sections[1].title.has_value()) << "no title is a null, not an empty string";
+        }
+
+        TEST_F(LibraryTest, FindByHashCarriesTheSectionsToo) {
+            // The deduplication path returns the text that was already there,
+            // and a caller cannot tell it apart from a `get` unless it does.
+            const core::TextId id = add(a_text("Prose", "hash-dedup"));
+
+            const Result<std::optional<app::TextItem>> read = repository_->find_by_hash("hash-dedup");
+
+            ASSERT_TRUE(read);
+            ASSERT_TRUE(read->has_value());
+            EXPECT_EQ((*read)->id, id);
+            ASSERT_EQ((*read)->sections.size(), 1U);
+            EXPECT_EQ((*read)->sections.front().end.value, 19U);
+        }
+
+        TEST_F(LibraryTest, ATextWithSectionsThatFailToWriteIsNotStoredAtAll) {
+            // Two sections claiming index zero: the second insert violates the
+            // primary key, and the transaction takes the text with it. A text
+            // with half its sections is one where "which chapter is this
+            // offset in" has no answer.
+            app::TextItem broken = a_text("Contradiction", "hash-broken");
+            broken.sections.push_back(app::TextSection{
+                    .idx = 0, .title = "again", .start = core::GraphemeIndex{0}, .end = core::GraphemeIndex{19}});
+
+            const Result<core::TextId> id = repository_->add(broken);
+
+            ASSERT_FALSE(id);
+            EXPECT_EQ(count("SELECT COUNT(*) FROM text_item"), 0) << "and the text went back with them";
+            EXPECT_EQ(count("SELECT COUNT(*) FROM text_section"), 0);
+        }
+
+        TEST_F(LibraryTest, RemovingATextTakesItsSections) {
+            const core::TextId id = add(a_text("Prose", "hash-cascade"));
+            ASSERT_EQ(count("SELECT COUNT(*) FROM text_section"), 1);
+
+            ASSERT_TRUE(repository_->remove(id));
+
+            EXPECT_EQ(count("SELECT COUNT(*) FROM text_section"), 0) << "ON DELETE CASCADE";
         }
 
         TEST_F(LibraryTest, TheOptionalFieldsRoundTripAsAbsent) {
@@ -106,6 +179,9 @@ namespace typeit::infra {
             sparse.origin.reset();
             sparse.language.reset();
             sparse.difficulty.reset();
+            sparse.author.reset();
+            sparse.mime.reset();
+            sparse.extractor.reset();
 
             const core::TextId id = add(sparse);
             const Result<std::optional<app::TextItem>> read = repository_->get(id);
@@ -115,6 +191,9 @@ namespace typeit::infra {
             EXPECT_FALSE((*read)->origin.has_value()) << "absent, not an empty string";
             EXPECT_FALSE((*read)->language.has_value());
             EXPECT_FALSE((*read)->difficulty.has_value());
+            EXPECT_FALSE((*read)->author.has_value());
+            EXPECT_FALSE((*read)->mime.has_value());
+            EXPECT_FALSE((*read)->extractor.has_value());
             EXPECT_EQ((*read)->source, app::TextSource::Paste);
         }
 
@@ -364,6 +443,34 @@ namespace typeit::infra {
             ASSERT_TRUE(mark->has_value());
             EXPECT_EQ((*mark)->offset, core::GraphemeIndex{250});
             EXPECT_EQ((*mark)->updated_at, kNoon + core::Millis{60'000});
+        }
+
+        TEST_F(LibraryTest, ABookmarkRemembersWhichSectionItIsIn) {
+            const core::TextId id = add(a_text("A whole book", "hash-chapter"));
+
+            ASSERT_TRUE(repository_->set_bookmark(
+                    {.text_id = id, .offset = core::GraphemeIndex{12}, .updated_at = kNoon, .section_idx = 4}));
+
+            const Result<std::optional<app::Bookmark>> mark = repository_->bookmark(id);
+            ASSERT_TRUE(mark);
+            ASSERT_TRUE(mark->has_value());
+            EXPECT_EQ((*mark)->section_idx, 4U) << "chapter 5 of however many (TX-006)";
+        }
+
+        TEST_F(LibraryTest, MovingABookmarkMovesItsSectionToo) {
+            // Written by the same statement as the offset, so a bookmark that
+            // moved into another chapter cannot keep claiming the old one.
+            const core::TextId id = add(a_text("A whole book", "hash-moved"));
+            ASSERT_TRUE(repository_->set_bookmark(
+                    {.text_id = id, .offset = core::GraphemeIndex{12}, .updated_at = kNoon, .section_idx = 4}));
+
+            ASSERT_TRUE(repository_->set_bookmark(
+                    {.text_id = id, .offset = core::GraphemeIndex{900}, .updated_at = kNoon, .section_idx = 9}));
+
+            const Result<std::optional<app::Bookmark>> mark = repository_->bookmark(id);
+            ASSERT_TRUE(mark);
+            ASSERT_TRUE(mark->has_value());
+            EXPECT_EQ((*mark)->section_idx, 9U);
         }
 
         TEST_F(LibraryTest, ATextWithNoBookmarkHasNone) {

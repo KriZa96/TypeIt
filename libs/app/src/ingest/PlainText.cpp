@@ -71,6 +71,8 @@ namespace typeit::app {
         return fetched;
     }
 
+    std::string_view PlainTextExtractor::name() const { return "plain-text"; }
+
     std::span<const std::string_view> PlainTextExtractor::mime_types() const {
         // One type, at last. Markdown went to TX-002, code to TX-003 and
         // subtitles to TX-004; each was parked here in the meantime so that no

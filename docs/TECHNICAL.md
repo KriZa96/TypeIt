@@ -581,10 +581,12 @@ Design notes:
 - `mode_param` is JSON rather than a column per mode, deliberately: adding a mode must not
   require a migration (ADR-008).
 
-**Schema v2** adds `text_section`, plus `section_idx` on bookmarks and `author` / `mime` /
-`extractor` on `text_item`, to support chapters in imported ebooks and web articles. It is
-specified in [TEXT_SOURCES §9](TEXT_SOURCES.md#9-sections-and-schema) and delivered by
-[TX-006](issues/PHASE-6A-text-sources.md#tx-006--schema-v2-and-section-persistence). An entity
+**user_version 3** (`003_sections.sql`) adds `text_section`, plus `section_idx` on bookmarks and
+`author` / `mime` / `extractor` on `text_item`, to support chapters in imported ebooks and web
+articles. It is specified in [TEXT_SOURCES §9](TEXT_SOURCES.md#9-sections-and-schema) and
+delivered by
+[TX-006](issues/PHASE-6A-text-sources.md#tx-006--schema-v2-and-section-persistence) — which
+TEXT_SOURCES calls "schema v2", from before TI-109's daily-totals index took 2. An entity
 diagram of both versions is in [DIAGRAMS §7](DIAGRAMS.md#7-database-schema).
 
 ---

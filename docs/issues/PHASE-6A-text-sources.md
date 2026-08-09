@@ -297,17 +297,50 @@ chapter and the library can show "Chapter 4 of 31".
 This is the first schema migration after v1, and therefore the first live exercise of the
 schema-version guard in [CI_CD §6](../CI_CD.md#6-tier-1--versioning-guards-version-guardyml).
 
-**Unit tests** (`MigrationV2Test.cpp`)
-- Migration from v1 to v2 preserves every existing row.
+**Unit tests** (`MigrationV3Test.cpp`)
+- Migration from the previous version preserves every existing row.
 - A pre-existing text with no sections gets its implicit single section.
 - Existing bookmarks migrate to `section_idx = 0` with their offsets intact.
-- Rollback on failure leaves `user_version` at 1.
+- Rollback on failure leaves `user_version` where it was.
 - Cascade delete removes sections with their text.
-- The CI schema guard **fails** if `user_version` is not bumped — verified by deliberately
-  omitting the bump in a scratch branch.
+- The CI schema guard **fails** if a released schema file is edited, or a new one is numbered at
+  or below one — verified by the fixtures in `version-tools-test.sh`.
 
 **Acceptance**
-- [ ] A user upgrading from beta keeps every imported text and every bookmark.
+- [x] A user upgrading from beta keeps every imported text and every bookmark. Checked against
+      a database built by replaying the *released* migration files rather than one this binary
+      created, because a test that migrates a schema the binary just wrote is testing the
+      binary against itself.
+- [x] **It is `user_version` 3, not 2.** This issue and TEXT_SOURCES were written when v1 was
+      the only schema; TI-109 took 2 for the daily-totals index in the meantime. The number
+      comes from the filename, and the only rule that matters is that a new file is above every
+      released one — which is precisely what the CI guard checks, and what a file numbered 2
+      would have silently failed: every database already past 2 would skip it.
+- [x] A text that was in the library before today gets the one section it always implicitly
+      had, backfilled by the migration. Without it, every reader would need an "or none, for
+      the old ones" branch — which is the branch TX-005 exists to remove.
+- [x] `section_idx` is `NOT NULL DEFAULT 0` rather than nullable, and the default is what
+      backfills the bookmarks already on disk. Every text has a section covering all of it, so
+      "no section" describes nothing; a nullable column would be a null every reader defends
+      against and no writer can produce.
+- [x] The new `text_item` columns arrive **empty** on an upgraded database. A text imported
+      before the pipeline recorded its type has no type to record, and guessing one from the
+      origin's extension would be writing down a fact nobody established.
+- [x] A failed upgrade leaves the version, the rows and the columns exactly as they were —
+      including the `ALTER`s, which go back with the rest of the step. The next start retries
+      this migration rather than the one after it, and the rows are still there to retry
+      against.
+- [x] A text and its sections are written in one transaction. A text with half its sections is
+      one where "which chapter is this offset in" has no answer, and the migration made sure
+      that state does not otherwise exist.
+- [x] `extractor` is recorded because the first time somebody reports that a file imported
+      wrongly, the answer to "which of eight extractors produced this" is otherwise a guess
+      from the filename.
+- [x] The bookmark's section is worked out by the service at write time, not by whoever
+      displays it. A section index derived at read time disagrees with its offset the moment a
+      text is re-imported, and this is written once per run.
+- [x] The fake and the SQLite repository are held to the same contract for all of it, because
+      a fake that forgets the sections is a service that passes its tests and loses chapters.
 
 ---
 

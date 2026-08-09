@@ -488,6 +488,8 @@ namespace typeit::app {
 
     }  // namespace
 
+    std::string_view MarkdownExtractor::name() const { return "markdown"; }
+
     std::span<const std::string_view> MarkdownExtractor::mime_types() const {
         static constexpr std::array<std::string_view, 1> kTypes{"text/markdown"};
         return kTypes;

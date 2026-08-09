@@ -158,8 +158,8 @@ namespace typeit::infra {
             // Introspected rather than assumed: the schema is the contract
             // between this binary and everybody's history file.
             const std::set<std::string> expected{
-                    "profile",  "text_item",   "text_tag",   "text_bookmark", "session",        "session_sample",
-                    "key_stat", "bigram_stat", "error_pair", "personal_best", "keystroke_blob",
+                    "profile",        "text_item", "text_tag",    "text_bookmark", "text_section",  "session",
+                    "session_sample", "key_stat",  "bigram_stat", "error_pair",    "personal_best", "keystroke_blob",
             };
 
             EXPECT_EQ(tables_of(db()), expected);
