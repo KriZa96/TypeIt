@@ -16,6 +16,15 @@ set(TYPEIT_SQLITE_VERSION 3530400 CACHE STRING "SQLite amalgamation version to b
 set(FTXUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(FTXUI_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(FTXUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+# And it does not install itself into our prefix. A dependency brought in by
+# FetchContent contributes its own `install()` rules to this build, so without
+# this `cmake --install` ships FTXUI's headers, static libraries, pkg-config
+# file and CMake package config alongside our binary — none of which a user of
+# a typing test has any use for, and all of which would land in the packages
+# TI-138 builds. Found by running the first install this project has ever done
+# (TI-137): the prefix contained FTXUI and nothing else, because the rules for
+# our own binary had not been written yet.
+set(FTXUI_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
     ftxui

@@ -101,10 +101,12 @@ prefix → `$XDG_DATA_DIRS` → `./assets` (development only).
       a temp directory — `<prefix>/bin/typeit` beside `<prefix>/share/typeit` — and resolves the
       assets from it with nothing but the binary's own path, including through a symlink, which
       is the `/usr/games/TypeIt` case from the README.
-- [ ] **The full relocation test — `cmake --install` to a temp prefix, move it, delete the
-      source — needs two things that do not exist yet:** an installable binary (the composition
-      root is Phase 3) and bundled assets to install (Phase 6). It lands with the packaging
-      work at TI-138, and the search order it would exercise is already covered here.
+- [x] **The full relocation test now exists** (`cli.relocatable`, TI-137). Both things it was
+      waiting for arrived: the composition root in Phase 3 and the bundled assets in Phase 6.
+      It installs to a temp prefix, **moves** the tree, and runs the binary from there with
+      `TYPEIT_ASSETS_DIR` and `XDG_DATA_DIRS` unset and the working directory somewhere else —
+      so the only entry in the search order that can succeed is the executable-relative one.
+      Watched to fail by dropping the asset install rule.
 - [x] `__FILE__` is gone from everything the rebuild owns, and a check keeps it that way:
       `infra.isolation.layers_include_only_what_they_may` fails on any use in `libs/` or
       `apps/`, watched to fail on a deliberate one. Comments may still name the macro — the
@@ -446,12 +448,13 @@ its destructor.
       a future version is refused with the file untouched. There is one prior version — zero —
       until a second schema file exists, and the CI schema guard is what makes sure the second
       one arrives with its own test.
-- [ ] **The relocation test needs an installable binary and assets to install**, neither of
-      which exists before Phase 3 and Phase 6. What C2 was actually about is tested: an install
-      tree in a temp directory, resolved from the binary's own path, through a symlink, with no
-      reference to where anything was compiled. `__FILE__` is gone from everything the rebuild
-      owns and a check keeps it that way. The end-to-end move-the-tree test lands with the
-      packaging work at TI-138.
+- [x] **The relocation test is done** — it was waiting on an installable binary (Phase 3) and
+      assets to install (Phase 6), and both arrived, so TI-137's install rules and the
+      `cli.relocatable` test landed with them. The tree is installed, *moved*, and run from its
+      new home with the earlier entries of the search order unset: only the executable-relative
+      lookup can answer, which is exactly what defect C2 was about. That is on top of what was
+      already tested here — an install tree in a temp directory resolved through a symlink, and
+      a check that keeps `__FILE__` out of everything the rebuild owns.
 - [x] No SQL string concatenation, and the rule is held tighter than the lint can see: the lint
       reads one line at a time, so a query whose `+` fell on the next line slipped past it once.
       Both offenders were rewritten rather than the check loosened, and its comment now says

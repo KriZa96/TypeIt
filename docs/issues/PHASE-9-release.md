@@ -68,8 +68,19 @@ unfamiliar terminal can find out why a binding does not work instead of guessing
 - Uninstall (manifest-based) removes what it installed and nothing else.
 
 **Acceptance**
-- [ ] A binary installed from a deleted source tree runs — the final confirmation that
-      [defect C2](../CODEBASE_REVIEW.md#4-correctness-defects) is gone for good.
+- [x] A binary installed from a deleted source tree runs — the final confirmation that
+      [defect C2](../CODEBASE_REVIEW.md#4-correctness-defects) is gone for good. `cli.relocatable`
+      installs, **moves** the tree, and runs from the new location with `TYPEIT_ASSETS_DIR`,
+      `XDG_DATA_DIRS` and the working directory all pointed away — so the configured prefix and
+      the `./assets` fallback are both unavailable and only the executable-relative lookup can
+      succeed. Watched to fail by dropping the asset install rule.
+- [x] The prefix contains **only** what this project installs. A dependency fetched into the
+      build contributes its own `install()` rules, and the first install this project ever ran
+      produced a prefix containing FTXUI's headers, static libraries, pkg-config file and CMake
+      package config — and none of our own binary, because the rules for it did not exist yet.
+      `FTXUI_ENABLE_INSTALL` is off now and the test walks the prefix.
+- [ ] `--prefix` and `DESTDIR`, uninstall, and the man page: `DESTDIR` and the manifest-based
+      uninstall are untested, and `docs/typeit.1` does not exist until TI-139.
 
 ---
 

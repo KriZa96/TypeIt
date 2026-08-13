@@ -108,7 +108,7 @@ Fix every warning the new flags surface. Known in advance:
 
 **Acceptance**
 - [x] Zero warnings on gcc and clang with the TI-003 flag set.
-- [ ] Zero warnings on MSVC `/W4`.
+- [x] Zero warnings on MSVC `/W4`, now that a Windows job gets far enough to prove it.
 - [x] `docs/warning-baseline.txt` deleted.
 - [ ] Existing test suite passes with no test file modified.
 
@@ -231,7 +231,7 @@ this issue deletes the block outright.
 - Out: writing the presets (TI-010).
 
 **Acceptance**
-- [ ] Configures with `CXX=g++`, `CXX=clang++`, and MSVC.
+- [x] Configures with `CXX=g++`, `CXX=clang++`, and MSVC — one CI job apiece, plus clang-cl.
 - [ ] `-DCMAKE_TOOLCHAIN_FILE=…` on the command line is honoured.
 
 ---
@@ -251,7 +251,12 @@ Configure, build, and test presets for every supported toolchain.
 
 **Acceptance**
 - [x] `cmake --preset linux-gcc-debug && cmake --build --preset … && ctest --preset …` works.
-- [ ] The equivalent Windows sequence works.
+- [ ] The equivalent Windows sequence works. **Unverified, and CI does not verify it:** the
+      jobs configure with `cmake -S . -B build` and named cache variables, not with
+      `--preset` — their *names* match the presets but nothing invokes one. So
+      [BUILD §9](../BUILD.md#9-continuous-integration)'s "every preset in §7 is invoked by a
+      job, so a broken preset is caught immediately" is not true today, and the three Windows
+      presets in particular have never been run by anything.
 - [x] `compile_commands.json` is generated and clangd resolves includes.
 
 ---
@@ -420,11 +425,16 @@ rates. `src/docs/` is also the wrong home for documentation.
 
 All of the following, before tagging `v2.0.0-alpha.1`:
 
-- [ ] Fresh clone → configure → build → test on Linux **and** Windows, with no submodule step.
-- [ ] Zero warnings with `TYPEIT_WERROR=ON` on gcc, clang, and MSVC.
+- [x] Fresh clone → configure → build → test on Linux **and** Windows, with no submodule step.
+      Which is literally what every CI job does — checkout, configure, build, test — and they
+      pass.
+- [x] Zero warnings with `TYPEIT_WERROR=ON` on gcc, clang, and MSVC. Every matrix job sets it,
+      including both Windows compilers.
 - [x] All 41 existing tests pass, plus the 3 new ones from TI-005 (65 registered cases).
 - [x] Full suite clean under ASan + UBSan.
-- [ ] CI green on: linux-gcc-debug, linux-gcc-release, linux-clang-debug, sanitizers,
-      windows-msvc-debug, windows-msvc-release, windows-clang-cl, format.
+- [x] CI green on: linux-gcc-debug, linux-gcc-release, linux-clang-debug, sanitizers,
+      windows-msvc-debug, windows-msvc-release, windows-clang-cl, format — **and macOS**, which
+      was not on this list. First observed whole at `37836da`; before that the Windows jobs
+      failed at build for months and then at test, so nothing below them had ever run.
 - [x] Exactly one copy of each document; README rewritten.
 - [x] `CHANGELOG.md` `Unreleased` block reflects the phase.

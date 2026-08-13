@@ -620,6 +620,9 @@ acceptance asks for — see the acceptance note.
       results screens; `SessionScreenTest.RenderingAdvancesNeither` and
       `TypingAreaTest.RenderTwiceChangesNothing` cover the two that own a model, and assert the
       model as well as the pixels.
-- [ ] Full suite green on all CI configurations, including Windows.
+- [x] Full suite green on all CI configurations, including Windows — first observed whole at
+      `37836da`. It had never been true: the Windows jobs failed at build, then at test, and
+      the release configuration had never run its tests at all, which is where the
+      `EXPECT_DEBUG_DEATH` problem was hiding.
 - [x] `CHANGELOG.md` records the breaking changes: metric definitions, keybindings, data
       locations.

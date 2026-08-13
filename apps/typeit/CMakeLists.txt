@@ -12,6 +12,25 @@ typeit_enable_coverage(typeit_binary)
 typeit_enable_sanitizers(typeit_binary)
 typeit_enable_static_analysis(typeit_binary)
 
+# Install rules (TI-137, BUILD section 8).
+#
+# The binary and the assets it looks for, in the layout `AssetLocator` searches:
+# `<prefix>/bin/typeit` beside `<prefix>/share/typeit`. That relative pair is
+# what makes an install tree *relocatable* — move it anywhere and the binary
+# still finds its texts from its own path, which is the direct fix for defect
+# C2, where 1.0 located assets with `__FILE__` and so only worked on the machine
+# that compiled it.
+#
+# No man page yet: `docs/typeit.1` arrives with TI-139, and installing a file
+# that does not exist fails the install rather than skipping it.
+include(GNUInstallDirs)
+
+install(TARGETS typeit_binary RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/assets/texts/"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/typeit/texts")
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/assets/themes/"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/typeit/themes")
+
 if(TYPEIT_BUILD_TESTS)
     # Phase 3's exit criterion, and the smoke tests around it. These run the
     # real binary: everything else in the suite links a library, and a program
@@ -51,6 +70,15 @@ if(TYPEIT_BUILD_TESTS)
     add_test(NAME cli.texts_unknown_id_is_refused
              COMMAND typeit_binary --data-dir "${text_work}/empty" --text-id 999 --simulate /nonexistent)
     set_tests_properties(cli.texts_unknown_id_is_refused PROPERTIES WILL_FAIL TRUE)
+
+    # Defect C2, proved the only way that counts: install, move the tree, run
+    # it from there (TI-137). Serialised against the other build-driving tests
+    # because it runs `cmake --install` over this build directory.
+    add_test(NAME cli.relocatable
+             COMMAND "${CMAKE_COMMAND}" "-DBUILD=${CMAKE_BINARY_DIR}"
+                     "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/relocate-work" -P
+                     "${CMAKE_CURRENT_SOURCE_DIR}/relocate.cmake")
+    set_tests_properties(cli.relocatable PROPERTIES RESOURCE_LOCK build_directory)
 
     add_test(NAME cli.end_to_end
              COMMAND "${CMAKE_COMMAND}" "-DTYPEIT=$<TARGET_FILE:typeit_binary>"
