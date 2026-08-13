@@ -198,13 +198,6 @@ namespace typeit::core {
         progress_.target_speed = controller_.speed();
         progress_.trend = controller_.trend();
 
-        // The wall: the speed at which accuracy first fell through the gate.
-        // Recorded here because this is where both numbers are in the same
-        // place at the same moment (TI-128).
-        if (progress_.wall.value <= 0.0 && !attempts_.empty() && progress_.accuracy < params_.min_accuracy) {
-            progress_.wall = controller_.speed();
-        }
-
         if (lead > 0.0) {
             // Ahead again: the grace window starts over. This is what makes a
             // single fumbled keystroke survivable and a sustained inability to

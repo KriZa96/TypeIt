@@ -47,10 +47,6 @@ namespace typeit::core {
         /// rather than the peak instantaneous value that any lucky burst
         /// inflates (GAMEPLAY section 3.4).
         Wpm peak_sustained{0.0};
-        /// The speed at which accuracy first collapsed, if it has. The seed of
-        /// the speed-wall analysis (TI-128).
-        Wpm wall{0.0};
-
         /// Gross WPM over the last fifteen seconds, which is what an endless
         /// run's HUD shows instead of a cumulative average (GAMEPLAY §2.5). In
         /// a run with no end a cumulative average stops responding to what the
@@ -63,17 +59,6 @@ namespace typeit::core {
         /// Graphemes attempted. The other half of an endless run's result: how
         /// far, since there is no "how much of it".
         std::size_t distance = 0;
-    };
-
-    /// The target speed at one moment of a race.
-    ///
-    /// Recorded once a second, which is what the results chart draws the ghost
-    /// from. Bounded by the length of the run rather than by the number of
-    /// ticks: at sixty frames a second, one sample per frame would be an hour's
-    /// race in a quarter of a million rows nobody plots.
-    struct PacerSample {
-        Millis at{0};
-        Wpm wpm{0.0};
     };
 
     class RaceMode final : public IMode {

@@ -15,6 +15,7 @@
 #include "typeit/core/metrics/Metrics.h"
 #include "typeit/core/metrics/Timeline.h"
 #include "typeit/core/modes/RaceMode.h"
+#include "typeit/core/race/SpeedWall.h"
 #include "typeit/core/session/Keystroke.h"
 #include "typeit/core/session/KeystrokeLog.h"
 #include "typeit/core/session/Session.h"
@@ -208,11 +209,15 @@ namespace typeit::app {
         record.timeline = core::timeline(log, target);
         if (race != nullptr) {
             record.peak_wpm = race->race().peak_sustained;
-            // Absent rather than zero when accuracy never collapsed: there was
-            // no wall, and a wall at 0 WPM is a chart with a mark on it saying
-            // nothing happened (TI-128 reads this).
-            if (race->race().wall.value > 0.0) {
-                record.wall_wpm = race->race().wall;
+            // Computed from the finished log rather than noticed during the
+            // run. Live, "accuracy has dropped" and "accuracy has dropped and
+            // will recover in two seconds" are indistinguishable, and only one
+            // of them is a wall (TI-128). Absent when there was no collapse:
+            // being overtaken while typing well is not a wall, and a mark on a
+            // chart saying nothing happened is worse than no mark.
+            const core::SpeedWall wall = core::speed_wall(log, target, race->pacer_curve(), race->params());
+            if (wall.low.has_value()) {
+                record.wall_wpm = wall.low;
             }
             merge_pacer_curve(record.timeline, race->pacer_curve());
             if (record.mode_param.empty()) {

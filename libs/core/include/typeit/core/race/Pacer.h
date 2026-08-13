@@ -17,6 +17,18 @@
 
 namespace typeit::core {
 
+    /// The ghost's target speed at one moment of a race.
+    ///
+    /// Recorded once a second by the mode, read afterwards by the results
+    /// screen and by the speed-wall analysis. It lives here rather than with
+    /// the mode so that reading a race back does not mean depending on the
+    /// thing that played it.
+    struct PacerSample {
+        /// Since the run began, not since the epoch.
+        Millis at{0};
+        Wpm wpm{0.0};
+    };
+
     class Pacer {
     public:
         /// Graphemes per word, the convention every speed in this project uses

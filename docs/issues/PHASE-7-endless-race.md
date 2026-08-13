@@ -414,6 +414,28 @@ comfortably.
   designed to make them differ — otherwise the feature is doing nothing.
 - Sparse data in the band degrades gracefully.
 
+**Acceptance**
+- [x] **Computed after the run, not during it.** Live, "accuracy has dropped" and "accuracy has
+      dropped and will recover in two seconds" are indistinguishable, and only one of them is a
+      wall. TI-127's first cut recorded the speed at the first dip, which is precisely the
+      transient this issue says must not count; that field is gone.
+- [x] A transient dip that recovers is not the wall, which is what the whole thing turns on.
+      Found by scanning **backwards** for the last acceptable moment rather than forwards for
+      the first bad one — "and did not recover" becomes one comparison instead of a search.
+- [x] A run with no collapse reports no wall rather than inventing one. Being overtaken while
+      typing well is not a wall, and a diagnosis for it would be a made-up one.
+- [x] A run that was never accurate walls from its first keystroke, rather than from nowhere.
+- [x] **The pairs differ from the whole run's**, on a fixture built to make them differ — an
+      early repeated mistake that recovers, and a different mistake in the collapse. A feature
+      that returns the same answer as the cheap version is a feature doing nothing.
+- [x] First-attempt accuracy, matching what the gate read during the race, so the analysis
+      afterwards agrees with what the ramp was reacting to at the time.
+- [x] Sparse data degrades: a collapse the curve says nothing about — a race that ended inside
+      one second — reports the pairs without inventing a band. What failed is still known even
+      when the speed is not.
+- [x] At most five pairs, most frequent first, ties broken by the pair itself so two machines
+      agree. It is a list somebody reads before a drill, not a dataset.
+
 ---
 
 ## TI-129 — Ramp tuning pass
@@ -455,5 +477,6 @@ otherwise never happens.
 - [ ] The pacer does not visibly stutter.
 - [ ] Endless mode runs for 10 minutes with bounded memory. The mode's own state is bounded and
       tested; the text buffer is not refilled at all yet — see TI-120.
-- [ ] Race results identify the speed wall and its limiting key pairs.
+- [x] Race results identify the speed wall and its limiting key pairs. Showing them on the
+      results screen, and the one-key jump into a drill, are TI-125's and Phase 8's.
 - [ ] Tuning pass complete, with reasons recorded.
