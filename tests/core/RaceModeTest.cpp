@@ -347,6 +347,26 @@ namespace typeit::core {
             EXPECT_DOUBLE_EQ(mode.race().peak_sustained.value, 0.0) << "nothing has been held for ten seconds yet";
         }
 
+        TEST(RaceModeTest, ThePeakIsTheLevelTheSpeedNeverDroppedBelowForAWholeWindow) {
+            // Not "the same number for ten seconds" — a ramp that moves
+            // continuously never produces that, and asking for it recorded a
+            // peak of zero for every race ever run. It is the highest floor the
+            // speed held above, which is what "sustained" has to mean when the
+            // thing being measured is always changing.
+            Typist typist;
+            RaceMode mode{RaceParams{}, Wpm{60.0}};
+            mode.on_start(Millis{0}, typist.model());
+
+            for (std::int64_t at = 200; at <= 60'000; at += 200) {
+                typist.type(mode, 2, Millis{at});
+                mode.on_tick(Millis{at}, typist.model());
+            }
+
+            EXPECT_GT(mode.race().peak_sustained.value, 60.0) << "it climbed and held";
+            EXPECT_LE(mode.race().peak_sustained.value, mode.speed().value)
+                    << "and the sustained level is never above the speed reached";
+        }
+
         // ---- endless ------------------------------------------------------------------------
 
         TEST(RaceModeTest, WithThePacerDisabledTheRunNeverEnds) {

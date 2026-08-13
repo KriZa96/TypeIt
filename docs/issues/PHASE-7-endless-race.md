@@ -368,6 +368,33 @@ and race personal bests.
 - Race personal bests are tracked on `peak_wpm`, separately from timed-mode bests on `net_wpm`.
 - An abandoned race does not set a best.
 
+**Acceptance**
+- [x] `peak_wpm` and `wall_wpm` are filled by the service and round-trip. They were declared on
+      the record and on the schema and nobody wrote them — the mode knew both and was never
+      asked.
+- [x] **The sustained peak is the level the speed never dropped below for a whole window**, not
+      the same number for ten seconds. A ramp that moves continuously never produces the latter,
+      and asking for it recorded a peak of zero for every race ever run. Found by writing this
+      issue's first test; it is the number that becomes the next race's starting speed, so it
+      being silently zero would have made TI-126 a no-op too.
+- [x] No collapse means **no** wall rather than a wall of zero — a mark on a chart saying
+      nothing happened is worse than no mark.
+- [x] `pacer_wpm` is written and read. The column shipped in schema v1 and nothing had ever put
+      a value in it.
+- [x] The ghost's curve is sampled once a second, not once a tick: at sixty frames a second an
+      hour's race would be a quarter of a million rows nobody plots, and the speed changes by
+      less than a word a minute between samples.
+- [x] `mode_param` records every effective parameter, so a race stays reconstructible after
+      somebody edits a preset. Reading the config back at display time would mean last week's
+      race quietly re-describing itself as this week's difficulty.
+- [x] A `mode_param` the caller supplied is left alone — the caller knows which preset was
+      chosen *by name*, which this does not.
+- [x] A mode that is not a race records neither number and no pacer, so a timed run does not
+      carry two empty columns and a chart with an empty second series.
+- [x] Race bests are on `peak_wpm` and timed bests on `net_wpm`, already separate per metric;
+      an abandoned race sets none, which the completed guard already enforced and a test now
+      says out loud.
+
 ---
 
 ## TI-128 — Speed-wall analysis

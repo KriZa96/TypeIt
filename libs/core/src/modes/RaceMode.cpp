@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <ranges>
 #include <span>
 #include <utility>
 
@@ -49,8 +50,6 @@ namespace typeit::core {
         started_at_ = at;
         now_ = at;
         started_ = true;
-        holding_since_ = at;
-        holding_ = controller_.speed();
         if (paced_) {
             pacer_.advance(at);
         }
@@ -92,19 +91,46 @@ namespace typeit::core {
         return Accuracy{static_cast<double>(correct_) / static_cast<double>(attempts_.size())};
     }
 
-    void RaceMode::track_sustained(Millis now) {
-        const Wpm speed = controller_.speed();
-        if (speed != holding_) {
-            holding_ = speed;
-            holding_since_ = now;
+    void RaceMode::track_sustained() {
+        // The highest level the target speed never dropped below for a whole
+        // sustain window — *not* the same number for ten seconds, which a ramp
+        // that moves continuously never produces. The first cut asked for
+        // equality and recorded a peak of zero for every race ever run.
+        //
+        // Held rather than reached, because the peak instantaneous value is
+        // inflated by any lucky burst, and this number becomes the next race's
+        // starting speed (GAMEPLAY section 3.4).
+        if (curve_.empty()) {
             return;
         }
-        // Held rather than reached. The peak instantaneous value is inflated by
-        // any lucky burst, and it is this number that becomes the next race's
-        // starting speed (GAMEPLAY section 3.4).
-        if (now.value - holding_since_.value >= params_.sustain_window.value && speed > progress_.peak_sustained) {
-            progress_.peak_sustained = speed;
+        const std::int64_t oldest = curve_.back().at.value - params_.sustain_window.value;
+        double lowest = curve_.back().wpm.value;
+        bool covered = false;
+        for (const PacerSample& sample: std::ranges::reverse_view{curve_}) {
+            lowest = std::min(lowest, sample.wpm.value);
+            if (sample.at.value <= oldest) {
+                // The window is spanned: everything from here to now was at
+                // least `lowest`.
+                covered = true;
+                break;
+            }
         }
+        if (covered && lowest > progress_.peak_sustained.value) {
+            progress_.peak_sustained = Wpm{lowest};
+        }
+    }
+
+    void RaceMode::sample_pacer(Millis now) {
+        // One a second. At sixty frames a second, a sample per tick would make
+        // an hour's race a quarter of a million rows nobody plots — and the
+        // ghost's speed changes by less than a word a minute between them.
+        constexpr Millis kInterval{1'000};
+        if (sampled_ && now.value - last_sample_.value < kInterval.value) {
+            return;
+        }
+        sampled_ = true;
+        last_sample_ = now;
+        curve_.push_back(PacerSample{.at = Millis{now.value - started_at_.value}, .wpm = controller_.speed()});
     }
 
     void RaceMode::caught(const TypingModel& model) {
@@ -166,7 +192,8 @@ namespace typeit::core {
         {
             controller_.advance(elapsed, lead, progress_.accuracy);
             pacer_.set_speed(controller_.speed());
-            track_sustained(now);
+            sample_pacer(now);
+            track_sustained();
         }
         progress_.target_speed = controller_.speed();
         progress_.trend = controller_.trend();

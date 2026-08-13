@@ -8,6 +8,7 @@
 #define TYPEIT_CORE_METRICS_TIMELINE_H
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include "typeit/core/session/KeystrokeLog.h"
@@ -29,6 +30,10 @@ namespace typeit::core {
         /// applied to, whether or not they were later corrected. A mistake
         /// belongs to the second it was made in.
         std::size_t errors = 0;
+        /// The race ghost's target speed in this bucket, where there was a
+        /// ghost. Absent for every other mode, which is what keeps a timed
+        /// run's chart from having an empty second series on it (TI-127).
+        std::optional<Wpm> pacer_wpm;
     };
 
     /// Buckets are half-open — `[at, at + bucket)` — so an event on a boundary

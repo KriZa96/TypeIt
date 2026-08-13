@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -146,8 +147,16 @@ namespace typeit {
             // read. The library that would give it a real value is Phase 6.
             app::SessionRecord written = TestFixture::a_run();
             written.timeline = {
-                    {.at = core::Millis{0}, .wpm = core::Wpm{40.0}, .keystrokes = 5, .errors = 1},
-                    {.at = core::Millis{1'000}, .wpm = core::Wpm{60.0}, .keystrokes = 7, .errors = 0},
+                    {.at = core::Millis{0},
+                     .wpm = core::Wpm{40.0},
+                     .keystrokes = 5,
+                     .errors = 1,
+                     .pacer_wpm = core::Wpm{35.0}},
+                    {.at = core::Millis{1'000},
+                     .wpm = core::Wpm{60.0},
+                     .keystrokes = 7,
+                     .errors = 0,
+                     .pacer_wpm = std::nullopt},
             };
             const core::Result<core::SessionId> id = this->repository().save(written);
             ASSERT_TRUE(id) << (id ? "" : id.error().context);
@@ -432,8 +441,16 @@ namespace typeit {
 
         TYPED_TEST(HistoryRepositoryContract, ARunIsSavedWithItsStatsInOneCall) {
             app::SessionRecord record = TestFixture::a_run();
-            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0}, .wpm = core::Wpm{90.0}});
-            record.timeline.push_back(core::TimelineSample{.at = core::Millis{1'000}, .wpm = core::Wpm{110.0}});
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0},
+                                                           .wpm = core::Wpm{90.0},
+                                                           .keystrokes = 0,
+                                                           .errors = 0,
+                                                           .pacer_wpm = std::nullopt});
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{1'000},
+                                                           .wpm = core::Wpm{110.0},
+                                                           .keystrokes = 0,
+                                                           .errors = 0,
+                                                           .pacer_wpm = std::nullopt});
 
             core::KeyStats stats;
             stats.per_grapheme["a"] = core::KeyStat{.attempts = 5, .errors = 1};
@@ -459,8 +476,16 @@ namespace typeit {
             // that did not roll back would leave a run with no timeline and a
             // record it never earned.
             app::SessionRecord record = TestFixture::a_run();
-            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0}, .wpm = core::Wpm{90.0}});
-            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0}, .wpm = core::Wpm{110.0}});
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0},
+                                                           .wpm = core::Wpm{90.0},
+                                                           .keystrokes = 0,
+                                                           .errors = 0,
+                                                           .pacer_wpm = std::nullopt});
+            record.timeline.push_back(core::TimelineSample{.at = core::Millis{0},
+                                                           .wpm = core::Wpm{110.0},
+                                                           .keystrokes = 0,
+                                                           .errors = 0,
+                                                           .pacer_wpm = std::nullopt});
 
             core::KeyStats stats;
             stats.per_grapheme["a"] = core::KeyStat{.attempts = 5, .errors = 1};

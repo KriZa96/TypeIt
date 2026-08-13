@@ -169,7 +169,8 @@ namespace typeit::infra {
             return {};
         }
         Result<Statement> insert = database_->prepare(
-                "INSERT INTO session_sample (session_id, t_ms, wpm, errors) VALUES (?1, ?2, ?3, ?4)");
+                "INSERT INTO session_sample (session_id, t_ms, wpm, errors, pacer_wpm)"
+                " VALUES (?1, ?2, ?3, ?4, ?5)");
         if (!insert) {
             return std::unexpected{insert.error()};
         }
@@ -180,6 +181,11 @@ namespace typeit::infra {
                     .bind(2, sample.at.value)
                     .bind(3, sample.wpm.value)
                     .bind(4, static_cast<std::int64_t>(sample.errors));
+            if (sample.pacer_wpm.has_value()) {
+                insert->bind(5, sample.pacer_wpm->value);
+            } else {
+                insert->bind_null(5);
+            }
             if (const Status written = insert->run(); !written) {
                 return written;
             }
@@ -350,8 +356,9 @@ namespace typeit::infra {
     }
 
     Result<std::vector<core::TimelineSample>> SqliteHistoryRepository::read_samples(core::SessionId id) const {
-        Result<Statement> statement =
-                database_->prepare("SELECT t_ms, wpm, errors FROM session_sample WHERE session_id = ?1 ORDER BY t_ms");
+        Result<Statement> statement = database_->prepare(
+                "SELECT t_ms, wpm, errors, pacer_wpm FROM session_sample"
+                " WHERE session_id = ?1 ORDER BY t_ms");
         if (!statement) {
             return std::unexpected{statement.error()};
         }
@@ -370,10 +377,15 @@ namespace typeit::infra {
             // errors, which is what the chart draws — so a sample read back is
             // not byte-for-byte the one that was written. Said here rather than
             // left for somebody to discover in a diff.
-            samples.push_back(core::TimelineSample{.at = core::Millis{statement->column_int(0)},
-                                                   .wpm = core::Wpm{statement->column_double(1)},
-                                                   .keystrokes = 0,
-                                                   .errors = static_cast<std::size_t>(statement->column_int(2))});
+            core::TimelineSample sample{.at = core::Millis{statement->column_int(0)},
+                                        .wpm = core::Wpm{statement->column_double(1)},
+                                        .keystrokes = 0,
+                                        .errors = static_cast<std::size_t>(statement->column_int(2)),
+                                        .pacer_wpm = std::nullopt};
+            if (!statement->column_is_null(3)) {
+                sample.pacer_wpm = core::Wpm{statement->column_double(3)};
+            }
+            samples.push_back(sample);
         }
         return samples;
     }

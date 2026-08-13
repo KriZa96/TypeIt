@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <ftxui/component/event.hpp>
 #include <gtest/gtest.h>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -75,7 +76,8 @@ namespace typeit::tui {
                 record.timeline.push_back({.at = core::Millis{second * 1'000},
                                            .wpm = core::Wpm{60.0 + static_cast<double>(second)},
                                            .keystrokes = 6,
-                                           .errors = second == 3 ? 1U : 0U});
+                                           .errors = second == 3 ? 1U : 0U,
+                                           .pacer_wpm = std::nullopt});
             }
             return record;
         }

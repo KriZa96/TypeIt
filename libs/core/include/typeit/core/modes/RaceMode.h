@@ -13,7 +13,9 @@
 #include <cstddef>
 #include <deque>
 #include <optional>
+#include <span>
 #include <string_view>
+#include <vector>
 
 #include "typeit/core/metrics/RollingWpm.h"
 #include "typeit/core/modes/IMode.h"
@@ -63,6 +65,17 @@ namespace typeit::core {
         std::size_t distance = 0;
     };
 
+    /// The target speed at one moment of a race.
+    ///
+    /// Recorded once a second, which is what the results chart draws the ghost
+    /// from. Bounded by the length of the run rather than by the number of
+    /// ticks: at sixty frames a second, one sample per frame would be an hour's
+    /// race in a quarter of a million rows nobody plots.
+    struct PacerSample {
+        Millis at{0};
+        Wpm wpm{0.0};
+    };
+
     class RaceMode final : public IMode {
     public:
         /// `start` is the target speed the pacer opens at — from history, or
@@ -88,6 +101,15 @@ namespace typeit::core {
 
         [[nodiscard]] Wpm speed() const noexcept { return controller_.speed(); }
 
+        /// The ghost's speed over the run, one sample a second, for the results
+        /// chart and for `session_sample.pacer_wpm` (TI-127).
+        [[nodiscard]] std::span<const PacerSample> pacer_curve() const noexcept { return curve_; }
+
+        /// The numbers this race was actually run by, whatever the config file
+        /// says now. Recorded with the run so a race stays reconstructible
+        /// after somebody changes a preset (TI-127).
+        [[nodiscard]] const RaceParams& params() const noexcept { return params_; }
+
     private:
         /// The rolling window the accuracy gate reads.
         void record_attempt(bool correct);
@@ -100,7 +122,11 @@ namespace typeit::core {
         /// Being caught: a life, a push-back, and a penalty — or the end.
         void caught(const TypingModel& model);
 
-        void track_sustained(Millis now);
+        void track_sustained();
+
+        /// One sample a second, and one at the moment the ghost starts moving,
+        /// so the curve begins where the race does rather than a second later.
+        void sample_pacer(Millis now);
 
         RaceParams params_;
         DifficultyController controller_;
@@ -121,15 +147,15 @@ namespace typeit::core {
         Millis behind_since_{0};
         bool behind_ = false;
 
-        /// Since when the current speed has been held, for the sustained peak.
-        Millis holding_since_{0};
-        Wpm holding_{0.0};
-
         /// One entry per attempted grapheme, oldest first, capped at the
         /// window. A deque rather than a ring buffer because the window is
         /// fifty and the clarity is worth more than the arithmetic.
         std::deque<bool> attempts_;
         std::size_t correct_ = 0;
+
+        std::vector<PacerSample> curve_;
+        Millis last_sample_{0};
+        bool sampled_ = false;
     };
 
 }  // namespace typeit::core

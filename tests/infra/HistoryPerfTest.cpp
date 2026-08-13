@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -92,7 +93,8 @@ namespace typeit::infra {
                         record.timeline.push_back({.at = core::Millis{static_cast<std::int64_t>(second) * 1'000},
                                                    .wpm = core::Wpm{60.0},
                                                    .keystrokes = 5,
-                                                   .errors = 0});
+                                                   .errors = 0,
+                                                   .pacer_wpm = std::nullopt});
                     }
                     ASSERT_TRUE(repository_->save(record)) << "seeding run " << at;
                 }

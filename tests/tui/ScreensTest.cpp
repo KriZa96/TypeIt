@@ -9,6 +9,7 @@
 #include <ftxui/component/event.hpp>
 #include <gtest/gtest.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -743,7 +744,8 @@ namespace typeit::tui {
                 result.record.timeline.push_back({.at = core::Millis{second * 1'000},
                                                   .wpm = core::Wpm{60.0 + static_cast<double>(second)},
                                                   .keystrokes = 6,
-                                                  .errors = second == 2 ? 1U : 0U});
+                                                  .errors = second == 2 ? 1U : 0U,
+                                                  .pacer_wpm = std::nullopt});
             }
             result.errors.substitutions[{"m", "n"}] = 7;
             result.errors.substitutions[{"e", "r"}] = 3;

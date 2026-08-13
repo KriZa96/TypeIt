@@ -3,15 +3,18 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 
+#include "typeit/app/Json.h"
 #include "typeit/app/records/History.h"
 #include "typeit/core/Version.h"
 #include "typeit/core/metrics/ErrorMap.h"
 #include "typeit/core/metrics/KeyStats.h"
 #include "typeit/core/metrics/Metrics.h"
 #include "typeit/core/metrics/Timeline.h"
+#include "typeit/core/modes/RaceMode.h"
 #include "typeit/core/session/Keystroke.h"
 #include "typeit/core/session/KeystrokeLog.h"
 #include "typeit/core/session/Session.h"
@@ -51,6 +54,59 @@ namespace typeit::app {
 
         [[nodiscard]] std::size_t count_of(const core::TypingModel& model, core::GraphemeState state) {
             return static_cast<std::size_t>(std::ranges::count(model.states(), state));
+        }
+
+
+        /// The ghost's curve, laid onto the timeline the metrics produced.
+        ///
+        /// Both are one-second series but neither is guaranteed to be complete:
+        /// a timeline bucket exists only where something was typed, and a pacer
+        /// sample only after the opening grace. So each bucket takes the last
+        /// pacer reading at or before it, which is what the ghost's speed
+        /// actually was during that second.
+        void merge_pacer_curve(std::vector<core::TimelineSample>& timeline, std::span<const core::PacerSample> curve) {
+            if (curve.empty()) {
+                return;
+            }
+            auto reading = curve.begin();
+            for (core::TimelineSample& sample: timeline) {
+                while (std::next(reading) != curve.end() && std::next(reading)->at <= sample.at) {
+                    ++reading;
+                }
+                if (reading->at <= sample.at) {
+                    sample.pacer_wpm = reading->wpm;
+                }
+            }
+        }
+
+        /// Every effective parameter, so a past race is reconstructible after
+        /// the config changes.
+        ///
+        /// Written out rather than looped, because the field names are the
+        /// contract: a reader five years from now is matching these against
+        /// GAMEPLAY §3.5, not against whatever a reflection helper produced.
+        [[nodiscard]] std::string race_params_json(const core::RaceParams& params) {
+            std::string out = R"({"kind":"race")";
+            const auto field = [&out](std::string_view name, double value) {
+                out += ",";
+                json::append_string(out, name);
+                out += ":" + json::number(value);
+            };
+            field("ramp_up", params.ramp_up);
+            field("ramp_down", params.ramp_down);
+            field("min_accuracy", params.min_accuracy.value);
+            field("lead_comfort", params.lead_comfort);
+            field("lead_danger", params.lead_danger);
+            field("lead_scale", params.lead_scale);
+            field("grace_ms", static_cast<double>(params.grace.value));
+            field("lives", static_cast<double>(params.lives));
+            field("catch_penalty", params.catch_penalty);
+            field("start_factor", params.start_factor);
+            field("sustain_window_ms", static_cast<double>(params.sustain_window.value));
+            field("min_speed", params.min_speed.value);
+            field("max_speed", params.max_speed.value);
+            out += "}";
+            return out;
         }
 
     }  // namespace
@@ -108,6 +164,13 @@ namespace typeit::app {
             }
         }
 
+        // A race records three things no other mode has: the highest speed it
+        // held, the speed accuracy collapsed at, and the ghost's whole curve.
+        // Asked for by type rather than through `IMode`, because a mode that
+        // could be asked for a pacer speed would be every mode carrying a
+        // question only one of them can answer (TI-127).
+        const auto* const race = dynamic_cast<const core::RaceMode*>(&session.mode());
+
         SessionRecord record;
         record.started_at = run.started_at;
         record.ended_at = wall_clock_->unix_now();
@@ -143,6 +206,22 @@ namespace typeit::app {
         record.completed = outcome == Outcome::Completed;
         record.app_version = kVersionString;
         record.timeline = core::timeline(log, target);
+        if (race != nullptr) {
+            record.peak_wpm = race->race().peak_sustained;
+            // Absent rather than zero when accuracy never collapsed: there was
+            // no wall, and a wall at 0 WPM is a chart with a mark on it saying
+            // nothing happened (TI-128 reads this).
+            if (race->race().wall.value > 0.0) {
+                record.wall_wpm = race->race().wall;
+            }
+            merge_pacer_curve(record.timeline, race->pacer_curve());
+            if (record.mode_param.empty()) {
+                // The numbers this race was *run* by, not the ones in the
+                // config file when somebody later looks at it. A preset edited
+                // next week must not rewrite what last week's race was.
+                record.mode_param = race_params_json(race->params());
+            }
+        }
 
         core::KeyStats keys = core::key_stats(log, target);
         core::ErrorMap errors = core::error_map(log, target);
