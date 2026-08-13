@@ -14,6 +14,7 @@
 #include "typeit/core/text/TextBuffer.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -136,7 +137,7 @@ namespace typeit::core {
             KeystrokeLog log;
             log.append(typed("a", 200));
 
-            EXPECT_DEBUG_DEATH(log.append(typed("b", 199)), "backwards");
+            TYPEIT_EXPECT_PRECONDITION(log.append(typed("b", 199)), "backwards");
         }
 
         TEST(KeystrokeLogTest, GrowthDoesNotChangeAnyRecordedValue) {

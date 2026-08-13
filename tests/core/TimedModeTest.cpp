@@ -6,6 +6,7 @@
 #include "typeit/core/modes/TimedMode.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/testing/ModeDriver.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -126,8 +127,8 @@ namespace typeit::core {
         }
 
         TEST(TimedModeDeathTest, ADurationOutsideTheValidatedRangeIsABug) {
-            EXPECT_DEBUG_DEATH(TimedMode{Millis{0}}, "validated range");
-            EXPECT_DEBUG_DEATH(TimedMode{Millis{3'600'001}}, "validated range");
+            TYPEIT_EXPECT_PRECONDITION(TimedMode{Millis{0}}, "validated range");
+            TYPEIT_EXPECT_PRECONDITION(TimedMode{Millis{3'600'001}}, "validated range");
         }
 
         // Ported from tests/test_timer.cpp. All seven cases, with the FakeClock

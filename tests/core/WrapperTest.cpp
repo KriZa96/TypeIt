@@ -9,6 +9,7 @@
 #include "typeit/core/text/Wrapper.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -112,7 +113,7 @@ namespace typeit::core {
         TEST(WrapperTestDeath, ZeroColumnsIsRejected) {
             const TextBuffer buffer = build("abc");
 
-            EXPECT_DEBUG_DEATH(static_cast<void>(wrap(buffer.graphemes(), 0)), "at least one column");
+            TYPEIT_EXPECT_PRECONDITION(static_cast<void>(wrap(buffer.graphemes(), 0)), "at least one column");
         }
 
         // Ported from tests/test_text.cpp. The rebuild has to produce the same layout

@@ -8,6 +8,7 @@
 #include "typeit/core/text_supply/ITextProvider.h"
 #include "typeit/core/text_supply/Prng.h"
 #include "typeit/core/text_supply/WholeTextProvider.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -108,7 +109,7 @@ namespace typeit::core {
         TEST(PrngDeathTest, ABoundOfZeroIsABug) {
             Prng random{7};
 
-            EXPECT_DEBUG_DEATH(static_cast<void>(random.below(0)), "below zero of them");
+            TYPEIT_EXPECT_PRECONDITION(static_cast<void>(random.below(0)), "below zero of them");
         }
 
         TEST(PrngTest, ARandomSeedIsNotTheSameEveryTime) {

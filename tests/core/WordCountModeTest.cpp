@@ -7,6 +7,7 @@
 #include "typeit/core/modes/WordCountMode.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/testing/ModeDriver.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -156,7 +157,9 @@ namespace typeit::core {
             EXPECT_EQ(progress_of(mode).done, 2U);
         }
 
-        TEST(WordCountModeDeathTest, ZeroWordsIsABug) { EXPECT_DEBUG_DEATH(WordCountMode{0}, "over before it begins"); }
+        TEST(WordCountModeDeathTest, ZeroWordsIsABug) {
+            TYPEIT_EXPECT_PRECONDITION(WordCountMode{0}, "over before it begins");
+        }
 
     }  // namespace
 }  // namespace typeit::core

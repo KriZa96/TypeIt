@@ -9,6 +9,7 @@
 #include "typeit/core/text_supply/ChunkedProvider.h"
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
+#include "typeit/testing/Preconditions.h"
 #include "typeit/testing/TypingRun.h"
 
 namespace typeit::core {
@@ -179,8 +180,8 @@ namespace typeit::core {
         }
 
         TEST(ChunkedProviderDeathTest, AChunkOfNoGraphemesIsABug) {
-            EXPECT_DEBUG_DEATH(static_cast<void>(ChunkedProvider::create(kText, {.chunk_graphemes = 0})),
-                               "never delivers");
+            TYPEIT_EXPECT_PRECONDITION(static_cast<void>(ChunkedProvider::create(kText, {.chunk_graphemes = 0})),
+                                       "never delivers");
         }
 
     }  // namespace

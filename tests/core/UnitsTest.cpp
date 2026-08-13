@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "typeit/core/util/Units.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -103,7 +104,7 @@ namespace typeit::core {
         TEST(UnitsTestDeath, GraphemeIndexRefusesToDecrementBelowZero) {
             GraphemeIndex cursor{0};
 
-            EXPECT_DEBUG_DEATH(--cursor, "decremented below zero");
+            TYPEIT_EXPECT_PRECONDITION(--cursor, "decremented below zero");
         }
 
         TEST(UnitsTest, IdentitiesAreDistinctTypesWithTheSamePayload) {

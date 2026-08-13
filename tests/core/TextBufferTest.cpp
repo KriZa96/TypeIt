@@ -7,6 +7,7 @@
 #include "typeit/core/util/Result.h"
 #include "typeit/core/util/Units.h"
 #include "typeit/testing/AllocationCounter.h"
+#include "typeit/testing/Preconditions.h"
 
 namespace typeit::core {
     namespace {
@@ -51,7 +52,7 @@ namespace typeit::core {
         TEST(TextBufferTestDeath, AtRejectsAnIndexPastTheEnd) {
             const TextBuffer buffer = build("ab");
 
-            EXPECT_DEBUG_DEATH(static_cast<void>(buffer.at(GraphemeIndex{2})), "out of range");
+            TYPEIT_EXPECT_PRECONDITION(static_cast<void>(buffer.at(GraphemeIndex{2})), "out of range");
         }
 
         TEST(TextBufferTest, AtCheckedReturnsAnErrorInsteadOfDying) {
@@ -82,14 +83,15 @@ namespace typeit::core {
         TEST(TextBufferTestDeath, ToStringRejectsAReversedRange) {
             const TextBuffer buffer = build("abc");
 
-            EXPECT_DEBUG_DEATH(static_cast<void>(buffer.to_string(GraphemeIndex{2}, GraphemeIndex{1})), "reversed");
+            TYPEIT_EXPECT_PRECONDITION(static_cast<void>(buffer.to_string(GraphemeIndex{2}, GraphemeIndex{1})),
+                                       "reversed");
         }
 
         TEST(TextBufferTestDeath, ToStringRejectsARangePastTheEnd) {
             const TextBuffer buffer = build("abc");
 
-            EXPECT_DEBUG_DEATH(static_cast<void>(buffer.to_string(GraphemeIndex{0}, GraphemeIndex{4})),
-                               "past the text");
+            TYPEIT_EXPECT_PRECONDITION(static_cast<void>(buffer.to_string(GraphemeIndex{0}, GraphemeIndex{4})),
+                                       "past the text");
         }
 
         // The eight cases from tests/test_word_count.cpp, with identical expectations.
