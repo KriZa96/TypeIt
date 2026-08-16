@@ -26,7 +26,9 @@
 #include "typeit/app/services/SessionService.h"
 #include "typeit/core/modes/ModeRegistry.h"
 #include "typeit/core/modes/QuoteMode.h"
+#include "typeit/core/modes/RaceMode.h"
 #include "typeit/core/modes/TimedMode.h"
+#include "typeit/core/race/RaceParams.h"
 #include "typeit/testing/FakeClock.h"
 #include "typeit/testing/Fakes.h"
 
@@ -73,6 +75,8 @@ namespace typeit::tui {
             Runner() {
                 modes.register_mode("quote", [] { return std::make_unique<core::QuoteMode>(); });
                 modes.register_mode("timed", [] { return std::make_unique<core::TimedMode>(core::Millis{30'000}); });
+                modes.register_mode(
+                        "race", [] { return std::make_unique<core::RaceMode>(core::RaceParams{}, core::Wpm{40.0}); });
             }
 
             [[nodiscard]] static app::SessionRequest a_request(std::string_view mode = "quote",
@@ -542,6 +546,26 @@ namespace typeit::tui {
             (*screen)->on_tick(runner.clock.now());
 
             EXPECT_EQ((*screen)->session().model().log().size(), events) << "the tick typed nothing";
+        }
+
+        TEST(SessionScreenTest, ARaceDrawsThePacerBarAndAnOrdinaryRunDoesNot) {
+            // A HUD nobody draws is the same class of thing as a flag that says
+            // "not built yet" for a feature that exists (TI-125).
+            Fixture fixture;
+            Runner runner;
+            const core::Result<std::unique_ptr<SessionScreen>> racing =
+                    SessionScreen::create(fixture.context, runner.service, Runner::a_request("race"), runner.clock);
+            const core::Result<std::unique_ptr<SessionScreen>> timed =
+                    SessionScreen::create(fixture.context, runner.service, Runner::a_request("timed"), runner.clock);
+            ASSERT_TRUE(racing) << (racing ? "" : racing.error().context);
+            ASSERT_TRUE(timed) << (timed ? "" : timed.error().context);
+
+            const std::string with_ghost = testing::render_to_text((*racing)->render(), 80, 24);
+            const std::string without = testing::render_to_text((*timed)->render(), 80, 24);
+
+            EXPECT_NE(with_ghost.find("target"), std::string::npos) << with_ghost;
+            EXPECT_NE(with_ghost.find("lead"), std::string::npos) << with_ghost;
+            EXPECT_EQ(without.find("target"), std::string::npos) << "a timed run has no ghost: " << without;
         }
 
         TEST(SessionScreenTest, RenderingAdvancesNeither) {

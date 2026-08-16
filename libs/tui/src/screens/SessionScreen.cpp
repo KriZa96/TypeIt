@@ -12,8 +12,10 @@
 #include "Bars.h"
 #include "ColorQuantizer.h"
 #include "Keymap.h"
+#include "RaceHud.h"
 #include "typeit/core/metrics/Metrics.h"
 #include "typeit/core/modes/IMode.h"
+#include "typeit/core/modes/RaceMode.h"
 
 namespace typeit::tui {
     namespace {
@@ -105,6 +107,38 @@ namespace typeit::tui {
 
     void SessionScreen::abandon() { finish(app::Outcome::Abandoned, SessionOutcome::Abandoned); }
 
+    ftxui::Element SessionScreen::race_hud(app::ColorDepth depth, std::size_t width) const {
+        // Only a race has a ghost. Asked for by type rather than through
+        // `IMode`, because a mode that could be asked for a pacer position
+        // would be every mode carrying a question only one of them answers
+        // (TI-125, same reasoning as the persistence in TI-127).
+        const auto* const race = dynamic_cast<const core::RaceMode*>(&run_.session->mode());
+        if (race == nullptr) {
+            return ftxui::text("");
+        }
+
+        RaceHudState state;
+        state.target = race->race().target_speed;
+        state.trend = race->race().trend;
+        state.you = race->race().rolling_wpm;
+        state.accuracy = race->race().accuracy;
+        state.lead = race->race().lead;
+        state.lives_left = race->race().lives_left;
+        state.lives_total = race->params().lives;
+        state.pacer = race->race().pacer;
+        state.player = run_.session->model().cursor();
+
+        RaceHudOptions options;
+        options.depth = depth;
+        options.glyphs = context_->capabilities.glyphs;
+        options.window = static_cast<std::size_t>(race->params().lead_comfort * 4.0);
+
+        return ftxui::vbox({
+                race_stats_bar(state, *context_->theme, options),
+                pacer_bar(state, *context_->theme, width, options),
+        });
+    }
+
     ftxui::Element SessionScreen::render() {
         const app::ColorDepth depth = context_->capabilities.color;
         const Layout layout = context_->layout();
@@ -117,6 +151,13 @@ namespace typeit::tui {
             bar.show_progress = context_->config->appearance.show_progress;
             bar.depth = depth;
             rows.push_back(stats_bar(stats_of(*run_.session), *context_->theme, bar));
+            // The race strip goes *above* the ordinary one rather than
+            // replacing it: net WPM and accuracy still matter in a race, and a
+            // typist should not have to change modes to learn what they
+            // normally see.
+            if (ftxui::Element hud = race_hud(depth, layout.text_columns); hud != nullptr) {
+                rows.push_back(std::move(hud));
+            }
             rows.push_back(ftxui::text(""));
         }
 

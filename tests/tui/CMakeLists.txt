@@ -43,7 +43,7 @@ endif()
 
 add_executable(tui_tests ColorQuantizerTest.cpp FrameTickerTest.cpp GlyphSetTest.cpp
                          HeatmapTest.cpp HistogramTest.cpp HistoryScreenTest.cpp
-                         KeymapTest.cpp
+                         KeymapTest.cpp RaceHudTest.cpp
                          LineChartTest.cpp
                          LayoutTest.cpp SparklineTest.cpp StatsBarTest.cpp
                          ScreensTest.cpp ScreenStackTest.cpp SessionDetailScreenTest.cpp TextLibraryScreenTest.cpp Snapshot.cpp TerminalAppTest.cpp TypingAreaTest.cpp)

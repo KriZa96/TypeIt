@@ -311,6 +311,33 @@ lives.
 - Layout holds when the pacer is ahead of the player (negative lead).
 - Snapshots at 80×24 and 120×40.
 
+**Acceptance**
+- [x] The gap between the filled run and the caret **is** the lead, drawn to scale — asserted by
+      comparing two leads rather than by eyeballing one, because a bar that looks right and
+      measures wrong lies to somebody mid-race.
+- [x] The bar spans a **window** of the text rather than all of it. Over a three-thousand
+      grapheme chapter a lead of thirty is a fifth of a column, which is not a feedback channel;
+      four times `lead_comfort` makes a comfortable lead about a quarter of the bar.
+- [x] The trend marker is the accuracy gate made visible — `▲`/`▼`/`=` beside the target speed,
+      and coloured as well as shaped, so somebody who is well ahead and gaining nothing can see
+      *why* rather than wonder why the number stopped moving.
+- [x] The layout holds when the ghost is ahead: a negative lead is an ordinary state for the
+      length of the grace window, and the bar keeps both its ends. The lead reads `-12` rather
+      than `12`, which would be a lie about which way round the two are.
+- [x] Lives show what is left **and** what has gone, so the total is visible rather than
+      remembered.
+- [x] Every race glyph has an ASCII form, asserted by checking that nothing in either strip has
+      the high bit set under `GlyphSet::Ascii`.
+- [x] A bar narrower than its own two ends draws nothing rather than a partial one — the
+      responsive layout has a screen for that case.
+- [x] Snapshots at 80×24 and 120×40, plus the render-purity assertion every widget owes.
+- [x] **It is actually on screen.** The session screen draws it for a race and not for anything
+      else, with a test that says so — a HUD nobody draws is the same class of thing as a flag
+      that reports a feature is missing when it is there.
+- [ ] The inline pacer marker in the text is not drawn. `TypingArea` owns the text and takes no
+      pacer position; threading one through is a change to the widget that every other mode
+      also uses, and the bar already carries the same information.
+
 ---
 
 ## TI-126 — Adaptive start speed

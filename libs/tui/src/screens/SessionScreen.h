@@ -48,6 +48,13 @@ namespace typeit::tui {
                                                                                  const core::IClock& clock);
 
         [[nodiscard]] ftxui::Element render() override;
+
+        /// The race strip and pacer bar, or an empty element for any other
+
+        /// mode (TI-125).
+
+        [[nodiscard]] ftxui::Element race_hud(app::ColorDepth depth, std::size_t width) const;
+
         [[nodiscard]] bool on_event(ftxui::Event event) override;
         [[nodiscard]] std::string_view title() const override { return "session"; }
 
